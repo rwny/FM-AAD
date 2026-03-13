@@ -56,9 +56,10 @@ interface SceneProps {
   leftVisible: boolean;
   rightVisible: boolean;
   activeMode: string;
+  clipFloor: number | null;
 }
 
-function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode }: SceneProps) {
+function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor }: SceneProps) {
   return (
     <>
       <PerspectiveCamera makeDefault position={[-26.1, 14.766, 17.229]} fov={45} />
@@ -75,6 +76,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
           onACFound={onACFound}
           onRoomClick={onRoomClick} 
           activeMode={activeMode}
+          clipFloor={clipFloor}
         />
         <Environment preset="apartment" />
         <ContactShadows position={[0, -0.01, 0]} opacity={0.2} scale={100} blur={2.5} far={15} color="#334155" />
@@ -96,12 +98,38 @@ function App() {
   const [expandedFloors, setExpandedFloors] = useState<{[key: number]: boolean}>({ 1: true, 2: true })
   const [showLeft, setShowLeft] = useState(true)
   const [showRight, setShowRight] = useState(true)
+  const [clipFloor, setClipFloor] = useState<number | null>(null)
 
   const finalACAssets = useMemo(() => {
-    return acAssets.map(modelAsset => {
+    const STATUS_PRIORITY: Record<string, number> = { 'Faulty': 3, 'Warning': 2, 'Maintenance': 1, 'Normal': 0 };
+    
+    // 1. Merge mock data
+    const merged = acAssets.map(modelAsset => {
       const mockDetail = initialMockAC.find(m => m.id.toLowerCase() === modelAsset.id.toLowerCase())
       return mockDetail ? { ...modelAsset, ...mockDetail } : modelAsset
-    })
+    });
+
+    // 2. Group by ID suffix (e.g., '101' from 'fcu-101') and find max priority status
+    const groupStatus: Record<string, string> = {};
+    merged.forEach(asset => {
+      const suffix = asset.id.split('-')[1];
+      if (suffix) {
+        const currentStatus = asset.status || 'Normal';
+        const existingStatus = groupStatus[suffix] || 'Normal';
+        if (STATUS_PRIORITY[currentStatus] > STATUS_PRIORITY[existingStatus]) {
+          groupStatus[suffix] = currentStatus;
+        }
+      }
+    });
+
+    // 3. Apply the group status to all units in the pair
+    return merged.map(asset => {
+      const suffix = asset.id.split('-')[1];
+      if (suffix && groupStatus[suffix]) {
+        return { ...asset, status: groupStatus[suffix] };
+      }
+      return asset;
+    });
   }, [acAssets])
 
   const handleSearchChange = (val: string) => {
@@ -152,6 +180,7 @@ function App() {
             leftVisible={showLeft}
             rightVisible={showRight}
             activeMode={activeMode}
+            clipFloor={clipFloor}
           />
           <Sky distance={450000} sunPosition={[5, 1, 8]} inclination={0} azimuth={0.25} turbidity={0.05} rayleigh={0.3} />
         </Canvas>
@@ -197,14 +226,26 @@ function App() {
                 {Object.keys(floors).sort().map((floorStr) => {
                   const floorNum = parseInt(floorStr);
                   const isExpanded = expandedFloors[floorNum] !== false;
+                  const isClipped = clipFloor === floorNum;
                   return (
                     <div key={floorNum} className="space-y-0.5">
-                      <button onClick={() => setExpandedFloors(prev => ({...prev, [floorNum]: !isExpanded}))} className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}>
+                      <button 
+                        onClick={() => {
+                          const nextExpanded = !isExpanded;
+                          setExpandedFloors(prev => ({...prev, [floorNum]: nextExpanded}));
+                          // Automatically clip if expanding, remove clipping if collapsing
+                          setClipFloor(nextExpanded ? floorNum : null);
+                        }} 
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isClipped ? 'bg-indigo-50 ring-1 ring-indigo-200' : isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+                      >
                         <div className="flex items-center gap-1.5 text-slate-600">
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0 text-blue-500' : '-rotate-90'}`} />
-                          <span className={`text-[11px] font-black uppercase tracking-wider ${isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0 text-indigo-500' : '-rotate-90'}`} />
+                          <span className={`text-[11px] font-black uppercase tracking-wider ${isClipped ? 'text-indigo-700' : isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400">{floors[floorNum].length}</span>
+                        <div className="flex items-center gap-1.5">
+                          {isClipped && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />}
+                          <span className="text-[10px] font-bold text-slate-400">{rooms.filter(r => r.floor === floorNum).length}</span>
+                        </div>
                       </button>
                       {isExpanded && (
                         <div className="ml-1.5 pl-2.5 border-l border-slate-100 space-y-1 py-1">
@@ -224,20 +265,20 @@ function App() {
               <div className="space-y-0.5">
                 {filteredAC.map((asset) => {
                   const isSelected = asset.id === selectedRoomId;
-                  const statusBg = asset.status === 'Maintenance' ? 'bg-amber-50' : asset.status === 'Faulty' ? 'bg-rose-50' : 'bg-transparent';
-                  const statusText = asset.status === 'Maintenance' ? 'text-amber-700' : asset.status === 'Faulty' ? 'text-rose-700' : 'text-slate-600';
+                  const statusBg = asset.status === 'Maintenance' ? 'bg-amber-50' : asset.status === 'Faulty' ? 'bg-rose-50' : asset.status === 'Normal' ? 'bg-emerald-50/30' : 'bg-transparent';
+                  const statusText = asset.status === 'Maintenance' ? 'text-amber-700' : asset.status === 'Faulty' ? 'text-rose-700' : asset.status === 'Normal' ? 'text-emerald-700' : 'text-slate-600';
                   
                   return (
                     <div key={asset.id} onClick={() => setSelectedRoomId(asset.id)} className={`px-2 py-2 rounded-[4px] flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? 'bg-indigo-100 ring-1 ring-indigo-200 z-10' : `${statusBg} hover:bg-slate-100/80`}`}>
                       <div className="flex items-center gap-2 overflow-hidden">
-                        <Wind className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-600' : (asset.status === 'Normal' ? 'text-slate-300' : statusText)}`} />
+                        <Wind className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-600' : (asset.status === 'Normal' ? 'text-emerald-500' : statusText)}`} />
                         <div className="truncate">
                           <div className={`text-[13px] font-black leading-tight ${isSelected ? 'text-indigo-900' : statusText}`}>{asset.name}</div>
                           <div className="text-[10px] font-bold opacity-60 uppercase truncate">{asset.brand}</div>
                         </div>
                       </div>
-                      <span className={`text-[9px] font-black uppercase px-1 rounded-sm ${isSelected ? 'bg-indigo-200 text-indigo-800' : (asset.status === 'Normal' ? 'hidden' : 'bg-white/50 border border-current')}`}>
-                        {asset.status !== 'Normal' && asset.status}
+                      <span className={`text-[9px] font-black uppercase px-1 rounded-sm ${isSelected ? 'bg-indigo-200 text-indigo-800' : (asset.status === 'Normal' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white/50 border border-current')}`}>
+                        {asset.status}
                       </span>
                     </div>
                   )
@@ -273,7 +314,13 @@ function App() {
             <div className="space-y-3">
               <div className="flex justify-between items-start gap-2">
                 <h3 className="text-lg font-black tracking-tighter leading-tight text-slate-900">{selectedRoom?.name || selectedAC?.name}</h3>
-                <span className={`px-1.5 py-0.5 text-[7px] font-black rounded-full border uppercase shrink-0 ${ (selectedRoom || selectedAC?.status === 'Normal') ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-rose-100 text-rose-700 border-rose-200' }`}> {selectedAC?.status || 'Active'} </span>
+                <span className={`px-1.5 py-0.5 text-[7px] font-black rounded-full border uppercase shrink-0 ${ 
+                  (selectedRoom || selectedAC?.status === 'Normal') 
+                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
+                    : selectedAC?.status === 'Maintenance'
+                    ? 'bg-amber-100 text-amber-700 border-amber-200'
+                    : 'bg-rose-100 text-rose-700 border-rose-200' 
+                }`}> {selectedAC?.status || 'Active'} </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2 bg-slate-50 rounded-[6px] border border-slate-100 shadow-sm text-center">
