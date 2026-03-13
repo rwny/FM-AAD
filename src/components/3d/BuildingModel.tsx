@@ -110,8 +110,13 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         return {
           id: item.nameLower,
           name: `${item.type} ${item.suffix || ''}`,
-          type: item.type, brand: 'System Default', model: 'BIM-Model-V1', capacity: 'Auto-detected',
-          status: item.mesh.userData.status, lastService: '2026-03-10', nextService: 'Pending'
+          type: item.type as 'FCU' | 'CDU',
+          brand: 'System Default',
+          model: 'BIM-Model-V1',
+          capacity: 'Auto-detected',
+          status: item.mesh.userData.status,
+          lastService: '2026-03-10',
+          nextService: 'Pending'
         }
       });
 
