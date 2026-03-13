@@ -1,9 +1,9 @@
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Sky, OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei'
 import { 
-  Building2, Box, Settings, Search, Camera as CameraIcon, 
-  ChevronDown, X, Info, Calendar, User, Tag, 
-  LayoutDashboard, Armchair, Zap, Wind, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, Activity
+  Building2, Box, Search, Camera as CameraIcon, 
+  ChevronDown, X, Info, User, Tag, 
+  Armchair, Zap, Wind, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, Activity
 } from 'lucide-react'
 import { Suspense, useRef, useEffect, useState, useMemo } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
