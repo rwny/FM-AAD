@@ -1,5 +1,5 @@
 import { useGLTF, Html } from '@react-three/drei'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import type { Room, ACAsset } from '../../types/bim'
 
@@ -146,8 +146,6 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
   return (
     <group onPointerDown={(e) => { e.stopPropagation(); onRoomClick?.(e.object.name.toLowerCase()); }}>
       <primitive object={clonedScene} />
-      
-      {/* ROOM LABELS - Increased Font Size */}
       {activeMode === 'AR' && roomLabels.map((room) => {
         const isSelected = room.id === selectedRoomId
         return (
@@ -161,8 +159,6 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
           </Html>
         )
       })}
-
-      {/* SELECTED AC LABEL - Increased Font Size & Boldness */}
       {activeMode === 'AC' && selectedACLabel && (
         <Html position={selectedACLabel.position} center distanceFactor={20} className="pointer-events-none">
           <div className="px-4 py-2 bg-indigo-600 text-white text-[14px] font-black rounded-[8px] shadow-2xl border border-indigo-400 whitespace-nowrap ring-4 ring-indigo-600/20">
