@@ -101,6 +101,20 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
 
   useEffect(() => {
     let activeACLabel: ACLabelData | null = null
+    
+    // Create clipping plane if a room is selected in AR mode
+    let clippingPlane: THREE.Plane | null = null
+    if (activeMode === 'AR' && selectedRoomId) {
+      const roomNumStr = selectedRoomId.replace('rm-', '')
+      const floorDigit = parseInt(roomNumStr.charAt(0))
+      
+      // Calculate clipping height: Floor 1 -> ~2.5, Floor 2 -> ~5.5, etc.
+      // Based on typical BIM heights: Floor 1 is y=0-2.5, Floor 2 is y=3-5.5
+      // We set clipping plane slightly above the floor level to show the floor
+      const clipHeight = floorDigit === 1 ? 2.5 : (floorDigit * 3.0) - 0.5
+      clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), clipHeight)
+    }
+
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const nameLower = child.name.toLowerCase()
@@ -121,7 +135,9 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
             opacity: activeMode === 'AC' ? 1.0 : 0.1,
             color: statusColor,
             emissive: isSelected ? statusColor : '#000000',
-            emissiveIntensity: isSelected ? 0.8 : (activeMode === 'AC' ? 0.2 : 0)
+            emissiveIntensity: isSelected ? 0.8 : (activeMode === 'AC' ? 0.2 : 0),
+            clippingPlanes: clippingPlane ? [clippingPlane] : [],
+            clipShadows: true
           })
           child.raycast = activeMode === 'AC' ? THREE.Mesh.prototype.raycast : () => null
         }
@@ -132,11 +148,24 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
           child.material = new THREE.MeshStandardMaterial({
             transparent: true, roughness: 0.9, metalness: 0, depthWrite: false,
             color: isSelected ? '#f97316' : '#e2e8f0',
-            opacity: activeMode === 'AR' ? (isSelected ? 0.9 : 0.7) : (isSelected ? 0.9 : 0.05),
+            opacity: activeMode === 'AR' ? (isSelected ? 0.9 : 0.7) : (isSelected ? 0.9 : 0.55),
             emissive: isSelected ? '#f97316' : '#000000',
-            emissiveIntensity: isSelected ? 0.2 : 0
+            emissiveIntensity: isSelected ? 0.2 : 0,
+            clippingPlanes: clippingPlane ? [clippingPlane] : [],
+            clipShadows: true
           })
           child.raycast = activeMode === 'AR' ? THREE.Mesh.prototype.raycast : () => null
+        }
+
+        // Apply clipping to architectural elements (xr- prefix)
+        if (nameLower.startsWith('xr-')) {
+          child.material = new THREE.MeshStandardMaterial({ 
+            color: '#475569', 
+            roughness: 0.9, 
+            metalness: 0,
+            clippingPlanes: clippingPlane ? [clippingPlane] : [],
+            clipShadows: true
+          })
         }
       }
     })
@@ -149,10 +178,9 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
       {activeMode === 'AR' && roomLabels.map((room) => {
         const isSelected = room.id === selectedRoomId
         return (
-          <Html key={room.id} position={room.position} center distanceFactor={25} className="pointer-events-none transition-all duration-300">
+          <Html key={room.id} position={room.position} distanceFactor={25} className="pointer-events-none transition-all duration-300">
             <div 
-              className={`px-3 py-1.5 rounded-[6px] text-[12px] font-black shadow-xl whitespace-nowrap transition-all ${isSelected ? 'text-white scale-125 z-50 shadow-indigo-500/20' : 'text-slate-800 bg-white/95 border border-slate-200'}`} 
-              style={{ backgroundColor: isSelected ? '#f97316' : undefined }}
+              className={`px-2 py-1 rounded-[4px] text-[10px] font-black shadow-xl whitespace-nowrap transition-all -translate-x-1/2 ${isSelected ? 'text-slate-900 bg-white scale-110 z-50 ring-2 ring-indigo-500' : 'text-slate-800 bg-white/95 border border-slate-200'}`} 
             >
               {room.number}
             </div>
@@ -160,8 +188,8 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
         )
       })}
       {activeMode === 'AC' && selectedACLabel && (
-        <Html position={selectedACLabel.position} center distanceFactor={20} className="pointer-events-none">
-          <div className="px-4 py-2 bg-indigo-600 text-white text-[14px] font-black rounded-[8px] shadow-2xl border border-indigo-400 whitespace-nowrap ring-4 ring-indigo-600/20">
+        <Html position={selectedACLabel.position} distanceFactor={20} className="pointer-events-none">
+          <div className="px-2 py-1 bg-white text-slate-900 text-[10px] font-black rounded-[4px] shadow-xl whitespace-nowrap transition-all -translate-x-1/2 scale-110 z-50 ring-2 ring-indigo-500">
             {selectedACLabel.id}
           </div>
         </Html>

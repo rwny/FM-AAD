@@ -142,7 +142,7 @@ function App() {
   return (
     <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px] gap-[10px]">
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true }}>
+        <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
           <color attach="background" args={['#bae6fd']} />
           <Scene 
             selectedRoomId={selectedRoomId} 
@@ -168,11 +168,19 @@ function App() {
           <button onClick={() => setShowLeft(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelLeftClose className="w-3.5 h-3.5" /></button>
         </header>
         
-        <div className="grid grid-cols-4 gap-0.5 p-1.5 bg-slate-100/30 border-b border-slate-100">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/30 border-b border-slate-100">
           {modes.map((m) => (
-            <button key={m.id} onClick={() => { setActiveMode(m.id as BIMMode); setSelectedRoomId(null); }} className={`flex flex-col items-center gap-0.5 p-1 rounded-[4px] transition-all ${activeMode === m.id ? 'bg-white shadow-sm text-indigo-600 ring-1 ring-slate-200' : 'text-slate-400 hover:text-slate-600'}`}>
-              <m.icon className="w-3 h-3" />
-              <span className="text-[7px] font-black uppercase tracking-tighter">{m.label}</span>
+            <button 
+              key={m.id} 
+              onClick={() => { setActiveMode(m.id as BIMMode); setSelectedRoomId(null); }} 
+              className={`flex flex-col items-center justify-center gap-1 py-4 rounded-[12px] transition-all ${
+                activeMode === m.id 
+                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200' 
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+              }`}
+            >
+              <m.icon className="w-10 h-10" />
+              <span className="text-[10px] font-black uppercase tracking-tight">{m.label}</span>
             </button>
           ))}
         </div>
@@ -180,7 +188,7 @@ function App() {
         <nav className="flex-1 p-2 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
           <div className="relative group">
             <Search className="absolute left-2.5 top-2 w-3 h-3 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            <input type="text" value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} placeholder={`Search...`} className="w-full bg-white/50 border border-slate-200 rounded-[6px] py-1.5 pl-8 pr-3 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-700" />
+            <input type="text" value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} placeholder={`Search...`} className="w-full bg-white/50 border border-slate-200 rounded-[6px] py-2 pl-9 pr-3 text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-700" />
           </div>
 
           <div className="space-y-2">
@@ -191,19 +199,19 @@ function App() {
                   const isExpanded = expandedFloors[floorNum] !== false;
                   return (
                     <div key={floorNum} className="space-y-0.5">
-                      <button onClick={() => setExpandedFloors(prev => ({...prev, [floorNum]: !isExpanded}))} className={`w-full flex items-center justify-between px-2 py-1 rounded-[4px] transition-all ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}>
+                      <button onClick={() => setExpandedFloors(prev => ({...prev, [floorNum]: !isExpanded}))} className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}>
                         <div className="flex items-center gap-1.5 text-slate-600">
-                          <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-0 text-blue-500' : '-rotate-90'}`} />
-                          <span className={`text-[9px] font-black uppercase tracking-wider ${isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0 text-blue-500' : '-rotate-90'}`} />
+                          <span className={`text-[11px] font-black uppercase tracking-wider ${isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
                         </div>
-                        <span className="text-[8px] font-bold text-slate-400">{floors[floorNum].length}</span>
+                        <span className="text-[10px] font-bold text-slate-400">{floors[floorNum].length}</span>
                       </button>
                       {isExpanded && (
-                        <div className="ml-1.5 pl-2.5 border-l border-slate-100 space-y-0.5 py-0.5">
+                        <div className="ml-1.5 pl-2.5 border-l border-slate-100 space-y-1 py-1">
                           {floors[floorNum].map((room) => (
-                            <div key={room.id} onClick={() => setSelectedRoomId(room.id)} className={`px-2 py-1 rounded-[4px] flex items-center gap-2 cursor-pointer transition-all ${room.id === selectedRoomId ? 'bg-indigo-100 text-indigo-700 font-black' : 'hover:bg-slate-100/50 text-slate-500 hover:text-slate-800'}`}>
-                              <Box className={`w-2.5 h-3.5 ${room.id === selectedRoomId ? 'text-indigo-600' : 'text-slate-300'}`} />
-                              <span className="text-[10px] font-bold tracking-tight">{room.name}</span>
+                            <div key={room.id} onClick={() => setSelectedRoomId(room.id)} className={`px-2 py-1.5 rounded-[4px] flex items-center gap-2 cursor-pointer transition-all ${room.id === selectedRoomId ? 'bg-indigo-100 text-indigo-700 font-black' : 'hover:bg-slate-100/50 text-slate-500 hover:text-slate-800'}`}>
+                              <Box className={`w-3.5 h-3.5 ${room.id === selectedRoomId ? 'text-indigo-600' : 'text-slate-300'}`} />
+                              <span className="text-[12px] font-bold tracking-tight">{room.name}</span>
                             </div>
                           ))}
                         </div>
@@ -220,15 +228,15 @@ function App() {
                   const statusText = asset.status === 'Maintenance' ? 'text-amber-700' : asset.status === 'Faulty' ? 'text-rose-700' : 'text-slate-600';
                   
                   return (
-                    <div key={asset.id} onClick={() => setSelectedRoomId(asset.id)} className={`px-2 py-1.5 rounded-[4px] flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? 'bg-indigo-100 ring-1 ring-indigo-200 z-10' : `${statusBg} hover:bg-slate-100/80`}`}>
+                    <div key={asset.id} onClick={() => setSelectedRoomId(asset.id)} className={`px-2 py-2 rounded-[4px] flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? 'bg-indigo-100 ring-1 ring-indigo-200 z-10' : `${statusBg} hover:bg-slate-100/80`}`}>
                       <div className="flex items-center gap-2 overflow-hidden">
-                        <Wind className={`w-3 h-3 shrink-0 ${isSelected ? 'text-indigo-600' : (asset.status === 'Normal' ? 'text-slate-300' : statusText)}`} />
+                        <Wind className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-600' : (asset.status === 'Normal' ? 'text-slate-300' : statusText)}`} />
                         <div className="truncate">
-                          <div className={`text-[12px] font-black leading-tight ${isSelected ? 'text-indigo-900' : statusText}`}>{asset.name}</div>
-                          <div className="text-[9px] font-bold opacity-60 uppercase truncate">{asset.brand}</div>
+                          <div className={`text-[13px] font-black leading-tight ${isSelected ? 'text-indigo-900' : statusText}`}>{asset.name}</div>
+                          <div className="text-[10px] font-bold opacity-60 uppercase truncate">{asset.brand}</div>
                         </div>
                       </div>
-                      <span className={`text-[8px] font-black uppercase px-1 rounded-sm ${isSelected ? 'bg-indigo-200 text-indigo-800' : (asset.status === 'Normal' ? 'hidden' : 'bg-white/50 border border-current')}`}>
+                      <span className={`text-[9px] font-black uppercase px-1 rounded-sm ${isSelected ? 'bg-indigo-200 text-indigo-800' : (asset.status === 'Normal' ? 'hidden' : 'bg-white/50 border border-current')}`}>
                         {asset.status !== 'Normal' && asset.status}
                       </span>
                     </div>
