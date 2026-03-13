@@ -69,7 +69,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
       <directionalLight position={[40, 60, 40]} intensity={1.2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-100} shadow-camera-right={100} shadow-camera-top={100} shadow-camera-bottom={-100} />
       <Suspense fallback={null}>
         <BuildingModel 
-          url="/src/assets/models/ar15-301.glb" 
+          url="/models/ar15-301.glb" 
           selectedRoomId={selectedRoomId} 
           onRoomsFound={onRoomsFound} 
           onACFound={onACFound}

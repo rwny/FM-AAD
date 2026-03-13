@@ -174,4 +174,4 @@ export function BuildingModel({ url, activeMode, selectedRoomId, onRoomsFound, o
   )
 }
 
-useGLTF.preload('/src/assets/models/ar15-301.glb')
+useGLTF.preload('/models/ar15-301.glb')
