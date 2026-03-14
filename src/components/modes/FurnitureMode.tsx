@@ -19,12 +19,13 @@ interface FurnitureModeProps {
 
 // --- Shared Helper Functions ---
 const getRoomStats = (allFurniture: FurnitureAsset[], roomId: string) => {
-  const assets = allFurniture.filter(a => a.room === roomId);
+  // FILTER OUT RETIRED ASSETS FROM ACTIVE COUNT
+  const assets = allFurniture.filter(a => a.room === roomId && !(a as any).isRetired);
   const stats = { green: 0, orange: 0, red: 0, total: assets.length };
   assets.forEach(a => {
     const s = (a.status || '').toLowerCase();
     if (s.includes('maintenance') || s.includes('warning')) stats.orange++;
-    else if (s.includes('faulty') || s.includes('พัง') || s.includes('หัก') || s.includes('เลิกใช้')) stats.red++;
+    else if (s.includes('faulty') || s.includes('พัง') || s.includes('หัก')) stats.red++;
     else stats.green++;
   });
   return stats;
@@ -145,7 +146,6 @@ export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
                         </div>
                       </div>
 
-                      {/* Category Grouping */}
                       {isRoomExpanded && Object.keys(groupedAssets).length > 0 && (
                         <div className="ml-3 pl-3 border-l border-slate-100 space-y-0.5 py-0.5">
                           {Object.keys(groupedAssets).map(cat => {
@@ -160,21 +160,22 @@ export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
                                     <ChevronRight className={`w-2.5 h-2.5 text-slate-400 transition-transform ${isCatExpanded ? 'rotate-90' : ''}`} />
                                     <span className="text-[10px] font-black text-slate-400 group-hover:text-indigo-500 uppercase">{cat}</span>
                                   </div>
-                                  <span className="text-[9px] font-bold text-slate-300">{groupedAssets[cat].length}</span>
+                                  <span className="text-[9px] font-bold text-slate-300">{groupedAssets[cat].filter(a => !(a as any).isRetired).length}</span>
                                 </div>
 
                                 {isCatExpanded && (
                                   <div className="ml-2 pl-3 border-l border-slate-50 space-y-0.5">
                                     {groupedAssets[cat].map(asset => {
                                       const isAssetSelected = selectedRoomId?.toLowerCase().replace(/\./g, '') === asset.id.toLowerCase().replace(/\./g, '');
+                                      const isRetired = (asset as any).isRetired;
                                       return (
                                         <div 
                                           key={asset.id}
                                           onClick={(e) => { e.stopPropagation(); setSelectedRoomId(asset.id); }}
-                                          className={`flex items-center justify-between px-2 py-0.5 rounded-[4px] cursor-pointer transition-all ${isAssetSelected ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-50 text-slate-400 hover:text-slate-600'}`}
+                                          className={`flex items-center justify-between px-2 py-0.5 rounded-[4px] cursor-pointer transition-all ${isAssetSelected ? 'bg-indigo-50 text-indigo-600' : isRetired ? 'text-slate-300 line-through opacity-50' : 'hover:bg-slate-100/50 text-slate-400 hover:text-slate-600'}`}
                                         >
                                           <div className="flex items-center gap-2">
-                                            <div className={`w-1 h-1 rounded-full ${getStatusBulletColor(asset.status)}`} />
+                                            <div className={`w-1 h-1 rounded-full ${isRetired ? 'bg-slate-200' : getStatusBulletColor(asset.status)}`} />
                                             <span className="text-[10px] font-black">{asset.id}</span>
                                           </div>
                                         </div>
@@ -202,6 +203,8 @@ export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
 export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, allFurniture
 }) => {
+  const [expandedGroups, setExpandedGroups] = useState<{[key: string]: boolean}>({})
+  
   const selectedFur = useMemo(() => {
     if (!selectedRoomId) return undefined;
     const targetId = selectedRoomId.toLowerCase().replace(/\./g, '');
@@ -215,7 +218,7 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
 
   const roomAssetGroups = useMemo(() => {
     if (!contextRoom) return {};
-    const assets = allFurniture.filter(a => a.room === contextRoom.id);
+    const assets = allFurniture.filter(a => a.room === contextRoom.id && !(a as any).isRetired); // Only Active Assets
     const groups: {[key: string]: any[]} = {};
     assets.forEach(a => {
       if (!groups[a.typeId]) groups[a.typeId] = [];
@@ -226,13 +229,14 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
 
   if (selectedFur) {
     const sortedLogs = [...(selectedFur.logs || [])].sort((a, b) => b.date.localeCompare(a.date));
+    const isRetired = (selectedFur as any).isRetired;
 
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar bg-white/40">
         <div className="space-y-4">
           <div className="flex justify-between items-start gap-2">
             <div className="space-y-1">
-               <h3 className="text-xl font-black tracking-tighter leading-tight text-slate-900">{selectedFur?.id}</h3>
+               <h3 className={`text-xl font-black tracking-tighter leading-tight ${isRetired ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{selectedFur?.id}</h3>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedFur?.typeName}</p>
             </div>
             <span className={`px-2 py-1 text-[9px] font-black rounded-full border uppercase shrink-0 shadow-sm ${getStatusColorClass(selectedFur?.status || 'Normal')}`}>
@@ -251,18 +255,18 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
             </div>
           </div>
 
-          <div className="p-4 bg-indigo-600 rounded-[12px] shadow-lg shadow-indigo-100 space-y-3 text-white">
-            <div className="flex justify-between items-center border-b border-indigo-400/30 pb-2">
-              <div className="flex items-center gap-2"><ShoppingCart className="w-3 h-3 text-indigo-200" /><span className="text-[9px] font-black uppercase">Brand</span></div>
+          <div className={`p-4 rounded-[12px] shadow-lg shadow-indigo-100 space-y-3 text-white ${isRetired ? 'bg-slate-400' : 'bg-indigo-600'}`}>
+            <div className="flex justify-between items-center border-b border-white/20 pb-2">
+              <div className="flex items-center gap-2"><ShoppingCart className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Brand</span></div>
               <span className="text-[11px] font-black uppercase">{selectedFur?.brand}</span>
             </div>
-            <div className="flex justify-between items-center border-b border-indigo-400/30 pb-2">
-              <div className="flex items-center gap-2"><Box className="w-3 h-3 text-indigo-200" /><span className="text-[9px] font-black uppercase">Model</span></div>
+            <div className="flex justify-between items-center border-b border-white/20 pb-2">
+              <div className="flex items-center gap-2"><Box className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Model</span></div>
               <span className="text-[11px] font-black uppercase">{selectedFur?.model}</span>
             </div>
             {(selectedFur?.Install || selectedFur?.install) && (
-              <div className="flex justify-between items-center border-b border-indigo-400/30 pb-2">
-                <div className="flex items-center gap-2"><Calendar className="w-3 h-3 text-indigo-200" /><span className="text-[9px] font-black uppercase">Installed</span></div>
+              <div className="flex justify-between items-center border-b border-white/20 pb-2">
+                <div className="flex items-center gap-2"><Calendar className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Installed</span></div>
                 <span className="text-[11px] font-black uppercase">{selectedFur.Install || selectedFur.install}</span>
               </div>
             )}
@@ -295,15 +299,16 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
 
         {selectedFur?.history && selectedFur.history.length > 0 && (
           <div className="space-y-3 mt-2">
-            <div className="flex items-center gap-2 text-slate-400 font-black uppercase tracking-widest text-[9px] px-1"><Calendar className="w-3.5 h-3.5" /> <span>Model Timeline</span></div>
+            <div className="flex items-center gap-2 text-slate-400 font-black uppercase tracking-widest text-[9px] px-1"><Calendar className="w-3.5 h-3.5" /> <span>Model History (Replaced Objects)</span></div>
             <div className="space-y-2">
-              {selectedFur.history.sort((a: any, b: any) => b.year.localeCompare(a.year)).map((h: any, i: number) => (
-                <div key={i} className={`p-3 rounded-[10px] border transition-all ${h.status === 'เลิกใช้' ? 'bg-slate-50 border-slate-200 opacity-50' : 'bg-white border-indigo-100 shadow-sm'}`}>
+              {selectedFur.history.sort((a: any, b: any) => b.date.localeCompare(a.date)).map((h: any, i: number) => (
+                <div key={i} className="p-3 rounded-[10px] border border-slate-100 bg-slate-50/50 opacity-70">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-black text-slate-600">{h.year} Spec</span>
-                    <span className={`text-[7px] px-1 font-black rounded-full border uppercase ${getStatusColorClass(h.status)}`}>{h.status}</span>
+                    <span className="text-[10px] font-black text-slate-500">{h.date} (Retired)</span>
+                    <span className={`text-[7px] px-1 font-black rounded-full border uppercase bg-white text-slate-400`}>{h.status}</span>
                   </div>
                   <div className="text-[10px] font-bold text-slate-600">{h.brand} | {h.model}</div>
+                  <div className="text-[8px] font-black text-slate-400 uppercase mt-1">ID: {h.assetId}</div>
                 </div>
               ))}
             </div>
@@ -315,6 +320,7 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
 
   if (contextRoom) {
     const stats = getRoomStats(allFurniture, contextRoom.id);
+    const totalAssetsCount = Object.values(roomAssetGroups).reduce((acc, curr) => acc + curr.length, 0);
     
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
@@ -322,7 +328,7 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
           <div className="p-4 bg-indigo-600 rounded-[12px] text-white shadow-lg">
             <div className="flex items-center gap-2 mb-1">
               <Building2 className="w-4 h-4 text-indigo-200" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Room Overview</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Active Room Inventory</span>
             </div>
             <h3 className="text-2xl font-black tracking-tighter leading-tight">{contextRoom.name}</h3>
             <div className="mt-3 flex gap-4 border-t border-indigo-400/30 pt-3">
@@ -338,11 +344,11 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px] px-1"><ListChecks className="w-3.5 h-3.5" /> <span>Summary</span></div>
+            <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px] px-1"><ListChecks className="w-3.5 h-3.5" /> <span>Summary (Excl. Retired)</span></div>
             
             <div className="grid grid-cols-1 gap-2">
               <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm text-center">
-                <div className="text-[10px] font-black text-slate-400 uppercase mb-2">Inventory Status</div>
+                <div className="text-[10px] font-black text-slate-400 uppercase mb-2">Current Active Status</div>
                 <div className="flex justify-center gap-4">
                   <div className="flex flex-col items-center">
                     <span className="text-2xl font-black text-emerald-600">{stats.green}</span>
@@ -362,7 +368,7 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
               </div>
               
               <div className="p-3 bg-slate-50 border border-slate-100 rounded-[10px]">
-                <div className="text-[9px] font-black text-slate-400 uppercase mb-2">Breakdown by Type</div>
+                <div className="text-[9px] font-black text-slate-400 uppercase mb-2">Active Assets by Type</div>
                 <div className="space-y-2">
                   {Object.keys(roomAssetGroups).map(typeId => (
                     <div key={typeId} className="flex justify-between items-center">
