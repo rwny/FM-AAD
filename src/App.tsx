@@ -2,14 +2,21 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber'
 import { Sky, OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei'
 import { 
   Building2, Box, Search, Camera as CameraIcon, 
-  ChevronDown, X, Info, User, Tag, 
-  Armchair, Zap, Wind, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, Activity
+  ChevronDown, X, Info, User, Tag, Phone, ShoppingCart, ListChecks,
+  Armchair, Zap, Wind, PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, Activity, Calendar
 } from 'lucide-react'
 import { Suspense, useRef, useEffect, useState, useMemo } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
-import type { Room, ACAsset } from './types/bim'
+import type { Room, ACAsset, FurnitureAsset } from './types/bim'
 import { mockACAssets as initialMockAC } from './utils/mockData'
+import buildingJson from './utils/AR15.json'
 import * as THREE from 'three'
+
+// Import Mode Components
+import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
+import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/FurnitureMode'
+import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
+import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
 
 // --- Components ---
 
@@ -102,61 +109,62 @@ function App() {
 
   const finalACAssets = useMemo(() => {
     const STATUS_PRIORITY: Record<string, number> = { 'Faulty': 3, 'Warning': 2, 'Maintenance': 1, 'Normal': 0 };
-    
-    // 1. Merge mock data
     const merged = acAssets.map(modelAsset => {
       const mockDetail = initialMockAC.find(m => m.id.toLowerCase() === modelAsset.id.toLowerCase())
       return mockDetail ? { ...modelAsset, ...mockDetail } : modelAsset
     });
-
-    // 2. Group by ID suffix (e.g., '101' from 'fcu-101') and find max priority status
     const groupStatus: Record<string, string> = {};
     merged.forEach(asset => {
       const suffix = asset.id.split('-')[1];
       if (suffix) {
         const currentStatus = asset.status || 'Normal';
         const existingStatus = groupStatus[suffix] || 'Normal';
-        if (STATUS_PRIORITY[currentStatus] > STATUS_PRIORITY[existingStatus]) {
-          groupStatus[suffix] = currentStatus;
-        }
+        if (STATUS_PRIORITY[currentStatus] > STATUS_PRIORITY[existingStatus]) groupStatus[suffix] = currentStatus;
       }
     });
-
-    // 3. Apply the group status to all units in the pair
     return merged.map(asset => {
       const suffix = asset.id.split('-')[1];
-      if (suffix && groupStatus[suffix]) {
-        return { ...asset, status: groupStatus[suffix] };
-      }
+      if (suffix && groupStatus[suffix]) return { ...asset, status: groupStatus[suffix] as any };
       return asset;
     });
   }, [acAssets])
 
+  const allFurniture = useMemo(() => {
+    const assets: any[] = [];
+    buildingJson.floors.forEach((f: any, fIdx: number) => {
+      const floorNum = parseInt(f.name.replace('FLOOR ', '')) || (fIdx + 1);
+      f.rooms.forEach((r: any) => {
+        r.assets.forEach((a: any) => {
+          assets.push({
+            ...a,
+            floor: floorNum,
+            room: r.id,
+            status: a.currentStatus || 'Normal'
+          });
+        });
+      });
+    });
+    return assets;
+  }, []);
+
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
-    if (val.trim() === '' && activeMode === 'AR') { setSelectedRoomId(null); return; }
+    if (val.trim() === '') {
+      if (activeMode === 'AR') setSelectedRoomId(null);
+      return;
+    }
+    
     if (activeMode === 'AR') {
       const match = rooms.find(room => room.number.includes(val) || room.name.toLowerCase().includes(val.toLowerCase()))
       if (match) setSelectedRoomId(match.id)
     } else if (activeMode === 'AC') {
       const match = finalACAssets.find(a => a.id.includes(val.toLowerCase()) || a.name.toLowerCase().includes(val.toLowerCase()))
       if (match) setSelectedRoomId(match.id)
+    } else if (activeMode === 'Fur') {
+      const match = allFurniture.find(a => a.id.toLowerCase().includes(val.toLowerCase()) || (a.typeName || '').toLowerCase().includes(val.toLowerCase()))
+      if (match) setSelectedRoomId(match.id)
     }
   }
-
-  const floors = useMemo(() => {
-    const filtered = rooms.filter(room => room.name.toLowerCase().includes(searchQuery.toLowerCase()) || room.number.includes(searchQuery))
-    const groups: { [key: number]: Room[] } = {}
-    filtered.forEach(room => {
-      if (!groups[room.floor]) groups[room.floor] = []
-      groups[room.floor].push(room)
-    })
-    return groups
-  }, [rooms, searchQuery])
-
-  const filteredAC = useMemo(() => finalACAssets.filter(a => a.id.includes(searchQuery.toLowerCase()) || a.name.toLowerCase().includes(searchQuery.toLowerCase())), [finalACAssets, searchQuery])
-  const selectedRoom = useMemo(() => rooms.find(r => r.id === selectedRoomId), [rooms, selectedRoomId])
-  const selectedAC = useMemo(() => finalACAssets.find(a => a.id === selectedRoomId), [finalACAssets, selectedRoomId])
 
   const handleCapture = () => window.dispatchEvent(new CustomEvent('take-screenshot'))
 
@@ -166,6 +174,29 @@ function App() {
     { id: 'EE', label: 'Elec', icon: Zap },
     { id: 'AC', label: 'Air', icon: Wind },
   ]
+
+  // --- Render Helpers ---
+  const renderLeftPanel = () => {
+    const commonProps = { selectedRoomId, setSelectedRoomId, rooms, searchQuery, expandedFloors, setExpandedFloors, clipFloor, setClipFloor };
+    switch (activeMode) {
+      case 'AR': return <ArchLeftPanel {...commonProps} />;
+      case 'Fur': return <FurnitureLeftPanel {...commonProps} allFurniture={allFurniture} />;
+      case 'AC': return <ACLeftPanel {...commonProps} finalACAssets={finalACAssets} />;
+      case 'EE': return <EELeftPanel {...commonProps} />;
+      default: return null;
+    }
+  }
+
+  const renderRightPanel = () => {
+    const commonProps = { selectedRoomId, setSelectedRoomId, rooms, searchQuery, expandedFloors, setExpandedFloors, clipFloor, setClipFloor };
+    switch (activeMode) {
+      case 'AR': return <ArchRightPanel {...commonProps} />;
+      case 'Fur': return <FurnitureRightPanel {...commonProps} allFurniture={allFurniture} />;
+      case 'AC': return <ACRightPanel {...commonProps} finalACAssets={finalACAssets} />;
+      case 'EE': return <EERightPanel {...commonProps} />;
+      default: return null;
+    }
+  }
 
   return (
     <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px] gap-[10px]">
@@ -201,7 +232,7 @@ function App() {
           {modes.map((m) => (
             <button 
               key={m.id} 
-              onClick={() => { setActiveMode(m.id as BIMMode); setSelectedRoomId(null); }} 
+              onClick={() => { setActiveMode(m.id as BIMMode); setSelectedRoomId(null); setClipFloor(null); }} 
               className={`flex flex-col items-center justify-center gap-1 py-4 rounded-[12px] transition-all ${
                 activeMode === m.id 
                   ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200' 
@@ -219,77 +250,7 @@ function App() {
             <Search className="absolute left-2.5 top-2 w-3 h-3 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
             <input type="text" value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} placeholder={`Search...`} className="w-full bg-white/50 border border-slate-200 rounded-[6px] py-2 pl-9 pr-3 text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-700" />
           </div>
-
-          <div className="space-y-2">
-            {activeMode === 'AR' ? (
-              <div className="space-y-1">
-                {Object.keys(floors).sort().map((floorStr) => {
-                  const floorNum = parseInt(floorStr);
-                  const isExpanded = expandedFloors[floorNum] !== false;
-                  const isClipped = clipFloor === floorNum;
-                  return (
-                    <div key={floorNum} className="space-y-0.5">
-                      <button 
-                        onClick={() => {
-                          const nextExpanded = !isExpanded;
-                          setExpandedFloors(prev => ({...prev, [floorNum]: nextExpanded}));
-                          // Automatically clip if expanding, remove clipping if collapsing
-                          setClipFloor(nextExpanded ? floorNum : null);
-                        }} 
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isClipped ? 'bg-indigo-50 ring-1 ring-indigo-200' : isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
-                      >
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0 text-indigo-500' : '-rotate-90'}`} />
-                          <span className={`text-[11px] font-black uppercase tracking-wider ${isClipped ? 'text-indigo-700' : isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {isClipped && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />}
-                          <span className="text-[10px] font-bold text-slate-400">{rooms.filter(r => r.floor === floorNum).length}</span>
-                        </div>
-                      </button>
-                      {isExpanded && (
-                        <div className="ml-1.5 pl-2.5 border-l border-slate-100 space-y-1 py-1">
-                          {floors[floorNum].map((room) => (
-                            <div key={room.id} onClick={() => setSelectedRoomId(room.id)} className={`px-2 py-1.5 rounded-[4px] flex items-center gap-2 cursor-pointer transition-all ${room.id === selectedRoomId ? 'bg-indigo-100 text-indigo-700 font-black' : 'hover:bg-slate-100/50 text-slate-500 hover:text-slate-800'}`}>
-                              <Box className={`w-3.5 h-3.5 ${room.id === selectedRoomId ? 'text-indigo-600' : 'text-slate-300'}`} />
-                              <span className="text-[12px] font-bold tracking-tight">{room.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ) : activeMode === 'AC' ? (
-              <div className="space-y-0.5">
-                {filteredAC.map((asset) => {
-                  const isSelected = asset.id === selectedRoomId;
-                  const statusBg = asset.status === 'Maintenance' ? 'bg-amber-50' : asset.status === 'Faulty' ? 'bg-rose-50' : asset.status === 'Normal' ? 'bg-emerald-50/30' : 'bg-transparent';
-                  const statusText = asset.status === 'Maintenance' ? 'text-amber-700' : asset.status === 'Faulty' ? 'text-rose-700' : asset.status === 'Normal' ? 'text-emerald-700' : 'text-slate-600';
-                  
-                  return (
-                    <div key={asset.id} onClick={() => setSelectedRoomId(asset.id)} className={`px-2 py-2 rounded-[4px] flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? 'bg-indigo-100 ring-1 ring-indigo-200 z-10' : `${statusBg} hover:bg-slate-100/80`}`}>
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Wind className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-600' : (asset.status === 'Normal' ? 'text-emerald-500' : statusText)}`} />
-                        <div className="truncate">
-                          <div className={`text-[13px] font-black leading-tight ${isSelected ? 'text-indigo-900' : statusText}`}>{asset.name}</div>
-                          <div className="text-[10px] font-bold opacity-60 uppercase truncate">{asset.brand}</div>
-                        </div>
-                      </div>
-                      <span className={`text-[9px] font-black uppercase px-1 rounded-sm ${isSelected ? 'bg-indigo-200 text-indigo-800' : (asset.status === 'Normal' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-white/50 border border-current')}`}>
-                        {asset.status}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center opacity-30 grayscale">
-                <p className="text-[8px] font-black uppercase">Module Active: {activeMode}</p>
-              </div>
-            )}
-          </div>
+          {renderLeftPanel()}
         </nav>
       </aside>
 
@@ -297,68 +258,15 @@ function App() {
 
       {!showRight && (<button onClick={() => setShowRight(true)} className="absolute right-[20px] top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-md rounded-[8px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all"><PanelRight className="w-5 h-5" /></button>)}
 
-      <aside className={`relative w-[240px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showRight ? 'translate-x-0 opacity-100' : 'translate-x-[260px] opacity-0'}`}>
+      <aside className={`relative w-[300px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showRight ? 'translate-x-0 opacity-100' : 'translate-x-[320px] opacity-0'}`}>
         <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-indigo-50 rounded-[4px] flex items-center justify-center border border-indigo-100"><Info className="w-3.5 h-3.5 text-indigo-600" /></div>
-            <h1 className="text-xs font-black tracking-tight text-slate-800 uppercase italic">Data</h1>
+            <h1 className="text-xs font-black tracking-tight text-slate-800 uppercase italic">BIM Explorer</h1>
           </div>
-          <div className="flex items-center gap-1">
-            {selectedRoomId && <button onClick={() => setSelectedRoomId(null)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><X className="w-3 h-3" /></button>}
-            <button onClick={() => setShowRight(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelRightClose className="w-3.5 h-3.5" /></button>
-          </div>
+          <button onClick={() => setShowRight(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelRightClose className="w-3.5 h-3.5" /></button>
         </header>
-
-        {selectedRoom || selectedAC ? (
-          <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-            <div className="space-y-3">
-              <div className="flex justify-between items-start gap-2">
-                <h3 className="text-lg font-black tracking-tighter leading-tight text-slate-900">{selectedRoom?.name || selectedAC?.name}</h3>
-                <span className={`px-1.5 py-0.5 text-[7px] font-black rounded-full border uppercase shrink-0 ${ 
-                  (selectedRoom || selectedAC?.status === 'Normal') 
-                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200' 
-                    : selectedAC?.status === 'Maintenance'
-                    ? 'bg-amber-100 text-amber-700 border-amber-200'
-                    : 'bg-rose-100 text-rose-700 border-rose-200' 
-                }`}> {selectedAC?.status || 'Active'} </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 bg-slate-50 rounded-[6px] border border-slate-100 shadow-sm text-center">
-                  <div className="text-[7px] text-slate-400 font-black uppercase mb-0.5">{selectedAC ? 'Type' : 'Level'}</div>
-                  <div className="text-slate-800 text-[11px] font-black truncate">{selectedAC ? selectedAC.type : `Floor 0${selectedRoom?.floor}`}</div>
-                </div>
-                <div className="p-2 bg-slate-50 rounded-[6px] border border-slate-100 shadow-sm text-center">
-                  <div className="text-[7px] text-slate-400 font-black uppercase mb-0.5">BIM ID</div>
-                  <div className="text-slate-800 text-[11px] font-black truncate">{selectedRoom?.number || selectedAC?.id}</div>
-                </div>
-              </div>
-              {selectedAC && (
-                <div className="p-2 bg-indigo-50/50 rounded-[6px] border border-indigo-100/50 space-y-1">
-                  <div className="flex justify-between items-center text-[9px]"><span className="text-slate-400 font-bold uppercase">Brand</span><span className="text-indigo-700 font-black uppercase">{selectedAC.brand}</span></div>
-                  <div className="flex justify-between items-center text-[9px]"><span className="text-slate-400 font-bold uppercase">Model</span><span className="text-indigo-700 font-black uppercase">{selectedAC.model}</span></div>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[8px] px-1"><Activity className="w-3 h-3" /> <span>System Logs</span></div>
-              <div className="space-y-1.5">
-                {selectedAC?.logs?.map(log => (
-                  <div key={log.id} className="p-2 bg-white border border-slate-100 rounded-[6px] shadow-sm">
-                    <div className="flex justify-between items-center mb-1"><span className={`text-[7px] px-1 font-black rounded-full uppercase ${log.status === 'Completed' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{log.status}</span><span className="text-[7px] text-slate-400 font-mono">{log.date}</span></div>
-                    <p className="text-[9px] text-slate-700 font-bold leading-tight">{log.issue}</p>
-                    <div className="flex items-center gap-1.5 mt-1 text-[8px] text-slate-400 font-bold italic"><User className="w-2.5 h-2.5" /> {log.reporter}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[6px] font-black text-[9px] uppercase tracking-widest shadow-lg shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 mt-auto"> <Tag className="w-3 h-3" /> Log Report </button>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center opacity-30">
-            <Box className="w-6 h-6 text-slate-400 mb-2" />
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Select Object</p>
-          </div>
-        )}
+        {renderRightPanel()}
       </aside>
 
       <div className="absolute bottom-[24px] left-1/2 -translate-x-1/2 flex gap-3 z-10 pointer-events-none items-center">

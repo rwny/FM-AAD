@@ -5,7 +5,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['"Noto Sans Thai Looped"', '"Noto Sans Thai"', 'Inter', 'system-ui', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }

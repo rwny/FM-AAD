@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:data": "node scripts/build-md-to-json.js",
+    "generate:ar15": "node scripts/build-ar15-md-to-json.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

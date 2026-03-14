@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  font-family: "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -28,4 +28,22 @@ body, html, #root {
 
 #root {
   display: flex;
+}
+
+/* Custom scrollbar for better appearance with Thai fonts */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }
