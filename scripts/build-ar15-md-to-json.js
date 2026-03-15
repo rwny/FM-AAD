@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const mdPath = path.join(__dirname, '..', 'src', 'utils', 'AR15.md');
+const mdPath = path.join(__dirname, '..', 'src', 'utils', 'AR15-DATA.md');
 const mdContent = fs.readFileSync(mdPath, 'utf-8');
 
 function parseIndent(line) {

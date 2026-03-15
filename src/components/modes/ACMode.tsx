@@ -12,11 +12,14 @@ interface ACModeProps {
   setExpandedFloors: React.Dispatch<React.SetStateAction<{[key: number]: boolean}>>;
   clipFloor: number | null;
   setClipFloor: (floor: number | null) => void;
+  selectedFloor: number | null;
+  setSelectedFloor: (floor: number | null) => void;
 }
 
 export const ACLeftPanel: React.FC<ACModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
-  expandedFloors, setExpandedFloors, clipFloor, setClipFloor, finalACAssets
+  expandedFloors, setExpandedFloors, clipFloor, setClipFloor, finalACAssets,
+  selectedFloor, setSelectedFloor
 }) => {
   const [expandedRooms, setExpandedRooms] = useState<{[key: string]: boolean}>({})
 
@@ -32,7 +35,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 
   const getACInRoom = (roomId: string) => {
     const roomNum = roomId.replace('rm-', '');
-    return finalACAssets.filter(a => a.id.includes(roomNum));
+    return finalACAssets.filter(a => a.id.toLowerCase().includes(roomNum.toLowerCase()));
   }
 
   const getRoomStats = (roomId: string) => {
@@ -56,8 +59,10 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
     <div className="space-y-1">
       {Object.keys(floors).sort().map((floorStr) => {
         const floorNum = parseInt(floorStr);
-        const isExpanded = expandedFloors[floorNum] !== false;
+        const isExpanded = !!expandedFloors[floorNum];
         const isClipped = clipFloor === floorNum;
+        const isFloorSelected = selectedFloor === floorNum && !selectedRoomId;
+
         return (
           <div key={floorNum} className="space-y-0.5">
             <button 
@@ -65,14 +70,16 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
                 const nextExpanded = !isExpanded;
                 setExpandedFloors(prev => ({...prev, [floorNum]: nextExpanded}));
                 setClipFloor(nextExpanded ? floorNum : null);
+                setSelectedFloor(floorNum);
+                setSelectedRoomId(null);
               }} 
-              className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isClipped ? 'bg-indigo-50 ring-1 ring-indigo-200' : isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+              className={`w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] transition-all ${isFloorSelected ? 'bg-indigo-600 text-white shadow-md' : isClipped ? 'bg-indigo-50 ring-1 ring-indigo-100 text-indigo-700' : 'hover:bg-slate-50 text-slate-600'}`}
             >
-              <div className="flex items-center gap-1.5 text-slate-600">
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0 text-indigo-500' : '-rotate-90'}`} />
-                <span className={`text-[11px] font-black uppercase tracking-wider ${isClipped ? 'text-indigo-700' : isExpanded ? 'text-slate-800' : ''}`}>Floor 0{floorNum}</span>
+              <div className="flex items-center gap-1.5 ">
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'} ${isFloorSelected ? 'text-indigo-200' : 'text-slate-400'}`} />
+                <span className={`text-[11px] font-black uppercase tracking-wider`}>Floor 0{floorNum}</span>
               </div>
-              <span className="text-[10px] font-bold text-slate-400">{rooms.filter(r => r.floor === floorNum).length}</span>
+              <span className={`text-[10px] font-bold ${isFloorSelected ? 'text-indigo-200' : 'text-slate-400'}`}>{rooms.filter(r => r.floor === floorNum).length}</span>
             </button>
             
             {isExpanded && (
@@ -86,7 +93,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
                   return (
                     <div key={room.id} className="space-y-0.5">
                       <div 
-                        onClick={() => { setSelectedRoomId(room.id); setExpandedRooms(prev => ({...prev, [room.id]: !prev[room.id]})); }} 
+                        onClick={() => { setSelectedRoomId(room.id); setSelectedFloor(null); setExpandedRooms(prev => ({...prev, [room.id]: !prev[room.id]})); }} 
                         className={`px-2 py-1.5 rounded-[4px] flex items-center justify-between cursor-pointer transition-all ${isRoomSelected ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-slate-100/50 text-slate-500 hover:text-slate-800'}`}
                       >
                         <div className="flex items-center gap-2 overflow-hidden">
@@ -110,7 +117,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
                           {roomAssets.map(asset => (
                             <div 
                               key={asset.id}
-                              onClick={(e) => { e.stopPropagation(); setSelectedRoomId(asset.id); }}
+                              onClick={(e) => { e.stopPropagation(); setSelectedRoomId(asset.id); setSelectedFloor(null); }}
                               className={`flex items-center justify-between px-2 py-1 rounded-[4px] cursor-pointer transition-all ${selectedRoomId === asset.id ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-50 text-slate-400 hover:text-slate-600'}`}
                             >
                               <div className="flex items-center gap-2">
@@ -133,7 +140,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
   )
 }
 
-export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms }) => {
+export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms, selectedFloor }) => {
   const selectedAC = finalACAssets.find((a: any) => a.id === selectedRoomId);
   const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
 
@@ -144,6 +151,7 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
     return 'text-emerald-700 bg-emerald-50 border-emerald-200'
   }
 
+  // Asset Selected
   if (selectedAC) {
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
@@ -188,6 +196,7 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
     );
   }
 
+  // Room Selected
   if (selectedRoom) {
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
@@ -196,17 +205,33 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mt-1">Air Conditioning Summary</p>
         </div>
         <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-[12px] opacity-40">
-          <Wind className="w-8 h-8 mx-auto text-slate-300 mb-2" />
           <p className="text-[10px] font-black text-slate-400 uppercase">Select AC unit for details</p>
         </div>
       </div>
     );
   }
 
+  // Floor Selected
+  if (selectedFloor) {
+    const floorACs = finalACAssets.filter((a: ACAsset) => a.id.split('-')[1]?.startsWith(selectedFloor.toString()));
+    return (
+      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
+        <div className="p-4 bg-slate-100 rounded-[12px] border border-slate-200">
+           <h3 className="text-2xl font-black text-slate-800">FLOOR 0{selectedFloor}</h3>
+           <p className="text-[10px] font-black text-slate-400 uppercase mt-1">Air Conditioning Overview</p>
+        </div>
+        <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm text-center">
+           <div className="text-[8px] font-black text-slate-400 uppercase mb-2">Total Units at Level 0{selectedFloor}</div>
+           <div className="text-4xl font-black text-indigo-600">{floorACs.length}</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-40 grayscale">
       <Wind className="w-16 h-16 text-slate-100 mb-4" />
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Select Room or Unit</p>
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Select Floor, Room or Unit</p>
     </div>
   );
 }

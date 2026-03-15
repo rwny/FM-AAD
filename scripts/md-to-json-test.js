@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const mdPath = './src/utils/AR15.md';
+const mdPath = './src/utils/AR15-DATA.md';
 const outputPath = './src/utils/AR15.json';
 
 function parseMD(content) {

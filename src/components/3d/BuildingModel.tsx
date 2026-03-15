@@ -1,8 +1,7 @@
 import { useGLTF, Html } from '@react-three/drei'
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
-import { useThree } from '@react-three/fiber'
-import type { Room, ACAsset, FurnitureAsset } from '../../types/bim'
+import type { Room, ACAsset } from '../../types/bim'
 import buildingJson from '../../utils/AR15.json'
 
 interface BuildingModelProps {
@@ -132,17 +131,28 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       if (child instanceof THREE.Mesh) {
         const nameLower = child.name.toLowerCase()
         const cleanName = nameLower.replace(/\./g, '');
-        const isSelected = cleanSelectedId && cleanName === cleanSelectedId;
+        const isSelected = !!(cleanSelectedId && cleanName === cleanSelectedId);
         
         const isAC = nameLower.startsWith('fcu-') || nameLower.startsWith('cdu-')
         const isRoom = nameLower.startsWith('rm-')
         const isFur = nameLower.startsWith('lf-') || nameLower.startsWith('bf-')
-        const isStruc = nameLower.startsWith('xr-struc')
+        const isStruc = nameLower.startsWith('xr-struc') || nameLower.startsWith('st-')
         const isArch = nameLower.startsWith('xr-') && !isStruc
 
         // Floor Visibility Logic
         let meshFloor = 1;
         if (isRoom) meshFloor = parseInt(nameLower.replace('rm-', '').charAt(0));
+        else if (nameLower.startsWith('st-')) {
+          const numPart = nameLower.replace('st-', '').split(/[^0-9]/)[0];
+          const num = parseInt(numPart);
+          if (!isNaN(num)) {
+            meshFloor = Math.floor(num / 1000);
+            // Handle edge cases where num < 1000 if they exist (e.g., st-200 might be foundation/basement or level 0)
+            if (meshFloor === 0) meshFloor = 1; 
+          } else {
+            meshFloor = 1;
+          }
+        }
         else if (isFur) {
           const asset = allFurniture.find(a => a.id.toLowerCase().replace(/\./g, '') === cleanName);
           meshFloor = asset?.floor || 1;
@@ -156,12 +166,10 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
           meshFloor = meshCenter.y > 2.8 ? 2 : 1;
         }
 
-        if (clipFloor === 1) {
-          child.visible = meshFloor === 1;
-        } else if (clipFloor === 2) {
-          child.visible = true; 
+        if (clipFloor !== null && clipFloor !== undefined) {
+          child.visible = meshFloor <= clipFloor;
         } else {
-          child.visible = true; 
+          child.visible = true;
         }
 
         const materialConfig = {
@@ -227,9 +235,9 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         else if (isStruc) {
           child.material = new THREE.MeshStandardMaterial({ 
             ...materialConfig,
-            color: '#475569', 
-            roughness: 0.9, 
-            metalness: 0,
+            color: '#71797E', // Steel Gray
+            roughness: 0.8, 
+            metalness: 0.2,
             transparent: false,
             opacity: 1.0
           })

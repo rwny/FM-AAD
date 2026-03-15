@@ -9,7 +9,74 @@
 * **Database:** ฐานข้อมูล Real-time (Firebase/Supabase)
 * **Point Cloud:** ข้อมูลสแกนจริง (.PLY) เพื่อการตรวจสอบ (Inspection)
 
-## 2. โครงสร้างเทคโนโลยี (Tech Stack)
+## 2. โครงสร้างลำดับชั้นการทำงาน (Hierarchy of Workflow)
+
+การทำงานจะเรียงลำดับจากระดับบนสุดลงไปหาระดับย่อยที่สุด (Top-Down Approach):
+
+1.  **🏫 Building (ระดับอาคาร):** โหลดโมเดลรวมของอาคาร (เช่น `ar15-301.glb`) แสดงภาพรวมภายนอกและโครงสร้างหลัก
+2. **📶 Floor (ระดับชั้น):** ให้ 3d object แ่ละตัว มีชื่อที่ระบุชั้น เพื่อกรอง วัตถุที่จะแสดง ถ้าทำงานชั้น 1 ชั้นที่สูงกว่า ก็ไม่ต้องแสดง แต่ถ้าทำงานที่ชั้น 2 วัตถุที่อยู่ชั้นสูงกว่าก็จะไม่แสดง แต่ชั้นที่อยู่ต้ำกว่า ให้แสดงเหมือนปกติ 
+3.  **🚪 Room (ระดับห้อง):** ระบุตำแหน่งด้วย Room ID (เช่น `RM-101`) มีป้ายกำกับ (HTML Labels) แสดงชื่อห้อง และสามารถคลิกเพื่อ Focus ได้
+4.  **🛋️ Asset / Component (ระดับอุปกรณ์):** หน่วยที่เล็กที่สุดในระบบ แบ่งตามประเภท (Furniture, AC, EE) พร้อมข้อมูลทางเทคนิคและสถานะการซ่อมบำรุง
+
+---
+
+## 3. รายละเอียดโหมดการทำงาน (Modular Inspection Modes)
+
+ระบบแบ่งการแสดงผลตามประเภทของงาน (Context-Aware Rendering):
+
+- ในทุกๆ Mode เส้นทางในเวป ให้ left side panel เป็นตัวพา User ไป ด้วย expand menu กดที่รายการแล้วขยายรายการย่อยไปจนสุด ทำงานแบบนี้
+
+   - for each MODE [AR, FUR, ELEC, AC] left side  bar (navigate bar)
+      - FLOOR 01 : {
+         show : all floor 1
+         hilight : no
+         [Right side bar] : show floor data{}
+      }
+         - Room 01 : {
+            show : all floor 1
+            hilight : room 1
+            [Right side bar] : show room data{}
+         }
+            - Equipment : {
+               show : all equipment
+               hilight : clicl selected equiptment
+               [Right side bar] : show equipment data{}
+            }
+
+### **A. 🏛️ ARCH Mode (Architectural)**
+*   **เป้าหมาย:** ใช้สำหรับการนำชมสถานที่และการจัดการพื้นที่ (Space Management)
+*   **ฟังก์ชันหลัก:**
+    - แสดงป้ายชื่อห้อง (Room Labels) ทั้งหมด
+    - ระบบเจาะชั้น (Clipping) อัตโนมัติเมื่อเลือกห้อง
+    - ผนังและโครงสร้างอาคารแสดงผลแบบทึบ (Solid) เพื่อให้เห็นขอบเขตที่ชัดเจน
+*   **Data Key:** วัตถุที่ขึ้นต้นด้วย `RM-` (Rooms) และ `XR-` (Arch)
+
+### **B. 🛋️ FURNITURE Mode**
+*   **เป้าหมาย:** บริหารจัดการครุภัณฑ์และเฟอร์นิเจอร์ (Inventory Tracking)
+*   **ฟังก์ชันหลัก:**
+    - เน้นสีสันที่ตัวเฟอร์นิเจอร์ (Highlighted) และทำโครงสร้างอาคารให้จางลง (Transparent) 
+    - แสดงสถานะแยกตามชิ้นงาน (Normal, Faulty, Maintenance)
+    - รายการ Sidebar แสดงผลรวมจำนวนชิ้นแยกตามชั้นและห้อง
+*   **Data Key:** วัตถุที่ขึ้นต้นด้วย `LF-` หรือ `BF-`
+
+### **C. ❄️ AC Mode (Air Conditioning)**
+*   **เป้าหมาย:** ตรวจสอบระบบปรับอากาศและงานซ่อมบำรุงเครื่องจักร
+*   **ฟังก์ชันหลัก:**
+    - ระบบ **FCU/CDU Sync:** หากตัวใดตัวหนึ่งเสีย ระบบจะแจ้งเตือนทั้งคู่ที่ลิ้งก์กัน
+    - แสดงข้อมูลทางเทคนิคเบื้องต้น (BTU, Brand, Model)
+    - เปลี่ยนสีอุปกรณ์ตามสถานะการทำงาน (Normal: ฟ้า, Warning: ส้ม, Faulty: แดง)
+*   **Data Key:** วัตถุที่ขึ้นต้นด้วย `FCU-` และ `CDU-`
+
+### **D. ⚡ EE Mode (Electrical)**
+*   **เป้าหมาย:** ตรวจสอบระบบไฟฟ้าและแผงควบคุม (กำลังพัฒนา)
+*   **ฟังก์ชันหลัก:**
+    - แสดงตำแหน่งตู้ไฟ (DB) และจุดจ่ายไฟสำคัญ
+    - (Coming Soon) ระบบจำลองการจ่ายไฟ (Power Circuit Path)
+*   **Data Key:** วัตถุที่เกี่ยวข้องกับระบบไฟฟ้า
+
+---
+
+## 4. โครงสร้างเทคโนโลยี (Tech Stack)
 
 * **Frontend:** React.js + TypeScript (Vite)
 * **3D Engine:** Three.js ผ่าน `@react-three/fiber` (R3F)
@@ -18,7 +85,7 @@
 * **Styling:** Tailwind CSS + **Font: Noto Sans Thai (Google Fonts)**
 * **Rendering Options:** Enabled `localClippingEnabled` ใน Three.js Renderer
 
-## 3. มาตรฐานการออกแบบ UI (Design Standards)
+## 5. มาตรฐานการออกแบบ UI (Design Standards)
 
 * **Typography:** ใช้ "Noto Sans Thai" (Loop) เป็น Font หลักเพื่อความอ่านง่ายและทันสมัย
 * **Color Scheme:** เน้น Light Mode สะอาดตา (Background: `#f8fafc`, Text: `#1e293b`)
@@ -28,7 +95,7 @@
   - มุมมน `rounded-[12px]` และ Gap เล็กน้อยเพื่อความสวยงาม
 * **Layout:** Sidebar กว้าง 240px, ขอบโค้งมน, ใช้ Backdrop Blur (Glassmorphism)
 
-## 4. โครงสร้างข้อมูล (Data Hierarchy & Mockup)
+## 6. โครงสร้างข้อมูล (Data Hierarchy & Mockup)
 
 * **Fixed Mockup Data:** ข้อมูลอุปกรณ์ (AC Assets) จะถูก Fix ไว้ที่ `src/utils/mockData.ts` เพื่อความเป็นระเบียบและไม่เปลี่ยนค่าแบบ Random ทุกครั้งที่รัน
 * **Mapping:** ID ใน JSON (เช่น `fcu-101`) ต้องตรงกับชื่อ Object ในไฟล์ Blender (Case-insensitive)
@@ -43,7 +110,7 @@
 }
 ```
 
-## 5. ส่วนประกอบและเทคนิคพิเศษ (Core Modules & Logic)
+## 7. ส่วนประกอบและเทคนิคพิเศษ (Core Modules & Logic)
 
 ### A. 3D Viewer & Clipping Logic
 * **Automatic Clipping Plane:** เมื่อเลือกห้องในโหมด AR (เช่น RM-101) ระบบจะคำนวณระดับความสูงของชั้น (Floor Height) และสร้าง `THREE.Plane` เพื่อตัด (Clip) ส่วนที่อยู่เหนือขึ้นไปออกทันที เพื่อให้เห็นภายในชั้นนั้นๆ ได้ชัดเจน
@@ -60,14 +127,7 @@
 ### C. UI / Dashboard Module
 * **Interactive Labels:** ใช้ `<Html />` จาก `@react-three/drei` ในการติดป้ายชื่อห้องและอุปกรณ์ โดยจะขยายใหญ่ (Scale Up) และมีเส้นขอบ (Ring) เมื่อถูกเลือก
 
-## 6. ฟีเจอร์หลัก (Key Features)
-
-1. **โหมดการตรวจสอบระบบ (Modular Inspection Mode):** สลับระหว่าง Arch, Furniture, Electric, Air (AC)
-2. **ระบบ X-Ray & Clipping:** มองทะลุชั้นได้อัตโนมัติเมื่อเจาะจงเลือกพื้นที่
-3. **Smart Search:** ค้นหา Room หรือ Asset ID แล้วกล้องจะ Focus พร้อมแสดง Clipping Plane ที่เหมาะสม
-4. **Capture System:** ปุ่มบันทึกภาพหน้าจอพร้อม UI (Screenshot)
-
-## 7. ขั้นตอนการพัฒนาที่ทำไปแล้ว (Accomplishments)
+## 8. ขั้นตอนการพัฒนาที่ทำไปแล้ว (Accomplishments)
 
 1. ✅ **Setup UI Base:** Sidebar, Mode Switch, Font Noto Sans Thai
 2. ✅ **3D Integration:** โหลด GLB, Traverse เพื่อใส่ Material และ Logic
@@ -80,7 +140,7 @@
 
 ---
 
-## 8. แผนการพัฒนาในอนาคต (Future Roadmap)
+## 9. แผนการพัฒนาในอนาคต (Future Roadmap)
 
 ### 🛠️ ระยะสั้น (Short-term - Quick Wins)
 
@@ -154,7 +214,7 @@
 
 ---
 
-## 9. ลำดับความสำคัญในการพัฒนา (Implementation Priority)
+## 10. ลำดับความสำคัญในการพัฒนา (Implementation Priority)
 
 **แนะนำ:** เริ่มจาก **Asset Details Panel** + **Work Order System**
 - ✅ คุณค่าสูงต่อผู้ใช้
@@ -162,4 +222,4 @@
 - ✅ ไม่ต้องใช้ Backend ในระยะเริ่มต้น (ใช้ localStorage)
 
 ---
-*อัปเดตล่าสุด: 13 มีนาคม 2026*
+*อัปเดตล่าสุด: 15 มีนาคม 2026*

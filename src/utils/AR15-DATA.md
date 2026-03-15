@@ -4,12 +4,20 @@
         - rm-101 : ประประชุม 1
             - AR
                 - Floor
+                    - F1 : epoxy
+                    - F2 : กระเบื้องยาง
                 - Wall
+                    - P1 : ก่ออิฐฉาบเรียบทาสี
+                    - P2 : gypsumboard
                 - Ceiling
+                    - C1 : ทาสี
                 - Door
+                    - D1 : ประตูบานเปิดคู่
                 - Window
+                    - W6 : หน้าต่างอลูมิเนียม 
             - FUR
                 - BF
+                    - BF101 กระดาน whiteboard
                 - LF
                     - Type
                         - [LF-1]
