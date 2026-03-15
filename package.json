@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run generate:ar15 && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate:data": "node scripts/build-md-to-json.js",
