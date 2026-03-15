@@ -24,5 +24,6 @@ dist-ssr
 *.sw?
 
 # me
-.blend1
+*.blend
+*.blend1
 temp
