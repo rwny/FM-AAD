@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { 
-  Building2, Box, ChevronDown, ListChecks, Armchair, 
-  ShoppingCart, Calendar, Activity, Phone, Tag, ChevronRight
+  Box, ChevronDown, Armchair, 
+  ShoppingCart, Activity, ChevronRight
 } from 'lucide-react'
 import type { Room, FurnitureAsset } from '../../types/bim'
 
@@ -219,17 +219,6 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
     if (selectedFur) return rooms.find(r => r.id === selectedFur.room);
     return rooms.find(r => r.id === selectedRoomId);
   }, [rooms, selectedFur, selectedRoomId]);
-
-  const roomAssetGroups = useMemo(() => {
-    if (!contextRoom) return {};
-    const assets = allFurniture.filter(a => a.room === contextRoom.id && !(a as any).isRetired);
-    const groups: {[key: string]: any[]} = {};
-    assets.forEach(a => {
-      if (!groups[a.typeId]) groups[a.typeId] = [];
-      groups[a.typeId].push(a);
-    });
-    return groups;
-  }, [allFurniture, contextRoom]);
 
   // Asset Selected
   if (selectedFur) {
