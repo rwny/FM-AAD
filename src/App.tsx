@@ -1,16 +1,16 @@
-import { Canvas, useThree, useFrame } from '@react-three/fiber'
-import { Sky, OrbitControls, PerspectiveCamera, Environment, ContactShadows } from '@react-three/drei'
+import { Canvas } from '@react-three/fiber'
 import { 
   Building2, Search, Camera, Info, 
   Armchair, Zap, Wind, 
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight
 } from 'lucide-react'
-import { Suspense, useRef, useEffect, useState, useMemo } from 'react'
+import { Suspense, useState, useMemo } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
+import { SceneLighting } from './components/3d/SceneLighting'
+import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
 import { mockACAssets as initialMockAC } from './utils/mockData'
 import buildingJson from './utils/AR15.json'
-import * as THREE from 'three'
 
 // Import Mode Components
 import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
@@ -18,42 +18,7 @@ import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/Furn
 import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
 import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
 
-// --- Components ---
-
-function ScreenshotHandler() {
-  const { gl, scene, camera } = useThree()
-  useEffect(() => {
-    const takeScreenshot = () => {
-      gl.render(scene, camera)
-      const dataUrl = gl.domElement.toDataURL('image/png')
-      const link = document.createElement('a')
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-      link.download = `BIM_AR15_Capture_${timestamp}.png`
-      link.href = dataUrl
-      link.click()
-    }
-    const handleCustomEvent = () => takeScreenshot()
-    window.addEventListener('take-screenshot', handleCustomEvent)
-    return () => window.removeEventListener('take-screenshot', handleCustomEvent)
-  }, [gl, scene, camera])
-  return null
-}
-
-function CameraOffset({ leftVisible, rightVisible, sidebarWidth }: { leftVisible: boolean, rightVisible: boolean, sidebarWidth: number }) {
-  const { camera, size } = useThree()
-  const currentOffset = useRef(0)
-  useFrame(() => {
-    if (camera instanceof THREE.PerspectiveCamera) {
-      const l = leftVisible ? sidebarWidth : 0
-      const r = rightVisible ? sidebarWidth : 0
-      const targetOffset = (r - l) / 2
-      currentOffset.current = THREE.MathUtils.lerp(currentOffset.current, targetOffset, 0.1)
-      camera.setViewOffset(size.width, size.height, currentOffset.current, 0, size.width, size.height)
-      camera.updateProjectionMatrix()
-    }
-  })
-  return null
-}
+// --- Scene Component ---
 
 interface SceneProps {
   selectedRoomId: string | null;
@@ -69,29 +34,10 @@ interface SceneProps {
 function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor }: SceneProps) {
   return (
     <>
-      <ScreenshotHandler />
-      <CameraOffset leftVisible={leftVisible} rightVisible={rightVisible} sidebarWidth={300} />
-      <PerspectiveCamera makeDefault position={[-30, 20, 30]} fov={35} />
-      <OrbitControls 
-        target={[0, 2, 0]} 
-        maxPolarAngle={Math.PI / 2.1} 
-        minDistance={10} 
-        maxDistance={80}
-        makeDefault
-      />
+      <SceneControls leftVisible={leftVisible} rightVisible={rightVisible} />
       
       <Suspense fallback={null}>
-        <ambientLight intensity={0.8} />
-        <directionalLight 
-          position={[-20, 60, 40]} 
-          intensity={1.2} 
-          castShadow 
-          shadow-bias={-0.001}
-          shadow-mapSize={[4096, 4096]} 
-          shadow-camera-left={-100} 
-          shadow-camera-right={100} 
-          shadow-camera-top={100} 
-          shadow-camera-bottom={-100} />
+        <SceneLighting />
         <BuildingModel 
           url="/models/ar15-301.glb" 
           selectedRoomId={selectedRoomId} 
@@ -101,8 +47,6 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
           activeMode={activeMode}
           clipFloor={clipFloor}
         />
-        <Environment preset="apartment" />
-        <ContactShadows position={[0, -0.01, 0]} opacity={0.2} scale={100} blur={2.5} far={15} color="#334155" />
       </Suspense>
     </>
   )
@@ -125,7 +69,7 @@ function App() {
   const finalACAssets = useMemo(() => {
     const STATUS_PRIORITY: Record<string, number> = { 'Faulty': 3, 'Warning': 2, 'Maintenance': 1, 'Normal': 0 };
     const merged = acAssets.map(modelAsset => {
-      const mockDetail = initialMockAC.find(m => m.id.toLowerCase() === modelAsset.id.toLowerCase())
+      const mockDetail = initialMockAC.find((m: ACAsset) => m.id.toLowerCase() === modelAsset.id.toLowerCase())
       return mockDetail ? { ...modelAsset, ...mockDetail } : modelAsset
     });
     const groupStatus: Record<string, string> = {};
@@ -236,7 +180,6 @@ function App() {
             activeMode={activeMode}
             clipFloor={clipFloor}
           />
-          <Sky distance={450000} sunPosition={[5, 1, 8]} inclination={0} azimuth={0.25} turbidity={0.05} rayleigh={0.3} />
         </Canvas>
       </div>
 
