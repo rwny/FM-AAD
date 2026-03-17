@@ -2,7 +2,7 @@
   "building": "AR15",
   "floors": [
     {
-      "name": "FLOOR 1",
+      "name": "FLOOR-1",
       "rooms": [
         {
           "id": "rm-101",
@@ -47,7 +47,7 @@
       ]
     },
     {
-      "name": "FLOOR 2",
+      "name": "FLOOR-2",
       "rooms": []
     }
   ]

@@ -34,14 +34,6 @@ const getRoomStats = (allFurniture: FurnitureAsset[], roomId: string) => {
   return stats;
 }
 
-const getStatusColorClass = (status: string) => {
-  const s = (status || '').toLowerCase();
-  if (s.includes('maintenance')) return 'text-amber-700 bg-amber-50 border-amber-200'
-  if (s.includes('faulty') || s.includes('พัง') || s.includes('หัก')) return 'text-rose-700 bg-rose-50 border-rose-200'
-  if (s.includes('เลิกใช้')) return 'text-slate-500 bg-slate-50 border-slate-200'
-  return 'text-emerald-700 bg-emerald-50 border-emerald-200'
-}
-
 const getStatusBulletColor = (status: string) => {
   const s = (status || '').toLowerCase();
   if (s.includes('maintenance')) return 'bg-amber-500';

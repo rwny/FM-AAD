@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info } from 'lucide-react'
+import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info, Printer } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
-import { supabase, ensureAssetExists } from '../../utils/supabase'
 import { AddLogModal } from '../ui/AddLogModal'
 import { PrintReportModal } from '../ui/PrintReportModal'
 
@@ -146,6 +145,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 
 export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms, selectedFloor }) => {
   const [showAddLog, setShowAddLog] = useState(false)
+  const [showPrintReport, setShowPrintReport] = useState(false)
   const [logPage, setLogPage] = useState(0)
   const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set())
   const LOGS_PER_PAGE = 5

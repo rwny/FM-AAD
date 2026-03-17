@@ -9,10 +9,7 @@ import { BuildingModel } from './components/3d/BuildingModel'
 import { SceneLighting } from './components/3d/SceneLighting'
 import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
-import { mockACAssets as initialMockAC } from './utils/mockData'
-import buildingJson from './utils/AR15.json'
-import acSpecsJson from './utils/ac-specs.json'
-import { fetchBuildingData, fetchAllACLogs, supabase } from './utils/supabase'
+import { fetchBuildingData, fetchAllACLogs } from './utils/supabase'
 
 // Import Mode Components
 import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
@@ -74,7 +71,6 @@ function App() {
   const [buildingData, setBuildingData] = useState<any>(buildingJson)
   const [acDbLogs, setAcDbLogs] = useState<any[]>([])
   const [isLive, setIsLive] = useState(false)
-  const [dbError, setDbError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -90,7 +86,6 @@ function App() {
         console.log('📡 Connected to Supabase ac_maintenance_logs table')
       } catch (err: any) {
         console.warn('⚠️ Supabase connection failed:', err.message)
-        setDbError(err.message)
       }
     }
     loadData()

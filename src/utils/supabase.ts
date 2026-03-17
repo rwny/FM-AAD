@@ -79,7 +79,7 @@ export async function addACMaintenanceLog(assetId: string, logData: {
   return data
 }
 
-export async function ensureAssetExists(assetId: string, roomCode: string, category: string, typeName?: string) {
+export async function ensureAssetExists(assetId: string, _roomCode: string, _category: string, _typeName?: string) {
   // 1. Try to find the asset in ac_assets (by obj_name)
   const { data: asset } = await supabase
     .from('ac_assets')
