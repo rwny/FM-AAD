@@ -32,9 +32,10 @@ interface SceneProps {
   activeMode: BIMMode;
   clipFloor: number | null;
   buildingData: any;
+  finalACAssets: ACAsset[];
 }
 
-function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor, buildingData }: SceneProps) {
+function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor, buildingData, finalACAssets }: SceneProps) {
   return (
     <>
       <SceneControls leftVisible={leftVisible} rightVisible={rightVisible} />
@@ -50,6 +51,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
           activeMode={activeMode}
           clipFloor={clipFloor}
           buildingData={buildingData}
+          finalACAssets={finalACAssets}
         />
       </Suspense>
     </>
@@ -287,6 +289,7 @@ function App() {
             activeMode={activeMode}
             clipFloor={clipFloor}
             buildingData={buildingData}
+            finalACAssets={finalACAssets}
           />
         </Canvas>
       </div>

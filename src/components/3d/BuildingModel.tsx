@@ -12,6 +12,7 @@ interface BuildingModelProps {
   onACFound?: (assets: ACAsset[]) => void;
   onRoomClick?: (roomId: string | null) => void;
   buildingData: any;
+  finalACAssets: ACAsset[];
 }
 
 interface RoomLabelData extends Room {
@@ -24,7 +25,7 @@ interface ACLabelData {
   position: THREE.Vector3;
 }
 
-export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick, buildingData }: BuildingModelProps) {
+export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick, buildingData, finalACAssets }: BuildingModelProps) {
   const { scene } = useGLTF(url)
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const [roomLabels, setRoomLabels] = useState<RoomLabelData[]>([])
@@ -46,11 +47,10 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
 
   const getStatusColor = (status: string) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('maintenance')) return '#f59e0b'
-    if (s.includes('faulty')) return '#ef4444'
-    if (s.includes('warning')) return '#facc15'
-    if (s.includes('เลิกใช้')) return '#64748b'
-    return '#0ea5e9'
+    if (s === 'normal') return '#10b981' // 🟢 Emerald 500
+    if (s === 'faulty') return '#f43f5e' // 🔴 Rose 500
+    if (s === 'maintenance') return '#f59e0b' // 🟡 Amber 500
+    return '#0ea5e9' // Default Blue
   }
 
   // Initial Scene Setup
@@ -79,7 +79,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
             const suffix = nameLower.split('-')[1] || ''
             const type = nameLower.startsWith('fcu-') ? 'FCU' : 'CDU'
             
-            // Find status in buildingData if exists
+            // Initial status check
             let status = 'Normal';
             if (buildingData && buildingData.floors) {
                buildingData.floors.forEach((f: any) => {
@@ -114,12 +114,6 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         }
       })
 
-      const groupStatus: Record<string, string> = {};
-      foundACRaw.forEach(item => {
-        item.mesh.userData.status = item.mesh.userData.status || 'Normal'
-        groupStatus[item.suffix] = item.mesh.userData.status
-      });
-
       const foundACFinal: ACAsset[] = foundACRaw.map(item => ({
         id: item.nameLower,
         name: `${item.type} ${item.suffix || ''}`,
@@ -138,7 +132,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
     }
   }, [clonedScene, onRoomsFound, onACFound, buildingData])
 
-  // Update Materials and Visibility (No Camera Control here)
+  // Update Materials and Visibility
   useEffect(() => {
     let activeLabel: ACLabelData | null = null
     const cleanSelectedId = selectedRoomId?.toLowerCase().replace(/\./g, '');
@@ -163,7 +157,6 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
           const num = parseInt(numPart);
           if (!isNaN(num)) {
             meshFloor = Math.floor(num / 1000);
-            // Handle edge cases where num < 1000 if they exist (e.g., st-200 might be foundation/basement or level 0)
             if (meshFloor === 0) meshFloor = 1; 
           } else {
             meshFloor = 1;
@@ -193,7 +186,10 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         }
 
         if (isAC) {
-          const statusColor = getStatusColor(child.userData.status)
+          // Dynamic status color from finalACAssets
+          const liveAsset = (finalACAssets || []).find(a => a.id.toLowerCase() === cleanName);
+          const statusColor = getStatusColor(liveAsset?.status || child.userData.status);
+          
           if (isSelected) {
             const acBox = new THREE.Box3().setFromObject(child)
             const acCenter = new THREE.Vector3()
@@ -230,8 +226,6 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
             emissive: isSelected ? '#f97316' : '#000000',
             emissiveIntensity: isSelected ? 0.5 : 0,
           })
-          
-          // CRITICAL: Ensure raycast is enabled for clickable furniture
           child.raycast = (activeMode === 'Fur' && child.visible) ? THREE.Mesh.prototype.raycast : () => null
           
           if (activeMode !== 'Fur' && !isSelected) {
@@ -254,7 +248,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         else if (isStruc) {
           child.material = new THREE.MeshStandardMaterial({ 
             ...materialConfig,
-            color: '#71797E', // Steel Gray
+            color: '#71797E',
             roughness: 0.8, 
             metalness: 0.2,
             transparent: false,
@@ -277,7 +271,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       }
     })
     setSelectedLabel(activeLabel)
-  }, [clonedScene, selectedRoomId, activeMode, clipFloor, allFurniture])
+  }, [clonedScene, selectedRoomId, activeMode, clipFloor, allFurniture, finalACAssets])
 
   return (
     <group onPointerDown={(e) => { 
