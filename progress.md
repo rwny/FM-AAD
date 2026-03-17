@@ -29,6 +29,13 @@
 - [x] **Fixed Mockup Data:** จัดระเบียบข้อมูลอุปกรณ์ (AC Assets) ไว้ที่ `src/utils/mockData.ts`
 - [x] **FCU/CDU Status Sync:** ระบบ Synchronize สถานะคู่แอร์ หากตัวใดตัวหนึ่งเสีย (Faulty/Warning) อีกตัวจะแสดงสถานะวิกฤตตามไปด้วยโดยอัตโนมัติ
 
+### 4. Database & Connectivity (WIP)
+- [x] **Supabase Client:** ตั้งค่า Supabase Client พร้อมระบบ Fallback เป็น Local JSON หากเชื่อมต่อไม่ได้
+- [x] **Database Schema:** ออกแบบโครงสร้างตาราง (Buildings, Floors, Rooms, Assets, Logs) ใน Supabase
+- [x] **Seeding Script:** สร้างสคริปต์ `seed-supabase.js` สำหรับนำเข้าข้อมูลจาก Markdown เข้าสู่ Database
+- [x] **UI Live Status:** เพิ่มตัวบ่งชี้ "Live DB" / "Local Data" ใน Header ของแอป
+- [ ] **Real-time Updates:** ระบบอัปเดตสถานะแบบ Real-time เมื่อมีการบันทึกข้อมูลใหม่ (Future)
+
 ---
 
 ## 🚀 สิ่งที่จะทำต่อไป (Next Steps)

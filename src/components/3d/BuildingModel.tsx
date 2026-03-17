@@ -2,7 +2,6 @@ import { useGLTF, Html } from '@react-three/drei'
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import type { Room, ACAsset } from '../../types/bim'
-import buildingJson from '../../utils/AR15.json'
 
 interface BuildingModelProps {
   url: string;
@@ -12,6 +11,7 @@ interface BuildingModelProps {
   onRoomsFound?: (rooms: Room[]) => void;
   onACFound?: (assets: ACAsset[]) => void;
   onRoomClick?: (roomId: string | null) => void;
+  buildingData: any;
 }
 
 interface RoomLabelData extends Room {
@@ -24,7 +24,7 @@ interface ACLabelData {
   position: THREE.Vector3;
 }
 
-export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick }: BuildingModelProps) {
+export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick, buildingData }: BuildingModelProps) {
   const { scene } = useGLTF(url)
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const [roomLabels, setRoomLabels] = useState<RoomLabelData[]>([])
@@ -32,8 +32,9 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
 
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
-    buildingJson.floors.forEach((f: any) => {
-      const floorNum = parseInt(f.name.replace('FLOOR ', '')) || 1;
+    if (!buildingData || !buildingData.floors) return assets;
+    buildingData.floors.forEach((f: any) => {
+      const floorNum = f.floor || (parseInt(f.name.replace('FLOOR ', '')) || 1);
       f.rooms.forEach((r: any) => {
         r.assets.forEach((a: any) => {
           assets.push({ ...a, room: r.id, floor: floorNum });
@@ -41,7 +42,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       });
     });
     return assets;
-  }, []);
+  }, [buildingData]);
 
   const getStatusColor = (status: string) => {
     const s = (status || '').toLowerCase();
@@ -77,6 +78,21 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
           if (nameLower.startsWith('fcu-') || nameLower.startsWith('cdu-')) {
             const suffix = nameLower.split('-')[1] || ''
             const type = nameLower.startsWith('fcu-') ? 'FCU' : 'CDU'
+            
+            // Find status in buildingData if exists
+            let status = 'Normal';
+            if (buildingData && buildingData.floors) {
+               buildingData.floors.forEach((f: any) => {
+                 f.rooms.forEach((r: any) => {
+                   r.assets.forEach((a: any) => {
+                     if (a.id.toLowerCase() === nameLower) {
+                       status = a.status || a.currentStatus || 'Normal';
+                     }
+                   });
+                 });
+               });
+            }
+            child.userData.status = status;
             foundACRaw.push({ mesh: child, nameLower, suffix, type })
           }
 
@@ -120,7 +136,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       if (onRoomsFound) onRoomsFound(foundRooms.sort((a, b) => a.number.localeCompare(b.number)))
       if (onACFound) onACFound(foundACFinal)
     }
-  }, [clonedScene, onRoomsFound, onACFound])
+  }, [clonedScene, onRoomsFound, onACFound, buildingData])
 
   // Update Materials and Visibility (No Camera Control here)
   useEffect(() => {
@@ -197,7 +213,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         
         else if (isFur) {
           const assetData = allFurniture.find(a => a.id.toLowerCase().replace(/\./g, '') === cleanName)
-          const statusColor = getStatusColor(assetData?.currentStatus || 'Normal')
+          const statusColor = getStatusColor(assetData?.status || assetData?.currentStatus || 'Normal')
           
           if (isSelected) {
             const furBox = new THREE.Box3().setFromObject(child)
@@ -214,9 +230,12 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
             emissive: isSelected ? '#f97316' : '#000000',
             emissiveIntensity: isSelected ? 0.5 : 0,
           })
+          
+          // CRITICAL: Ensure raycast is enabled for clickable furniture
           child.raycast = (activeMode === 'Fur' && child.visible) ? THREE.Mesh.prototype.raycast : () => null
-          if (activeMode !== 'Fur') {
-             child.visible = child.visible && activeMode === 'AR' || isSelected;
+          
+          if (activeMode !== 'Fur' && !isSelected) {
+             child.visible = child.visible && activeMode === 'AR';
           }
         }
 

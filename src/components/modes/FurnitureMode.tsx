@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react'
-import { 
-  Box, ChevronDown, Armchair, 
-  ShoppingCart, Activity, ChevronRight
+import {
+  Box, ChevronDown, Armchair,
+  ShoppingCart, Activity, ChevronRight, PlusCircle, ChevronLeft
 } from 'lucide-react'
 import type { Room, FurnitureAsset } from '../../types/bim'
+import { AddLogModal } from '../ui/AddLogModal'
+import { supabase } from '../../utils/supabase'
 
 interface FurnitureModeProps {
   selectedRoomId: string | null;
@@ -209,11 +211,72 @@ export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
 export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
   selectedRoomId, rooms, allFurniture, selectedFloor
 }) => {
+  const [showAddLog, setShowAddLog] = useState(false)
+  const [logPage, setLogPage] = useState(0)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const LOGS_PER_PAGE = 2
+
   const selectedFur = useMemo(() => {
     if (!selectedRoomId) return undefined;
-    const targetId = selectedRoomId.toLowerCase().replace(/\./g, '');
-    return allFurniture.find(a => a.id.toLowerCase().replace(/\./g, '') === targetId);
+    const targetId = selectedRoomId.toLowerCase().replace(/\./g, '').trim();
+    return allFurniture.find(a => {
+      const assetId = a.id.toLowerCase().replace(/\./g, '').trim();
+      return assetId === targetId;
+    });
   }, [allFurniture, selectedRoomId])
+
+  // Form State
+  const [editForm, setEditForm] = useState({
+    brand: '',
+    model: '',
+    status: ''
+  })
+
+  // Sync Form when asset changes or edit starts
+  React.useEffect(() => {
+    if (selectedFur && isEditing) {
+      setEditForm({
+        brand: selectedFur.brand || '',
+        model: selectedFur.model || '',
+        status: selectedFur.status || 'Normal'
+      })
+    }
+  }, [selectedFur, isEditing])
+
+  const handleSave = async () => {
+    if (!selectedFur) return;
+    setIsSaving(true);
+    try {
+      const assetDbId = (selectedFur as any).dbId; // Use dbId (UUID)
+      if (!assetDbId) throw new Error('Database ID (UUID) missing for this asset.');
+
+      const { error } = await supabase
+        .from('assets')
+        .update({
+          brand: editForm.brand,
+          model: editForm.model,
+          status: editForm.status,
+          metadata: {
+            ...(selectedFur as any).metadata,
+            brand: editForm.brand,
+            model: editForm.model,
+            status: editForm.status
+          }
+        })
+        .eq('id', assetDbId);
+
+      if (error) throw error;
+      
+      setIsEditing(false);
+      // Trigger global refresh (App.tsx will handle this if we pass a callback or use window event)
+      window.dispatchEvent(new CustomEvent('refresh-bim-data'));
+    } catch (err: any) {
+      alert('Error saving: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   const contextRoom = useMemo(() => {
     if (selectedFur) return rooms.find(r => r.id === selectedFur.room);
@@ -223,7 +286,14 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
   // Asset Selected
   if (selectedFur) {
     const sortedLogs = [...(selectedFur.logs || [])].sort((a, b) => b.date.localeCompare(a.date));
+    const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
+    const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
     const isRetired = (selectedFur as any).isRetired;
+
+    const handleLogAdded = () => {
+      window.dispatchEvent(new CustomEvent('refresh-bim-data'));
+      setLogPage(0)
+    }
 
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar bg-white/40">
@@ -233,39 +303,115 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
                <h3 className={`text-xl font-black tracking-tighter leading-tight ${isRetired ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{selectedFur?.id}</h3>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedFur?.typeName}</p>
             </div>
-            <span className={`px-2 py-1 text-[9px] font-black rounded-full border uppercase shrink-0 shadow-sm ${getStatusColorClass(selectedFur?.status || 'Normal')}`}>
-              {selectedFur?.status || 'Active'}
-            </span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2.5 bg-white/80 rounded-[8px] border border-slate-200 shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Asset ID</div>
-              <div className="text-slate-800 text-[12px] font-black truncate">{selectedFur?.assetId || '-'}</div>
-            </div>
-            <div className="p-2.5 bg-white/80 rounded-[8px] border border-slate-200 shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Level</div>
-              <div className="text-slate-800 text-[12px] font-black truncate">Level 0{selectedFur?.floor}</div>
-            </div>
+            {!isEditing && (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="px-2 py-1 text-[9px] font-black rounded-full border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors uppercase shrink-0"
+              >
+                Edit Details
+              </button>
+            )}
           </div>
 
-          <div className={`p-4 rounded-[12px] shadow-lg shadow-indigo-100 space-y-3 text-white ${isRetired ? 'bg-slate-400' : 'bg-indigo-600'}`}>
-            <div className="flex justify-between items-center border-b border-white/20 pb-2">
-              <div className="flex items-center gap-2"><ShoppingCart className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Brand</span></div>
-              <span className="text-[11px] font-black uppercase">{selectedFur?.brand}</span>
+          {isEditing ? (
+            <div className="space-y-3 p-3 bg-white/80 rounded-[12px] border border-indigo-100 shadow-inner">
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-indigo-400 uppercase tracking-wider">Brand Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.brand}
+                  onChange={(e) => setEditForm({...editForm, brand: e.target.value})}
+                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-[6px] text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  placeholder="e.g. ModernForm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-indigo-400 uppercase tracking-wider">Model / Serial</label>
+                <input 
+                  type="text" 
+                  value={editForm.model}
+                  onChange={(e) => setEditForm({...editForm, model: e.target.value})}
+                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-[6px] text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  placeholder="e.g. MD-1565465"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-indigo-400 uppercase tracking-wider">Status</label>
+                <select 
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-[6px] text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                >
+                  <option value="Normal">Normal (Active)</option>
+                  <option value="Maintenance">Maintenance (Waiting)</option>
+                  <option value="Faulty">Faulty (Broken)</option>
+                  <option value="เลิกใช้">Retired (Not counted)</option>
+                </select>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 py-1.5 text-[10px] font-black uppercase text-slate-500 hover:bg-slate-100 rounded-[6px] transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex-1 py-1.5 text-[10px] font-black uppercase bg-indigo-600 text-white rounded-[6px] shadow-md shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
-            <div className="flex justify-between items-center border-b border-white/20 pb-2">
-              <div className="flex items-center gap-2"><Box className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Model</span></div>
-              <span className="text-[11px] font-black uppercase">{selectedFur?.model}</span>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 bg-white/80 rounded-[8px] border border-slate-200 shadow-sm">
+                  <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Asset ID</div>
+                  <div className="text-slate-800 text-[12px] font-black truncate">{selectedFur?.assetId || '-'}</div>
+                </div>
+                <div className="p-2.5 bg-white/80 rounded-[8px] border border-slate-200 shadow-sm">
+                  <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Status</div>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${getStatusBulletColor(selectedFur?.status || 'Normal')}`} />
+                    <div className="text-slate-800 text-[11px] font-black uppercase truncate">{selectedFur?.status || 'Normal'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-[12px] shadow-lg shadow-indigo-100 space-y-3 text-white ${isRetired ? 'bg-slate-400' : 'bg-indigo-600'}`}>
+                <div className="flex justify-between items-center border-b border-white/20 pb-2">
+                  <div className="flex items-center gap-2"><ShoppingCart className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Brand</span></div>
+                  <span className="text-[11px] font-black uppercase">{selectedFur?.brand || '-'}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/20 pb-2">
+                  <div className="flex items-center gap-2"><Box className="w-3 h-3 opacity-60" /><span className="text-[9px] font-black uppercase">Model</span></div>
+                  <span className="text-[11px] font-black uppercase">{selectedFur?.model || '-'}</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px] px-1"><Activity className="w-3.5 h-3.5" /> <span>Asset Logs</span></div>
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px]">
+              <Activity className="w-3.5 h-3.5" /> 
+              <span>Asset Logs</span>
+            </div>
+            <button
+              onClick={() => setShowAddLog(true)}
+              className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[6px] transition-all shadow-md"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span className="text-[9px] font-black uppercase">Add Log</span>
+            </button>
+          </div>
+          
           <div className="bg-white/80 rounded-[10px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
-            {sortedLogs.length > 0 ? (
-              sortedLogs.map((log, i) => (
+            {currentPageLogs.length > 0 ? (
+              currentPageLogs.map((log, i) => (
                 <div key={i} className="p-3 leading-tight">
                   <div className="flex gap-2.5 items-center">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${getLogBulletColor(log.issue)} shadow-sm`} />
@@ -278,7 +424,38 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
               <div className="p-8 text-center text-slate-300 text-[10px] font-black uppercase italic">No logs recorded</div>
             )}
           </div>
+
+          {sortedLogs.length > 0 && (
+            <div className="flex items-center justify-between px-2">
+              <button
+                onClick={() => setLogPage(p => Math.max(0, p - 1))}
+                disabled={logPage === 0}
+                className="p-1.5 hover:bg-slate-100 rounded-[6px] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4 text-slate-500" />
+              </button>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                Page {logPage + 1} of {totalPages}
+              </span>
+              <button
+                onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={logPage >= totalPages - 1}
+                className="p-1.5 hover:bg-slate-100 rounded-[6px] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+          )}
         </div>
+
+        {showAddLog && (
+          <AddLogModal
+            assetId={selectedFur.id}
+            assetDbId={(selectedFur as any).dbId}
+            onClose={() => setShowAddLog(false)}
+            onSuccess={handleLogAdded}
+          />
+        )}
       </div>
     );
   }

@@ -1,16 +1,18 @@
 import { Canvas } from '@react-three/fiber'
-import { 
-  Building2, Search, Camera, Info, 
-  Armchair, Zap, Wind, 
+import {
+  Building2, Search, Camera, Info,
+  Armchair, Zap, Wind,
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight
 } from 'lucide-react'
-import { Suspense, useState, useMemo } from 'react'
+import { Suspense, useState, useMemo, useEffect } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
 import { SceneLighting } from './components/3d/SceneLighting'
 import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
 import { mockACAssets as initialMockAC } from './utils/mockData'
 import buildingJson from './utils/AR15.json'
+import acSpecsJson from './utils/ac-specs.json'
+import { fetchBuildingData, fetchAllACLogs, supabase } from './utils/supabase'
 
 // Import Mode Components
 import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
@@ -29,9 +31,10 @@ interface SceneProps {
   rightVisible: boolean;
   activeMode: BIMMode;
   clipFloor: number | null;
+  buildingData: any;
 }
 
-function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor }: SceneProps) {
+function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor, buildingData }: SceneProps) {
   return (
     <>
       <SceneControls leftVisible={leftVisible} rightVisible={rightVisible} />
@@ -46,6 +49,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
           onRoomClick={onRoomClick} 
           activeMode={activeMode}
           clipFloor={clipFloor}
+          buildingData={buildingData}
         />
       </Suspense>
     </>
@@ -66,31 +70,124 @@ function App() {
   const [clipFloor, setClipFloor] = useState<number | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
 
-  const finalACAssets = useMemo(() => {
-    const STATUS_PRIORITY: Record<string, number> = { 'Faulty': 3, 'Warning': 2, 'Maintenance': 1, 'Normal': 0 };
-    const merged = acAssets.map(modelAsset => {
-      const mockDetail = initialMockAC.find((m: ACAsset) => m.id.toLowerCase() === modelAsset.id.toLowerCase())
-      return mockDetail ? { ...modelAsset, ...mockDetail } : modelAsset
-    });
-    const groupStatus: Record<string, string> = {};
-    merged.forEach(asset => {
-      const suffix = asset.id.split('-')[1];
-      if (suffix) {
-        const currentStatus = asset.status || 'Normal';
-        const existingStatus = groupStatus[suffix] || 'Normal';
-        if (STATUS_PRIORITY[currentStatus] > STATUS_PRIORITY[existingStatus]) groupStatus[suffix] = currentStatus;
+  // Database State
+  const [buildingData, setBuildingData] = useState<any>(buildingJson)
+  const [acDbLogs, setAcDbLogs] = useState<any[]>([])
+  const [isLive, setIsLive] = useState(false)
+  const [dbError, setDbError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await fetchBuildingData('AR15')
+        if (data) setBuildingData(data)
+
+        // Fetch logs from Supabase
+        const logs = await fetchAllACLogs()
+        setAcDbLogs(logs || [])
+
+        setIsLive(true)
+        console.log('📡 Connected to Supabase ac_maintenance_logs table')
+      } catch (err: any) {
+        console.warn('⚠️ Supabase connection failed:', err.message)
+        setDbError(err.message)
       }
-    });
-    return merged.map(asset => {
-      const suffix = asset.id.split('-')[1];
-      if (suffix && groupStatus[suffix]) return { ...asset, status: groupStatus[suffix] as any };
-      return asset;
-    });
-  }, [acAssets])
+    }
+    loadData()
+
+    const handleRefresh = () => loadData()
+    window.addEventListener('refresh-bim-data', handleRefresh)
+    return () => window.removeEventListener('refresh-bim-data', handleRefresh)
+  }, [])
+
+  const finalACAssets = useMemo(() => {
+    return acAssets.map(modelAsset => {
+      const acData = acSpecsJson as any;
+      let matchedAssetInfo: any = null;
+      let matchedAcId: string = '';
+      
+      const modelIdLow = modelAsset.id.toLowerCase();
+
+      // 1. Search for Spec in JSON Floors
+      for (const floorNum in acData.floors) {
+        for (const roomNum in acData.floors[floorNum]) {
+          const roomAssets = acData.floors[floorNum][roomNum];
+          for (const acId in roomAssets) {
+            const info = roomAssets[acId];
+            const acIdLow = acId.toLowerCase();
+            
+            const isExactMatch = acIdLow === modelIdLow || 
+                                (info.units && info.units.some((u: string) => u.toLowerCase() === modelIdLow));
+            
+            const isFuzzyMatch = modelIdLow.includes(roomNum) && acIdLow.includes(roomNum);
+
+            if (isExactMatch || isFuzzyMatch) {
+              matchedAssetInfo = info;
+              matchedAcId = acId;
+              break;
+            }
+          }
+          if (matchedAssetInfo) break;
+        }
+        if (matchedAssetInfo) break;
+      }
+
+      // 2. Identify the Peer unit (if this is FCU, find CDU and vice versa)
+      // Logic: if current is fcu-206, peer is cdu-206
+      const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
+      const currentNumber = modelAsset.id.split('-')[1];
+      const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
+      const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
+
+      // 3. Collect Logs (Self + Peer + System ID)
+      const assetLogs = acDbLogs.filter(l => {
+        const dbId = l.asset_id.toLowerCase();
+        return dbId === modelIdLow || 
+               (peerId && dbId === peerId.toLowerCase()) || 
+               (matchedAcId && dbId === matchedAcId.toLowerCase());
+      });
+      
+      // 4. Sort all merged logs by time
+      const sortedLogs = [...assetLogs].sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      const typeInfo = matchedAssetInfo?.type ? acData.types[matchedAssetInfo.type] : null;
+      let status = (matchedAssetInfo || typeInfo) ? 'Normal' : modelAsset.status;
+      if (sortedLogs.length > 0) {
+        if (sortedLogs.some(l => l.status === 'Pending')) status = 'Warning'
+        if (sortedLogs.some(l => l.status === 'In Progress')) status = 'Maintenance'
+        if (sortedLogs[0].issue.toLowerCase().includes('faulty') || sortedLogs[0].issue.toLowerCase().includes('fail')) status = 'Faulty'
+      }
+
+      return {
+        ...modelAsset,
+        assetId: matchedAssetInfo?.assetId || modelAsset.id,
+        acType: matchedAssetInfo?.type || '',
+        brand: typeInfo?.brand || matchedAssetInfo?.brand || modelAsset.brand || '---',
+        model: typeInfo?.model || matchedAssetInfo?.model || (modelAsset as any).model || '---',
+        capacity: typeInfo?.capacity || matchedAssetInfo?.capacity || (modelAsset as any).capacity || '---',
+        install: matchedAssetInfo?.installedDate || typeInfo?.['installed-date'] || (modelAsset as any).install || '',
+        logs: sortedLogs.map(l => ({
+          id: l.id,
+          date: l.date,
+          created_at: l.created_at,
+          issue: l.issue,
+          reporter: l.reporter,
+          status: l.status,
+          note: l.note
+        })),
+        status: status as any,
+        lastService: sortedLogs.length > 0 ? sortedLogs[0].date : ''
+      }
+    })
+  }, [acAssets, acDbLogs])
 
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
-    buildingJson.floors.forEach((f: any, fIdx: number) => {
+    buildingData.floors.forEach((f: any, fIdx: number) => {
       const floorNum = f.floor || (fIdx + 1);
       f.rooms.forEach((r: any) => {
         r.assets.forEach((a: any) => {
@@ -98,13 +195,13 @@ function App() {
             ...a,
             floor: floorNum,
             room: r.id,
-            status: a.currentStatus || 'Normal'
+            status: a.status || a.currentStatus || 'Normal'
           });
         });
       });
     });
     return assets;
-  }, []);
+  }, [buildingData]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
@@ -179,6 +276,7 @@ function App() {
             rightVisible={showRight}
             activeMode={activeMode}
             clipFloor={clipFloor}
+            buildingData={buildingData}
           />
         </Canvas>
       </div>
@@ -194,9 +292,17 @@ function App() {
 
       <aside className={`relative w-[280px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[300px] opacity-0'}`}>
         <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-indigo-600 rounded-[4px] flex items-center justify-center shadow-md"><Building2 className="w-3.5 h-3.5 text-white" /></div>
-            <h1 className="text-xs font-black tracking-tight leading-none text-slate-800 uppercase italic">FM_AR15</h1>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-indigo-600 rounded-[4px] flex items-center justify-center shadow-md"><Building2 className="w-3.5 h-3.5 text-white" /></div>
+              <h1 className="text-xs font-black tracking-tight leading-none text-slate-800 uppercase italic">FM_AR15</h1>
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                {isLive ? 'Live DB' : 'Local Data'}
+              </span>
+            </div>
           </div>
           <button onClick={() => setShowLeft(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelLeftClose className="w-3.5 h-3.5" /></button>
         </header>

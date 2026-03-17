@@ -1,0 +1,137 @@
+{
+  "types": {
+    "AC-1": {
+      "id": "AC-1",
+      "brand": "Mitsubishi",
+      "model": "MSY-JS18VF",
+      "capacity": "18,000 BTU"
+    },
+    "AC-2": {
+      "id": "AC-2",
+      "brand": "Mitsubishi",
+      "model": "MSY-JS36VF",
+      "capacity": "36,000 BTU"
+    }
+  },
+  "floors": {
+    "1": {
+      "101": {
+        "AC-101.1": {
+          "units": [
+            "FCU-101.1",
+            "CDU-101.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25411",
+          "type": "AC-1"
+        },
+        "AC-101.2": {
+          "units": [
+            "FCU-101.2",
+            "CDU-101.2"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25412",
+          "type": "AC-1"
+        }
+      },
+      "102": {
+        "AC-102.1": {
+          "units": [
+            "FCU-102.1",
+            "CDU-102.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25413",
+          "type": "AC-1"
+        },
+        "AC-102.2": {
+          "units": [
+            "FCU-102.2",
+            "CDU-102.2"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25414",
+          "type": "AC-1"
+        }
+      }
+    },
+    "2": {
+      "201": {
+        "AC-201.1": {
+          "units": [
+            "FCU-201.1",
+            "CDU-201.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25415",
+          "type": "AC-1"
+        },
+        "AC-201.2": {
+          "units": [
+            "FCU-201.2",
+            "CDU-201.2"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25416",
+          "type": "AC-1"
+        }
+      },
+      "202": {
+        "AC-202.1": {
+          "units": [
+            "FCU-202.1",
+            "CDU-202.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25417",
+          "type": "AC-2"
+        }
+      },
+      "203": {
+        "AC-203.1": {
+          "units": [
+            "FCU-203.1",
+            "CDU-203.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25418",
+          "type": "AC-1"
+        }
+      },
+      "204": {
+        "AC-204.1": {
+          "units": [
+            "FCU-204.1",
+            "CDU-204.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25419",
+          "type": "AC-2"
+        }
+      },
+      "205": {
+        "AC-205.1": {
+          "units": [
+            "FCU-205.1",
+            "CDU-205.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25420",
+          "type": "AC-1"
+        }
+      },
+      "206": {
+        "AC-206.1": {
+          "units": [
+            "FCU-206.1",
+            "CDU-206.1"
+          ],
+          "installedDate": "2026-03-12",
+          "assetId": "สถ.2569.AC.25421",
+          "type": "AC-2"
+        }
+      }
+    }
+  }
+}
