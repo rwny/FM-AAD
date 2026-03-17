@@ -9,6 +9,8 @@ import { BuildingModel } from './components/3d/BuildingModel'
 import { SceneLighting } from './components/3d/SceneLighting'
 import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
+import buildingJson from './utils/AR15.json'
+import acSpecsJson from './utils/ac-specs.json'
 import { fetchBuildingData, fetchAllACLogs } from './utils/supabase'
 
 // Import Mode Components
