@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react'
 import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info, Printer } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
-import { PrintReportModal } from '../ui/PrintReportModal'
 
 interface ACModeProps {
   selectedRoomId: string | null;
@@ -53,9 +52,9 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 
   const getStatusBulletColor = (status: string) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('maintenance') || s.includes('warning')) return 'bg-amber-500';
-    if (s.includes('faulty')) return 'bg-rose-500';
-    return 'bg-emerald-500';
+    if (s === 'normal') return 'bg-emerald-500'; // 🟢 Green
+    if (s === 'faulty') return 'bg-rose-500';   // 🔴 Red
+    return 'bg-amber-500'; // 🟠 Orange (Maintenance / In Progress / Pending)
   }
 
   return (
@@ -124,7 +123,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
                               className={`flex items-center justify-between px-2 py-1 rounded-[4px] cursor-pointer transition-all ${selectedRoomId === asset.id ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-50 text-slate-400 hover:text-slate-600'}`}
                             >
                               <div className="flex items-center gap-2">
-                                <div className={`w-1 h-1 rounded-full ${getStatusBulletColor(asset.status)}`} />
+                                <div className={`w-2.5 h-2.5 rounded-full ${getStatusBulletColor(asset.status)}`} />
                                 <span className="text-[10px] font-black">{asset.id.toUpperCase()}</span>
                               </div>
                             </div>
@@ -143,30 +142,25 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
   )
 }
 
-export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms, selectedFloor }) => {
+export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms, selectedFloor, setReportAsset, setSelectedLog }) => {
   const [showAddLog, setShowAddLog] = useState(false)
-  const [showPrintReport, setShowPrintReport] = useState(false)
   const [logPage, setLogPage] = useState(0)
-  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set())
   const LOGS_PER_PAGE = 5
 
   const selectedAC = finalACAssets.find((a: any) => a.id.toLowerCase() === selectedRoomId?.toLowerCase());
   const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
 
-  // Toggle log expansion
-  const toggleLogExpansion = (id: string) => {
-    setExpandedLogIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
   const formatTime = (timestamp: string) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  const getStatusBulletColor = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'normal') return 'bg-emerald-500';
+    if (s === 'faulty') return 'bg-rose-500';
+    return 'bg-amber-500';
   }
 
   // Asset Selected
@@ -232,62 +226,52 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
               <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[10px]">
                 <Activity className="w-4 h-4" /> <span>Service Logs</span>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowPrintReport(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-black uppercase">Report</span>
-                </button>
-                <button
-                  onClick={() => setShowAddLog(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[8px] transition-all shadow-md"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-black uppercase">Add Log</span>
-                </button>
-              </div>
+              <button
+                onClick={() => setShowAddLog(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[8px] transition-all shadow-md"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-black uppercase">Add Log</span>
+              </button>
             </div>
             
             <div className="bg-white/80 rounded-[10px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
               {currentPageLogs.length > 0 ? (
                 currentPageLogs.map((log: any, i: number) => {
-                  const isExpanded = expandedLogIds.has(log.id);
+                  const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
                   return (
-                    <div key={log.id || i} className="p-3 leading-tight space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex gap-2 items-center">
-                          <div className={`w-1.5 h-1.5 rounded-full ${log.status === 'Completed' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-black text-slate-900">{log.date}</span>
-                            <span className="text-[10px] font-bold text-slate-400">{formatTime(log.created_at)}</span>
+                    <div key={log.id || i} className="p-2.5 leading-tight space-y-0.5 group">
+                      {/* Line 1: Status + Date + Time + Reporter + Detail Button */}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 overflow-hidden flex-1">
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
+                          <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
+                            <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
+                            <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
+                            {log.reporter && (
+                              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight truncate">
+                                • {log.reporter}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <button 
-                          onClick={() => toggleLogExpansion(log.id || i.toString())}
-                          className="text-[10px] font-black text-indigo-500 uppercase hover:text-indigo-700 transition-colors"
+                          onClick={() => setSelectedLog(log)}
+                          className="text-[9px] font-black text-indigo-500 uppercase px-1.5 py-0.5 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors shrink-0"
                         >
-                          {isExpanded ? 'Show Less' : 'Detail'}
+                          Detail
                         </button>
                       </div>
                       
-                      <div className="ml-3.5 space-y-1">
-                        <div className={`text-sm font-black text-slate-800 ${!isExpanded ? 'truncate' : ''}`}>
-                          <span className="text-[10px] text-slate-400 uppercase mr-1.5">Issue:</span>
-                          {log.issue}
-                        </div>
-                        <div className={`text-[10px] font-bold text-slate-500 italic ${!isExpanded ? 'truncate' : ''}`}>
-                          <span className="text-[10px] text-slate-400 uppercase not-italic mr-1.5">Note:</span>
-                          {log.note || '---'}
-                        </div>
+                      {/* Line 2: Issue */}
+                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate">
+                        {log.issue}
                       </div>
                       
-                      {isExpanded && log.reporter && (
-                        <div className="ml-3.5 pt-1 text-[10px] font-black text-slate-400 uppercase">
-                          Reporter: <span className="text-slate-600">{log.reporter}</span>
-                        </div>
-                      )}
+                      {/* Line 3: Note */}
+                      <div className="ml-3.5 text-[10px] font-bold text-slate-400 italic leading-snug truncate">
+                        {log.note || '---'}
+                      </div>
                     </div>
                   );
                 })
@@ -303,6 +287,15 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
                 <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronRight className="w-4 h-4 text-slate-500" /></button>
               </div>
             )}
+
+            {/* Print Report Button at the Bottom */}
+            <button
+              onClick={() => setReportAsset(selectedAC)}
+              className="w-full flex items-center justify-center gap-2 py-2 mt-2 border border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all bg-white shadow-sm"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black uppercase">Generate Maintenance Report</span>
+            </button>
           </div>
         </div>
 
@@ -314,13 +307,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
             category="AC"
             onClose={() => setShowAddLog(false)}
             onSuccess={() => window.dispatchEvent(new CustomEvent('refresh-bim-data'))}
-          />
-        )}
-
-        {showPrintReport && (
-          <PrintReportModal
-            asset={selectedAC}
-            onClose={() => setShowPrintReport(false)}
           />
         )}
       </div>
@@ -359,7 +345,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
     )
   }
 
-  // Default Empty State
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-40 grayscale">
       <Wind className="w-16 h-16 text-slate-100 mb-4" />

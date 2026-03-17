@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import {
   Building2, Search, Camera, Info,
   Armchair, Zap, Wind,
-  PanelLeftClose, PanelLeft, PanelRightClose, PanelRight
+  PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X
 } from 'lucide-react'
 import { Suspense, useState, useMemo, useEffect } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
@@ -18,6 +18,7 @@ import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
 import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/FurnitureMode'
 import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
 import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
+import { PrintReportModal } from './components/ui/PrintReportModal'
 
 // --- Scene Component ---
 
@@ -68,6 +69,8 @@ function App() {
   const [showRight, setShowRight] = useState(true)
   const [clipFloor, setClipFloor] = useState<number | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
+  const [reportAsset, setReportAsset] = useState<any>(null)
+  const [selectedLog, setSelectedLog] = useState<any>(null)
 
   // Database State
   const [buildingData, setBuildingData] = useState<any>(buildingJson)
@@ -130,7 +133,6 @@ function App() {
       }
 
       // 2. Identify the Peer unit (if this is FCU, find CDU and vice versa)
-      // Logic: if current is fcu-206, peer is cdu-206
       const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
       const currentNumber = modelAsset.id.split('-')[1];
       const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
@@ -152,11 +154,22 @@ function App() {
       });
 
       const typeInfo = matchedAssetInfo?.type ? acData.types[matchedAssetInfo.type] : null;
-      let status = (matchedAssetInfo || typeInfo) ? 'Normal' : modelAsset.status;
+      // 4. Determine Status based on LATEST log
+      let status = 'Normal';
       if (sortedLogs.length > 0) {
-        if (sortedLogs.some(l => l.status === 'Pending')) status = 'Warning'
-        if (sortedLogs.some(l => l.status === 'In Progress')) status = 'Maintenance'
-        if (sortedLogs[0].issue.toLowerCase().includes('faulty') || sortedLogs[0].issue.toLowerCase().includes('fail')) status = 'Faulty'
+        const latestLog = sortedLogs[0];
+        const issueText = (latestLog.issue || '').toLowerCase();
+        const noteText = (latestLog.note || '').toLowerCase();
+        
+        if (latestLog.status === 'Completed') {
+          status = 'Normal'; // 🟢 Green
+        } else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending' || noteText.includes('พอใช้')) {
+          status = 'Maintenance'; // 🟠 Orange
+        }
+        
+        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') {
+          status = 'Faulty'; // 🔴 Red
+        }
       }
 
       return {
@@ -248,7 +261,7 @@ function App() {
     const commonProps = { 
       selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
       expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-      selectedFloor, setSelectedFloor
+      selectedFloor, setSelectedFloor, setReportAsset, setSelectedLog
     };
     switch (activeMode) {
       case 'AR': return <ArchRightPanel {...commonProps} finalACAssets={finalACAssets} />;
@@ -377,10 +390,57 @@ function App() {
           <div className="flex items-center gap-1.5 text-indigo-500">Zoom <span className="text-slate-300 italic">Scroll</span></div>
         </div>
       </div>
+
+      {reportAsset && (
+        <PrintReportModal 
+          asset={reportAsset} 
+          onClose={() => setReportAsset(null)} 
+        />
+      )}
+
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  selectedLog.status === 'Completed' ? 'bg-emerald-500' : 
+                  selectedLog.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'
+                }`} />
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Maintenance Activity Detail</h2>
+              </div>
+              <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Date & Time</div>
+                  <div className="text-xl font-black text-slate-900">{selectedLog.date} <span className="text-indigo-400 ml-2">{new Date(selectedLog.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Reporter</div>
+                  <div className="text-xl font-black text-indigo-600">{selectedLog.reporter || '---'}</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Issue / Activity</div>
+                <div className="text-2xl font-black text-slate-800 leading-tight">{selectedLog.issue}</div>
+              </div>
+              <div className="space-y-2 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Notes & Remarks</div>
+                <div className="text-lg font-bold text-slate-600 leading-relaxed italic">{selectedLog.note || 'No additional notes provided for this record.'}</div>
+              </div>
+            </div>
+            <div className="p-6 bg-slate-50/50 border-t border-slate-50 flex justify-end">
+              <button onClick={() => setSelectedLog(null)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs shadow-lg hover:bg-slate-800 transition-all">Close Detail</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default App
-
-// test

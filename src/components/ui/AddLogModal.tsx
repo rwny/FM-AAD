@@ -23,7 +23,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   const [issue, setIssue] = useState('')
   const [reporter, setReporter] = useState('')
   const [note, setNote] = useState('')
-  const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress'>('Completed')
+  const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>('Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -156,20 +156,20 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Status</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Status</label>
             <div className="grid grid-cols-3 gap-2">
-              {(['Completed', 'In Progress', 'Pending'] as const).map((s) => (
+              {(['Completed', 'In Progress', 'Faulty'] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatus(s)}
-                  className={`px-2 py-2 rounded-[8px] text-[10px] font-black uppercase transition-all border ${
+                  className={`px-1 py-2.5 rounded-[8px] text-[10px] font-black uppercase transition-all border ${
                     status === s
                       ? s === 'Completed'
                         ? 'bg-emerald-500 text-white border-emerald-600 shadow-md'
                         : s === 'In Progress'
                         ? 'bg-amber-500 text-white border-amber-600 shadow-md'
-                        : 'bg-slate-500 text-white border-slate-600 shadow-md'
+                        : 'bg-rose-500 text-white border-rose-600 shadow-md'
                       : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
