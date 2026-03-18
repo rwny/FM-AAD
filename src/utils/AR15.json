@@ -49,6 +49,10 @@
     {
       "name": "FLOOR-2",
       "rooms": []
+    },
+    {
+      "name": "FLOOR-3",
+      "rooms": []
     }
   ]
 }
