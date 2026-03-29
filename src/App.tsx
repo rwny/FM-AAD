@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import {
   Building2, Search, Camera, Info,
-  Armchair, Zap, Wind, Share2,
+  Wind, Share2,
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X
 } from 'lucide-react'
 import { Suspense, useState, useMemo, useEffect } from 'react'
@@ -236,8 +236,8 @@ function App() {
 
   const modes = [
     { id: 'AR', label: 'Arch', icon: Building2 },
-    { id: 'Fur', label: 'Fur', icon: Armchair },
-    { id: 'EE', label: 'Elec', icon: Zap },
+    // { id: 'Fur', label: 'Fur', icon: Armchair }, // Hidden for now
+    // { id: 'EE', label: 'Elec', icon: Zap }, // Hidden for now
     { id: 'AC', label: 'Air', icon: Wind },
     { id: 'KG', label: 'Graph', icon: Share2 },
   ]
