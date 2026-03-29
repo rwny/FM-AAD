@@ -242,7 +242,7 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Priority Action Items</span>
              </div>
              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
-                {faultyAssets.length > 0 ? faultyAssets.map(a => (
+                {faultyAssets.length > 0 ? faultyAssets.map((a: ACAsset) => (
                    <div 
                       key={a.id} 
                       onClick={() => setSelectedRoomId(a.id)}
