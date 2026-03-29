@@ -13,7 +13,7 @@
 
 การทำงานจะเรียงลำดับจากระดับบนสุดลงไปหาระดับย่อยที่สุด (Top-Down Approach):
 
-1.  **🏫 Building (ระดับอาคาร):** โหลดโมเดลรวมของอาคาร (เช่น `ar15-301.glb`) แสดงภาพรวมภายนอกและโครงสร้างหลัก
+1.  **🏫 Building (ระดับอาคาร):** โหลดโมเดลรวมของอาคาร (เช่น `ar15-302.glb`) แสดงภาพรวมภายนอกและโครงสร้างหลัก
 2. **📶 Floor (ระดับชั้น):** ให้ 3d object แ่ละตัว มีชื่อที่ระบุชั้น เพื่อกรอง วัตถุที่จะแสดง ถ้าทำงานชั้น 1 ชั้นที่สูงกว่า ก็ไม่ต้องแสดง แต่ถ้าทำงานที่ชั้น 2 วัตถุที่อยู่ชั้นสูงกว่าก็จะไม่แสดง แต่ชั้นที่อยู่ต้ำกว่า ให้แสดงเหมือนปกติ 
 3.  **🚪 Room (ระดับห้อง):** ระบุตำแหน่งด้วย Room ID (เช่น `RM-101`) มีป้ายกำกับ (HTML Labels) แสดงชื่อห้อง และสามารถคลิกเพื่อ Focus ได้
 4.  **🛋️ Asset / Component (ระดับอุปกรณ์):** หน่วยที่เล็กที่สุดในระบบ แบ่งตามประเภท (Furniture, AC, EE) พร้อมข้อมูลทางเทคนิคและสถานะการซ่อมบำรุง
@@ -166,7 +166,14 @@
 
 ### 🚀 ระยะกลาง (Medium-term - High Value)
 
-5. **Preventive Maintenance Scheduler**
+5. **Interactive Relation Map (Markmap Integration)**
+   - ฝังตัวเรนเดอร์ Markmap ลงในหน้าเว็บเพื่อแสดงโครงสร้างความสัมพันธ์ (Hierarchy) ทั้งหมด
+   - **Bidirectional Sync:** 
+     - คลิก Object ใน 3D → Markmap จะ Highlight และ Focus ไปที่โหนดนั้น
+     - คลิกโหนดใน Markmap → กล้อง 3D จะบินไปโฟกัสที่วัตถุนั้น (Fly-to)
+   - ช่วยให้เห็นภาพรวมของระบบ (System Overview) และที่มาที่ไปของอุปกรณ์ได้ชัดเจน
+
+6. **Preventive Maintenance Scheduler**
    - ปฏิทินแสดงกำหนดการซ่อมบำรุง
    - แจ้งเตือนอัตโนมัติเมื่อใกล้ถึง `nextService` date
    - งานซ่อมบำรุงซ้ำ (รายเดือน/รายไตรมาส)
@@ -214,7 +221,26 @@
 
 ---
 
-## 10. ลำดับความสำคัญในการพัฒนา (Implementation Priority)
+## 11. มาตรฐาน BIM และการเชื่อมโยง (Native IFC & BlenderBonsai)
+
+ระบบกำลังมุ่งสู่การเป็น **True Digital Twin** โดยใช้มาตรฐาน OpenBIM (IFC) เป็นแกนหลัก:
+
+### A. การสร้างข้อมูล (Authoring with BlenderBonsai)
+* **Native IFC:** ใช้ BlenderBonsai ในการกำหนด Class ให้กับวัตถุ 3D โดยตรง
+  - อาคาร -> `IfcBuilding`
+  - ชั้น -> `IfcBuildingStorey`
+  - ห้อง -> `IfcSpace`
+  - อุปกรณ์ AC -> `IfcUnitaryControlElement`
+* **Spatial Hierarchy:** รักษาลำดับชั้นความสัมพันธ์ตามมาตรฐาน IFC เพื่อให้ข้อมูลสามารถแลกเปลี่ยน (Interoperability) กับโปรแกรม BIM อื่นๆ ได้
+
+### B. กลไกการเชื่อมต่อ (The Bridge Mechanism - GlobalId)
+1. **Model Side:** วัตถุในไฟล์ `.glb` จะมี Custom Property ชื่อ **`GlobalId` (GUID)** ติดไปด้วยจาก BlenderBonsai
+2. **Database Side:** ตารางใน Supabase จะใช้คอลัมน์ `asset_guid` เป็น Primary Bridge เพื่ออ้างอิงกลับไปยังโมเดล 3D ได้อย่างแม่นยำ 100% แม้มีการเปลี่ยนชื่อวัตถุ
+3. **Web Side:** เมื่อคลิกที่วัตถุ -> โปรแกรมอ่าน GUID -> Fetch ข้อมูลประวัติการซ่อมบำรุงจาก Database
+
+---
+
+## 12. ลำดับความสำคัญในการพัฒนา (Implementation Priority)
 
 **แนะนำ:** เริ่มจาก **Asset Details Panel** + **Work Order System**
 - ✅ คุณค่าสูงต่อผู้ใช้

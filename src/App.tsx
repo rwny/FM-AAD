@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import {
   Building2, Search, Camera, Info,
-  Armchair, Zap, Wind,
+  Armchair, Zap, Wind, Share2,
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X
 } from 'lucide-react'
 import { Suspense, useState, useMemo, useEffect } from 'react'
@@ -10,15 +10,15 @@ import { SceneLighting } from './components/3d/SceneLighting'
 import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
 import buildingJson from './utils/AR15.json'
-import acSpecsJson from './utils/ac-specs.json'
-import { fetchBuildingData, fetchAllACLogs } from './utils/supabase'
+import { tgfData } from './data/carrier-tgf'
 
-// Import Mode Components
+// --- Mode Components ---
 import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
 import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/FurnitureMode'
 import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
 import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
 import { PrintReportModal } from './components/ui/PrintReportModal'
+import { KGVisualizer } from './components/KGVisualizer'
 
 // --- Scene Component ---
 
@@ -43,7 +43,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
       <Suspense fallback={null}>
         <SceneLighting />
         <BuildingModel 
-          url="/models/ar15-301.glb" 
+          url="/models/ar15-302.glb" 
           selectedRoomId={selectedRoomId} 
           onRoomsFound={onRoomsFound} 
           onACFound={onACFound}
@@ -77,20 +77,31 @@ function App() {
   // Database State
   const [buildingData, setBuildingData] = useState<any>(buildingJson)
   const [acDbLogs, setAcDbLogs] = useState<any[]>([])
+  const [kgNodes, setKgNodes] = useState<any[]>([])
+  const [kgEdges, setKgEdges] = useState<any[]>([])
   const [isLive, setIsLive] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await fetchBuildingData('AR15')
-        if (data) setBuildingData(data)
-
-        // Fetch logs from Supabase
-        const logs = await fetchAllACLogs()
-        setAcDbLogs(logs || [])
-
-        setIsLive(true)
-        console.log('📡 Connected to Supabase ac_maintenance_logs table')
+        import('./utils/supabase').then(async ({ fetchBuildingData, fetchAllACLogs, supabase }) => {
+            const data = await fetchBuildingData('AR15')
+            if (data) setBuildingData(data)
+    
+            // Fetch logs & KG from Supabase
+            const [logs, nodesRes, edgesRes] = await Promise.all([
+                fetchAllACLogs(),
+                supabase.from('kg_nodes').select('*'),
+                supabase.from('kg_edges').select('*')
+            ])
+            
+            setAcDbLogs(logs || [])
+            setKgNodes(nodesRes.data || [])
+            setKgEdges(edgesRes.data || [])
+    
+            setIsLive(true)
+            console.log('📡 Connected to Supabase DBs')
+        });
       } catch (err: any) {
         console.warn('⚠️ Supabase connection failed:', err.message)
       }
@@ -104,39 +115,29 @@ function App() {
 
   const finalACAssets = useMemo(() => {
     return acAssets.map(modelAsset => {
-      const acData = acSpecsJson as any;
-      let matchedAssetInfo: any = null;
-      let matchedAcId: string = '';
-      
       const modelIdLow = modelAsset.id.toLowerCase();
+      
+      // Look up in KG
+      const node = kgNodes.find(n => n.name.toLowerCase() === modelIdLow);
+      let acType = '';
+      let assetIdStr = modelAsset.id;
+      let installDate = '';
+      let matchedAcId = '';
 
-      // 1. Search for Spec in JSON Floors
-      for (const floorNum in acData.floors) {
-        for (const roomNum in acData.floors[floorNum]) {
-          const roomAssets = acData.floors[floorNum][roomNum];
-          for (const acId in roomAssets) {
-            const info = roomAssets[acId];
-            const acIdLow = acId.toLowerCase();
-            
-            const isExactMatch = acIdLow === modelIdLow || 
-                                (info.units && info.units.some((u: string) => u.toLowerCase() === modelIdLow));
-            
-            const isFuzzyMatch = modelIdLow.includes(roomNum) && acIdLow.includes(roomNum);
-
-            if (isExactMatch || isFuzzyMatch) {
-              matchedAssetInfo = info;
-              matchedAcId = acId;
-              break;
-            }
-          }
-          if (matchedAssetInfo) break;
-        }
-        if (matchedAssetInfo) break;
+      if (node) {
+         const edge = kgEdges.find(e => e.object_id === node.id && e.predicate === 'contains');
+         const parentNode = edge ? kgNodes.find(n => n.id === edge.subject_id) : null;
+         
+         const meta = parentNode?.metadata || node.metadata || {};
+         acType = meta.ac_type || '';
+         assetIdStr = meta.asset_id || modelAsset.id;
+         installDate = meta.install_date || '';
+         if (parentNode) matchedAcId = parentNode.name;
       }
 
-      // 2. Identify the Peer unit (if this is FCU, find CDU and vice versa)
+      // 2. Identify the Peer unit
       const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
-      const currentNumber = modelAsset.id.split('-')[1];
+      const currentNumber = modelAsset.id.split('-').slice(1).join('-'); // e.g. 101-1
       const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
       const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
 
@@ -155,33 +156,30 @@ function App() {
         return timeB - timeA;
       });
 
-      const typeInfo = matchedAssetInfo?.type ? acData.types[matchedAssetInfo.type] : null;
-      // 4. Determine Status based on LATEST log
+      // Status based on LATEST log
       let status = 'Normal';
       if (sortedLogs.length > 0) {
         const latestLog = sortedLogs[0];
         const issueText = (latestLog.issue || '').toLowerCase();
         const noteText = (latestLog.note || '').toLowerCase();
         
-        if (latestLog.status === 'Completed') {
-          status = 'Normal'; // 🟢 Green
-        } else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending' || noteText.includes('พอใช้')) {
-          status = 'Maintenance'; // 🟠 Orange
-        }
+        if (latestLog.status === 'Completed') status = 'Normal';
+        else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending' || noteText.includes('พอใช้')) status = 'Maintenance';
         
-        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') {
-          status = 'Faulty'; // 🔴 Red
-        }
+        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') status = 'Faulty';
       }
+
+      // We need to resolve tgfData, but it's not imported at the top yet, we will add the import next
+      const typeInfo = acType ? (tgfData.models as any)[acType] : null;
 
       return {
         ...modelAsset,
-        assetId: matchedAssetInfo?.assetId || modelAsset.id,
-        acType: matchedAssetInfo?.type || '',
-        brand: typeInfo?.brand || matchedAssetInfo?.brand || modelAsset.brand || '---',
-        model: typeInfo?.model || matchedAssetInfo?.model || (modelAsset as any).model || '---',
-        capacity: typeInfo?.capacity || matchedAssetInfo?.capacity || (modelAsset as any).capacity || '---',
-        install: matchedAssetInfo?.installedDate || typeInfo?.['installed-date'] || (modelAsset as any).install || '',
+        assetId: assetIdStr,
+        acType: acType || 'Unknown',
+        brand: typeInfo?.Brand || 'Carrier',
+        model: acType || '---',
+        capacity: typeInfo?.NominalCoolingCapacity ? `${typeInfo.NominalCoolingCapacity} BTU/hr` : '---',
+        install: installDate || '---',
         logs: sortedLogs.map(l => ({
           id: l.id,
           date: l.date,
@@ -195,7 +193,7 @@ function App() {
         lastService: sortedLogs.length > 0 ? sortedLogs[0].date : ''
       }
     })
-  }, [acAssets, acDbLogs])
+  }, [acAssets, acDbLogs, kgNodes, kgEdges])
 
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
@@ -241,6 +239,7 @@ function App() {
     { id: 'Fur', label: 'Fur', icon: Armchair },
     { id: 'EE', label: 'Elec', icon: Zap },
     { id: 'AC', label: 'Air', icon: Wind },
+    { id: 'KG', label: 'Graph', icon: Share2 },
   ]
 
   // --- Render Helpers ---
@@ -277,7 +276,9 @@ function App() {
   return (
     <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px] gap-[10px]">
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
+        {activeMode === 'KG' && <KGVisualizer />}
+        <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
+          <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
           <color attach="background" args={['#bae6fd']} />
           <Scene 
             selectedRoomId={selectedRoomId} 
@@ -292,6 +293,7 @@ function App() {
             finalACAssets={finalACAssets}
           />
         </Canvas>
+        </div>
       </div>
 
       {!showLeft && (

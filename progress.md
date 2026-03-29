@@ -11,6 +11,10 @@
 - [x] **Automated Parser:** สร้าง Script `scripts/parse-ac-data.cjs` สำหรับแปลง Markdown เป็น `ac-specs.json` โดยอัตโนมัติ
 - [x] **Dynamic Logs (Supabase):** เชื่อมต่อระบบประวัติการซ่อมบำรุงเข้ากับ Supabase ตาราง `ac_maintenance_logs`
 - [x] **Shared Intelligence:** พัฒนา Logic การรวมข้อมูลระหว่าง FCU และ CDU (Peer matching) โดยอ้างอิงเลขห้อง ทำให้ทั้งชุดแอร์เห็นประวัติการซ่อมร่วมกัน
+- [ ] **Future Vision (Hybrid 2.0):** พัฒนาระบบ **"DB as Source, MD as View"** 
+    - ใช้ Supabase เป็นฐานข้อมูลหลักสำหรับการแก้ไขผ่านหน้าเว็บ (CMS)
+    - สร้างสคริปต์ **Exporter** ดึงข้อมูลจาก DB กลับมาเป็นไฟล์ `.md` โดยอัตโนมัติ
+    - รักษาโครงสร้าง Tree เพื่อให้มนุษย์อ่านง่ายและใช้ **Markmap** ดูความสัมพันธ์ (Relation) ได้เหมือนเดิม
 
 ### 2. UI & User Experience (AC Mode Focus)
 - [x] **Standardized Typography:** ปรับปรุงขนาดตัวอักษรเป็น 3 ระดับมาตรฐาน (Large, Medium, Small) เพื่อความสบายตา

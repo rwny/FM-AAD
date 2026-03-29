@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info, Printer } from 'lucide-react'
+import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info, Printer, LayoutDashboard, PieChart } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
 
@@ -57,8 +57,45 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
     return 'bg-amber-500'; // 🟠 Orange (Maintenance / In Progress / Pending)
   }
 
+  const projectStats = useMemo(() => {
+    const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
+    finalACAssets.forEach(a => {
+      if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
+      else if (a.status === 'Faulty') stats.red++;
+      else stats.green++;
+    });
+    return stats;
+  }, [finalACAssets]);
+
   return (
     <div className="space-y-1">
+      {/* Project Dashboard Button */}
+      <button 
+        onClick={() => {
+          setSelectedRoomId(null);
+          setSelectedFloor(null);
+          setClipFloor(null);
+          // Special ID to trigger Dashboard in Right Panel
+          setSelectedRoomId('DASHBOARD_OVERVIEW');
+        }}
+        className={`w-full flex items-center justify-between px-3 py-2.5 mb-3 rounded-[10px] transition-all border ${
+          selectedRoomId === 'DASHBOARD_OVERVIEW' 
+            ? 'bg-indigo-600 text-white shadow-lg border-indigo-500' 
+            : 'bg-white/50 border-slate-200 text-slate-700 hover:bg-white hover:shadow-md'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <LayoutDashboard className={`w-4 h-4 ${selectedRoomId === 'DASHBOARD_OVERVIEW' ? 'text-indigo-200' : 'text-indigo-600'}`} />
+          <span className="text-[11px] font-black uppercase tracking-wider">Project Dashboard</span>
+        </div>
+        <div className="flex gap-1">
+           {projectStats.red > 0 && <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
+           {projectStats.orange > 0 && <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
+           <ChevronRight className={`w-3 h-3 ${selectedRoomId === 'DASHBOARD_OVERVIEW' ? 'text-indigo-200' : 'text-slate-300'}`} />
+        </div>
+      </button>
+
+      {/* Existing Floor List */}
       {Object.keys(floors).sort().map((floorStr) => {
         const floorNum = parseInt(floorStr);
         const isExpanded = !!expandedFloors[floorNum];
@@ -142,7 +179,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
   )
 }
 
-export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, rooms, selectedFloor, setReportAsset, setSelectedLog }) => {
+export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId, finalACAssets, rooms, selectedFloor, setReportAsset, setSelectedLog }) => {
   const [showAddLog, setShowAddLog] = useState(false)
   const [logPage, setLogPage] = useState(0)
   const LOGS_PER_PAGE = 5
@@ -163,7 +200,84 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
     return 'bg-amber-500';
   }
 
-  // Asset Selected
+  // NEW: Dashboard Overview Logic
+  if (selectedRoomId === 'DASHBOARD_OVERVIEW') {
+     const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
+     const setsTotal = Math.ceil(finalACAssets.length / 2);
+     finalACAssets.forEach((a: ACAsset) => {
+       if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
+       else if (a.status === 'Faulty') stats.red++;
+       else stats.green++;
+     });
+
+     const faultyAssets = finalACAssets.filter((a: ACAsset) => a.status === 'Faulty' || a.status === 'Maintenance');
+
+     return (
+       <div className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto custom-scrollbar bg-slate-50/50">
+          <div className="space-y-1">
+             <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">Project Dashboard</h3>
+             <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">AR15 Building Master Summary</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
+                <div className="text-[10px] font-black text-slate-400 uppercase">Operational</div>
+                <div className="flex items-baseline gap-1">
+                   <div className="text-3xl font-black text-emerald-500">{Math.round((stats.green/stats.total)*100)}%</div>
+                   <div className="text-[10px] font-bold text-slate-400 uppercase">Healty</div>
+                </div>
+             </div>
+             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
+                <div className="text-[10px] font-black text-slate-400 uppercase">Inventory</div>
+                <div className="flex items-baseline gap-1">
+                   <div className="text-3xl font-black text-indigo-600">{setsTotal}</div>
+                   <div className="text-[10px] font-bold text-slate-400 uppercase">Air Sets</div>
+                </div>
+             </div>
+          </div>
+
+          <div className="space-y-3">
+             <div className="flex items-center gap-2 px-1">
+                <Activity className="w-4 h-4 text-rose-500" />
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Priority Action Items</span>
+             </div>
+             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+                {faultyAssets.length > 0 ? faultyAssets.map(a => (
+                   <div 
+                      key={a.id} 
+                      onClick={() => setSelectedRoomId(a.id)}
+                      className="p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between"
+                   >
+                      <div className="flex items-center gap-3">
+                         <div className={`w-2 h-2 rounded-full ${a.status === 'Faulty' ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
+                         <div>
+                            <div className="text-xs font-black text-slate-800">{a.id.toUpperCase()}</div>
+                            <div className="text-[9px] font-bold text-slate-400 italic">Room: {a.id.split('-')[1]} • Floor: {a.id.split('-')[1]?.charAt(0)}</div>
+                         </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-200" />
+                   </div>
+                )) : (
+                   <div className="p-10 text-center space-y-2">
+                       <PieChart className="w-8 h-8 text-emerald-100 mx-auto" />
+                       <p className="text-[10px] font-black text-slate-300 uppercase italic">All Systems Operational</p>
+                   </div>
+                )}
+             </div>
+          </div>
+
+          <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-xl flex items-center justify-between">
+              <div className="space-y-0.5">
+                  <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest leading-none">Next Service Window</div>
+                  <div className="text-lg font-black">April 2026</div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-indigo-300" />
+          </div>
+       </div>
+     );
+  }
+
+  // Asset Selected Logic
   if (selectedAC) {
     const sortedLogs = selectedAC.logs || []; 
     const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
@@ -338,8 +452,10 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, finalACAssets, roo
            <p className="text-[10px] font-black text-slate-400 uppercase mt-1">Air Conditioning Overview</p>
         </div>
         <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm text-center">
-           <div className="text-[10px] font-black text-slate-400 uppercase mb-2">Total Units at Level 0{selectedFloor}</div>
-           <div className="text-3xl font-black text-indigo-600">{floorACs.length}</div>
+           <div className="text-[10px] font-black text-indigo-400 uppercase mb-2">Total Sets at Level 0{selectedFloor}</div>
+           <div className="text-3xl font-black text-indigo-600">
+             {Math.ceil(floorACs.length / 2)} <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sets</span>
+           </div>
         </div>
       </div>
     )

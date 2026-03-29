@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrier HVAC IFC Data Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar with catalog selection -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Catalogs</h2>
+            </div>
+            
+            <!-- Catalog Selector -->
+            <div class="catalog-selector">
+                <div class="catalog-tabs">
+                    <button class="catalog-tab active" data-catalog="tgf">TGF Series</button>
+                    <button class="catalog-tab" data-catalog="tgv">TGV Series</button>
+                    <button class="catalog-tab" data-catalog="tgev">TGEV Series</button>
+                </div>
+            </div>
+            
+            <!-- Model List -->
+            <div class="model-list-container">
+                <h3 id="current-catalog-name">TGF Series</h3>
+                <ul id="model-list">
+                    <!-- Model list will be inserted here -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main content area -->
+        <main class="main-content">
+            <header>
+                <div class="header-title">
+                    <h1>Carrier HVAC - IFC Property Data</h1>
+                </div>
+                <a id="catalog-download" href="#" target="_blank" class="download-link">Download Catalog</a>
+            </header>
+
+            <div id="empty-state" class="empty-state">
+                <div class="empty-content">
+                    <p class="empty-title">เลือกรุ่นเครื่องปรับอากาศ</p>
+                    <p class="empty-subtitle">เลือกรุ่นจากรายการด้านซ้ายเพื่อแสดงข้อมูล IFC</p>
+                </div>
+            </div>
+
+            <div id="data-display" class="hidden">
+                <div class="model-header">
+                    <div class="model-title">
+                        <h2 id="display-model-name"></h2>
+                        <span id="display-type" class="badge"></span>
+                    </div>
+                    <span id="model-code" class="model-code"></span>
+                </div>
+                <div class="table-wrapper">
+                    <table id="ifc-table">
+                        <thead>
+                            <tr>
+                                <th class="col-group">Property Set</th>
+                                <th class="col-property">Property Name</th>
+                                <th class="col-value">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../../data/data-tgf.js"></script>
+    <script src="../../data/data-tgv.js"></script>
+    <script src="../../data/data-tgev.js"></script>
+    <script>
+        const modelList = document.getElementById('model-list');
+        const currentCatalogName = document.getElementById('current-catalog-name');
+        const display = document.getElementById('data-display');
+        const emptyState = document.getElementById('empty-state');
+        const modelNameHeader = document.getElementById('display-model-name');
+        const typeBadge = document.getElementById('display-type');
+        const modelCode = document.getElementById('model-code');
+        const catalogDownload = document.getElementById('catalog-download');
+        const tableBody = document.querySelector('#ifc-table tbody');
+        const catalogTabs = document.querySelectorAll('.catalog-tab');
+
+        let currentCatalog = 'tgf';
+
+        // Catalog configurations
+        const catalogConfig = {
+            tgf: {
+                name: 'TGF Series',
+                pdfUrl: '../../catalogs/Carrier-42TGF-CP-Catalog.pdf',
+                getModels: getTgfModelList,
+                getIfcData: getTgfIfcData,
+                getModelData: (modelId) => tgfData.models[modelId]
+            },
+            tgv: {
+                name: 'TGV Series',
+                pdfUrl: '../../catalogs/Carrier-42TGV-CP-Catalog.pdf',
+                getModels: getTgvModelList,
+                getIfcData: getTgvIfcData,
+                getModelData: (modelId) => tgvData.models[modelId]
+            },
+            tgev: {
+                name: 'TGEV Series',
+                pdfUrl: '../../catalogs/TGEV-THAI_17102024m_tcm192-239962.pdf',
+                getModels: getTgevModelList,
+                getIfcData: getTgevIfcData,
+                getModelData: (modelId) => tgevData.models[modelId]
+            }
+        };
+
+        // Initialize catalog tabs
+        catalogTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const catalog = tab.dataset.catalog;
+                switchCatalog(catalog);
+                
+                // Update active tab
+                catalogTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        function switchCatalog(catalog) {
+            currentCatalog = catalog;
+            const config = catalogConfig[catalog];
+            
+            // Update catalog name
+            currentCatalogName.textContent = config.name;
+            
+            // Update download link
+            catalogDownload.href = config.pdfUrl;
+            
+            // Clear and repopulate model list
+            populateModelList();
+            
+            // Reset display
+            display.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        }
+
+        function populateModelList() {
+            const config = catalogConfig[currentCatalog];
+            const models = config.getModels();
+            
+            modelList.innerHTML = '';
+            
+            if (models.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'model-item empty';
+                li.textContent = 'No models available';
+                modelList.appendChild(li);
+                return;
+            }
+            
+            models.forEach(modelId => {
+                const li = document.createElement('li');
+                li.className = 'model-item';
+                li.textContent = modelId;
+                li.dataset.modelId = modelId;
+                
+                li.addEventListener('click', () => {
+                    document.querySelectorAll('.model-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    li.classList.add('active');
+                    showModelData(modelId);
+                });
+                
+                modelList.appendChild(li);
+            });
+        }
+
+        function showModelData(modelId) {
+            const config = catalogConfig[currentCatalog];
+            const ifcData = config.getIfcData(modelId);
+            const modelData = config.getModelData(modelId);
+            
+            if (ifcData && modelData) {
+                const displayModelId = modelId.replace("_3PH", "");
+                
+                modelNameHeader.textContent = displayModelId;
+                typeBadge.textContent = modelData.Type;
+                
+                // Get code meaning
+                let codeMeaning = '';
+                if (modelId.includes('UP')) codeMeaning = 'Unit Panel (แคสเซ็ตติดเพดาน)';
+                else if (modelId.includes('CP')) codeMeaning = 'Ceiling Panel (แขวนใต้ฝ้า)';
+                else if (modelId.includes('BP')) codeMeaning = 'Built-in Panel (ต่อท่อ/ฝังฝ้า)';
+                modelCode.textContent = codeMeaning;
+                
+                tableBody.innerHTML = '';
+                ifcData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="col-group">${row.group}</td>
+                        <td class="col-property">${row.property}</td>
+                        <td class="col-value">${row.value}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                emptyState.classList.add('hidden');
+                display.classList.remove('hidden');
+            }
+        }
+
+        // Initialize
+        populateModelList();
+    </script>
+</body>
+</html>

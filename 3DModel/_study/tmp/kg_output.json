@@ -1,0 +1,147 @@
+[
+    {
+        "subject": "ar15",
+        "predicate": "contains",
+        "object": "floor-1"
+    },
+    {
+        "subject": "floor-1",
+        "predicate": "contains",
+        "object": "room-101"
+    },
+    {
+        "subject": "room-101",
+        "predicate": "contains",
+        "object": "AC-101.1"
+    },
+    {
+        "subject": "room-101",
+        "predicate": "contains",
+        "object": "AC-101.2"
+    },
+    {
+        "subject": "room-101",
+        "predicate": "contains",
+        "object": "AC-101.3"
+    },
+    {
+        "subject": "room-101",
+        "predicate": "contains",
+        "object": "AC-101.4"
+    },
+    {
+        "subject": "room-101",
+        "predicate": "contains",
+        "object": "AC-101.5"
+    },
+    {
+        "subject": "floor-1",
+        "predicate": "contains",
+        "object": "room-102"
+    },
+    {
+        "subject": "room-102",
+        "predicate": "contains",
+        "object": "AC-102.1"
+    },
+    {
+        "subject": "room-102",
+        "predicate": "contains",
+        "object": "AC-102.2"
+    },
+    {
+        "subject": "ar15",
+        "predicate": "contains",
+        "object": "floor-2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-201"
+    },
+    {
+        "subject": "room-201",
+        "predicate": "contains",
+        "object": "AC-201.1"
+    },
+    {
+        "subject": "room-201",
+        "predicate": "contains",
+        "object": "AC-201.2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-202"
+    },
+    {
+        "subject": "room-202",
+        "predicate": "contains",
+        "object": "AC-202.1"
+    },
+    {
+        "subject": "room-202",
+        "predicate": "contains",
+        "object": "AC-202.2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-203"
+    },
+    {
+        "subject": "room-203",
+        "predicate": "contains",
+        "object": "AC-203.1"
+    },
+    {
+        "subject": "room-203",
+        "predicate": "contains",
+        "object": "AC-203.2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-204"
+    },
+    {
+        "subject": "room-204",
+        "predicate": "contains",
+        "object": "AC-204.1"
+    },
+    {
+        "subject": "room-204",
+        "predicate": "contains",
+        "object": "AC-204.2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-205"
+    },
+    {
+        "subject": "room-205",
+        "predicate": "contains",
+        "object": "AC-205.1"
+    },
+    {
+        "subject": "room-205",
+        "predicate": "contains",
+        "object": "AC-205.2"
+    },
+    {
+        "subject": "floor-2",
+        "predicate": "contains",
+        "object": "room-206"
+    },
+    {
+        "subject": "room-206",
+        "predicate": "contains",
+        "object": "AC-206.1"
+    },
+    {
+        "subject": "room-206",
+        "predicate": "contains",
+        "object": "AC-206.2"
+    }
+]

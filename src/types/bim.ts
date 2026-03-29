@@ -50,7 +50,7 @@ export interface FurnitureAsset {
   history?: any[];
 }
 
-export type BIMMode = 'AR' | 'Fur' | 'EE' | 'AC';
+export type BIMMode = 'AR' | 'Fur' | 'EE' | 'AC' | 'KG';
 
 export interface BuildingData {
   building: string;

@@ -4,7 +4,7 @@ AR15-AC-DATA
 - TYPE
     - [AC-1]
         - id: "AC-1"
-        - brand: "Mitsubishi"
+        - brand: "DAIKIN"
         - model: "MSY-JS18VF"
         - capacity: "18,000 BTU"
     - [AC-2]
@@ -88,3 +88,4 @@ AR15-AC-DATA
             - TYPE : "AC-2"
             - FCU-206.1
             - CDU-206.1
+

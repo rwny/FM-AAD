@@ -1,0 +1,54 @@
+- ar15 (AC)
+    - floor-1
+        - room-101
+            - AC-101-1 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-001]
+                - FCU-101-1
+                - CDU-101-1
+            - AC-101-2 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-002]
+                - FCU-101-2
+                - CDU-101-2
+            - AC-101-3 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-003]
+                - FCU-101-3
+                - CDU-101-3
+            - AC-101-4 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-004]
+                - FCU-101-4
+                - CDU-101-4
+        - room-102
+            - AC-102-1 (Type: 42TGF0241CP) [AssetID: สถ.2568-123-456-005]
+                - FCU-102-1
+                - CDU-102-1
+
+    - floor-2
+        - room-201
+            - AC-201-1 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-006]
+                - FCU-201-1
+                - CDU-201-1
+            - AC-201-2 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-007]
+                - FCU-201-2
+                - CDU-201-2
+            - AC-201-3 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-008]
+                - FCU-201-3
+                - CDU-201-3
+        - room-202
+            - AC-202-1 (Type: 42TGF0241CP) [AssetID: สถ.2568-123-456-009]
+                - FCU-202-1
+                - CDU-202-1
+        - room-203
+            - AC-203-1 (Type: 42TGF0241CP) [AssetID: สถ.2568-123-456-010]
+                - FCU-203-1
+                - CDU-203-1
+        - room-204
+            - AC-204-1 (Type: 42TGF0241CP) [AssetID: สถ.2568-123-456-011]
+                - FCU-204-1
+                - CDU-204-1
+        - room-205
+            - AC-205-1 (Type: 42TGF0241CP) [AssetID: สถ.2568-123-456-012]
+                - FCU-205-1
+                - CDU-205-1
+        - room-206
+            - AC-206-1 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-013]
+                - FCU-206-1
+                - CDU-206-1
+            - AC-206-2 (Type: 42TGF0361CP) [AssetID: สถ.2568-123-456-014]
+                - FCU-206-2
+                - CDU-206-2

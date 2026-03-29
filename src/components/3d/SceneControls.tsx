@@ -46,9 +46,12 @@ export function SceneControls({ leftVisible, rightVisible }: { leftVisible: bool
       <PerspectiveCamera makeDefault position={[-30, 20, 30]} fov={35} />
       <OrbitControls 
         target={[0, 2, 0]} 
-        maxPolarAngle={Math.PI / 2.1} 
+        minPolarAngle={Math.PI / 5} 
+        maxPolarAngle={Math.PI / 1.8} 
         minDistance={10} 
         maxDistance={80}
+        enableDamping={true}
+        dampingFactor={0.25}
         makeDefault
       />
     </>
