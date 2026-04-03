@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { 
-  X, Search, LayoutDashboard, 
-  ArrowUpRight, AlertCircle, CheckCircle2, 
-  Clock, Wind, Download, Box, Layers,
+  X, Search, 
+  ArrowUpRight, AlertCircle, 
+  Download, Box, Layers,
   ClipboardList, Copy, Check
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
@@ -19,58 +19,13 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | 'Normal' | 'Maintenance' | 'Faulty'>('All')
-  const [floorFilter, setFloorFilter] = useState<number | 'All'>('All')
+  const [floorFilter] = useState<number | 'All'>('All')
   const [historySystem, setHistorySystem] = useState<any | null>(null)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [historyCopyFeedback, setHistoryCopyFeedback] = useState(false)
 
-  const getHistoryData = (sys: any) => {
-    const allLogs = sys.components.flatMap((c: any) => (c.logs || []).map((l: any) => ({ ...l, assetId: c.id })));
-    const uniqueLogs = Array.from(new Map(allLogs.map((l: any) => [l.id || `${l.date}-${l.issue}`, l])).values());
-    const sortedLogs = uniqueLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    const headers = ['Date', 'Component', 'Status', 'Activity', 'Notes'];
-    const rows = [
-      [sys.installDate, 'System Master', 'Activated', 'Initial system deployment', `Project deployment to ${sys.roomName}`],
-      ...sortedLogs.map((l: any) => [l.date, l.assetId || sys.id, l.status, l.issue, l.note || ''])
-    ];
-    return { headers, rows };
-  };
-
-  const exportHistoryToCSV = (sys: any) => {
-    const { headers, rows } = getHistoryData(sys);
-    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `History_${sys.id}_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const copyHistoryToClipboard = (sys: any) => {
-    const { headers, rows } = getHistoryData(sys);
-    const textContent = [headers, ...rows].map(e => e.join("\t")).join("\n");
-    navigator.clipboard.writeText(textContent).then(() => {
-      setHistoryCopyFeedback(true);
-      setTimeout(() => setHistoryCopyFeedback(false), 2000);
-    });
-  };
-
   const systemData = useMemo(() => {
-    const groups: { [key: string]: { 
-      id: string, 
-      floor: number, 
-      roomName: string, 
-      brand: string,
-      model: string,
-      installDate: string,
-      components: ACAsset[],
-      aggregatedStatus: string,
-      lastService: string,
-      nextService: string
-    }} = {};
+    const groups: { [key: string]: any } = {};
 
     assets.forEach(asset => {
       const parts = asset.id.split('-');
@@ -122,16 +77,27 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     return { total, faulty, health: total > 0 ? Math.round((healthy / total) * 100) : 100 };
   }, [systemData]);
 
+  const getHistoryData = (sys: any) => {
+    const allLogs = sys.components.flatMap((c: any) => (c.logs || []).map((l: any) => ({ ...l, assetId: c.id })));
+    const uniqueLogs = Array.from(new Map(allLogs.map((l: any) => [l.id || `${l.date}-${l.issue}`, l])).values());
+    const sortedLogs = uniqueLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const headers = ['Date', 'Component', 'Status', 'Activity', 'Notes'];
+    const rows = [
+      [sys.installDate, 'System Master', 'Activated', 'Initial system deployment', `Project deployment to ${sys.roomName}`],
+      ...sortedLogs.map((l: any) => [l.date, l.assetId || sys.id, l.status, l.issue, l.note || ''])
+    ];
+    return { headers, rows };
+  };
+
   const exportToCSV = () => {
     const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Components'];
-    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map(c => c.id).join(' | ')]);
+    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map((c: any) => c.id).join(' | ')]);
     const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
+    link.setAttribute("href", URL.createObjectURL(blob));
     link.setAttribute("download", `AR15_Asset_Master_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -139,11 +105,32 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
   const copyToClipboard = () => {
     const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Components'];
-    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map(c => c.id).join(' | ')]);
+    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map((c: any) => c.id).join(' | ')]);
     const textContent = [headers, ...rows].map(e => e.join("\t")).join("\n");
     navigator.clipboard.writeText(textContent).then(() => {
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 2000);
+    });
+  };
+
+  const exportHistoryToCSV = (sys: any) => {
+    const { headers, rows } = getHistoryData(sys);
+    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", `History_${sys.id}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const copyHistoryToClipboard = (sys: any) => {
+    const { headers, rows } = getHistoryData(sys);
+    const textContent = [headers, ...rows].map(e => e.join("\t")).join("\n");
+    navigator.clipboard.writeText(textContent).then(() => {
+      setHistoryCopyFeedback(true);
+      setTimeout(() => setHistoryCopyFeedback(false), 2000);
     });
   };
 
@@ -264,18 +251,21 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                         const installMs = new Date(sys.installDate).getTime();
                         const installOffset = ((installMs - startWindowMs) / windowDuration) * 100;
                         const activeWidth = 100 - Math.max(0, installOffset);
-                        const markers = sys.components.flatMap(c => (c.logs || []).map(log => ({ ...log, assetId: c.id }))).map(log => {
+                        const markers = sys.components.flatMap((c: any) => (c.logs || []).map((log: any) => ({ ...log, assetId: c.id }))).map((log: any) => {
                           const logDate = new Date(log.date).getTime();
                           const pos = ((logDate - startWindowMs) / windowDuration) * 100;
                           return { ...log, pos };
-                        }).filter(m => m.pos >= 0);
+                        }).filter((m: any) => m.pos >= 0);
                         return (
                           <>
                             <div className="absolute h-1 bg-indigo-100 rounded-full shadow-sm" style={{ left: `${Math.max(0, installOffset)}%`, width: `${activeWidth}%` }} />
                             {installMs >= startWindowMs && <div className="absolute w-2 h-2 bg-emerald-500 rotate-45 z-20 border border-white shadow-sm" style={{ left: `calc(${installOffset}% - 4px)`, top: '50%', marginTop: '-4px' }} title={`Install: ${sys.installDate}`} />}
-                            {markers.map((m, i) => (
-                              <div key={i} className={`absolute w-2.5 h-2.5 rounded-full border border-white shadow-sm z-30 ${m.status === 'Faulty' ? 'bg-rose-500' : m.status === 'Normal' || m.status === 'Completed' ? 'bg-emerald-500' : 'bg-amber-500'} cursor-help hover:scale-150 transition-transform`} style={{ left: `${m.pos}%` }} title={`Date: ${m.date}\nComp: ${m.assetId}\nIssue: ${m.issue}`} />
-                            ))}
+                            {markers.map((m: any, i: number) => {
+                               const mColor = m.status === 'Faulty' ? 'bg-rose-500' : (m.status === 'Normal' || m.status === 'Completed' ? 'bg-emerald-500' : 'bg-amber-500');
+                               return (
+                                <div key={i} className={`absolute w-2.5 h-2.5 rounded-full border border-white shadow-sm z-30 ${mColor} cursor-help hover:scale-150 transition-transform`} style={{ left: `${m.pos}%` }} title={`Date: ${m.date}\nComp: ${m.assetId}\nIssue: ${m.issue}`} />
+                               );
+                            })}
                             <div className="absolute right-0 w-0.5 h-3 bg-indigo-300 z-10" title="Today" />
                             {installMs < startWindowMs && <div className="absolute -bottom-4 left-0 text-[7px] font-black text-slate-300 uppercase tracking-tighter">Installed {sys.installDate}</div>}
                           </>
@@ -288,7 +278,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100">
                     <div className="inline-flex flex-wrap items-center gap-1 p-1 bg-slate-50/50 rounded-lg border border-slate-100 shadow-inner">
-                      {sys.components.map(comp => (
+                      {sys.components.map((comp: any) => (
                         <div key={comp.id} onClick={() => onSelect(comp.id)} className="flex items-center gap-2 px-2.5 py-1 bg-white hover:bg-indigo-600 rounded border border-slate-200 transition-all cursor-pointer group/comp shadow-sm hover:scale-105 active:scale-95 group/btn" title={`${comp.id} [${comp.status}]\nLast: ${comp.logs?.[0]?.date || 'N/A'}`}>
                           <div className={`w-2 h-2 rounded-full ${getCompStatusColor(comp.status)} group-hover/btn:bg-white`} />
                           <span className="text-[10px] font-black text-slate-500 group-hover/btn:text-white uppercase tracking-tighter">{comp.id}</span>
@@ -297,7 +287,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                     </div>
                   </td>
                   <td className="px-2 py-3 text-right">
-                    <button onClick={() => { const primary = sys.components.find(c => c.id.startsWith('fcu')) || sys.components[0]; if (primary) onSelect(primary.id); }} className="p-1.5 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg transition-all shadow-sm border border-transparent hover:border-indigo-500"><ArrowUpRight className="w-4 h-4" /></button>
+                    <button onClick={() => { const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]; if (primary) onSelect(primary.id); }} className="p-1.5 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg transition-all shadow-sm border border-transparent hover:border-indigo-500"><ArrowUpRight className="w-4 h-4" /></button>
                   </td>
                 </tr>
               );
@@ -319,9 +309,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 animate-in zoom-in-95 duration-200">
             <header className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-600 rounded-lg text-white">
-                  <ClipboardList className="w-5 h-5" />
-                </div>
+                <div className="p-2 bg-indigo-600 rounded-lg text-white"><ClipboardList className="w-5 h-5" /></div>
                 <div>
                   <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight">System Life Cycle History</h2>
                   <p className="text-lg font-black text-slate-800 uppercase tracking-tight">{historySystem.id} • {historySystem.roomName}</p>
@@ -333,20 +321,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                     <Check className="w-3 h-3" /> COPIED!
                   </div>
                 )}
-                <button 
-                  onClick={() => copyHistoryToClipboard(historySystem)}
-                  className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95"
-                  title="Copy History to Clipboard"
-                >
-                  <Copy className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => exportHistoryToCSV(historySystem)}
-                  className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95"
-                  title="Download History CSV"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
+                <button onClick={() => copyHistoryToClipboard(historySystem)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95" title="Copy History"><Copy className="w-5 h-5" /></button>
+                <button onClick={() => exportHistoryToCSV(historySystem)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95" title="Download History CSV"><Download className="w-5 h-5" /></button>
                 <button onClick={() => setHistorySystem(null)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><X className="w-6 h-6" /></button>
               </div>
             </header>
@@ -358,18 +334,9 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
               <table className="w-full text-left border-collapse mb-4">
                 <tbody className="divide-y divide-slate-100">
                   <tr className="bg-emerald-50/30">
-                    <td className="px-4 py-2 border-r border-slate-100 w-32">
-                      <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="text-[11px] font-black text-slate-700">{historySystem.installDate}</span>
-                        <div className="w-2 h-2 bg-emerald-500 rotate-45 shrink-0 ml-auto" />
-                      </div>
-                    </td>
+                    <td className="px-4 py-2 border-r border-slate-100 w-32"><div className="flex items-center gap-1.5 whitespace-nowrap"><span className="text-[11px] font-black text-slate-700">{historySystem.installDate}</span><div className="w-2 h-2 bg-emerald-500 rotate-45 shrink-0 ml-auto" /></div></td>
                     <td className="px-4 py-2 border-r border-slate-100 w-32 text-[10px] font-black text-indigo-600 uppercase tracking-tighter">System Master</td>
-                    <td className="px-4 py-2 border-r border-slate-100 w-36">
-                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Deploy
-                      </div>
-                    </td>
+                    <td className="px-4 py-2 border-r border-slate-100 w-36"><div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Deploy</div></td>
                     <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-600 italic">Initial system deployment to {historySystem.roomName}</td>
                     <td className="px-4 py-2 text-[10px] text-slate-400">Standard activation</td>
                   </tr>
@@ -381,8 +348,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                         <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-500">{log.date}</td>
                         <td className="px-4 py-2 border-r border-slate-100 text-[10px] font-black text-slate-600 uppercase">{log.assetId || historySystem.id}</td>
                         <td className="px-4 py-2 border-r border-slate-100">
-                          <div className={`flex items-center justify-center gap-1.5 text-[10px] font-black uppercase whitespace-nowrap ${log.status === 'Completed' || log.status === 'Normal' ? 'text-emerald-600' : log.status === 'Faulty' ? 'text-rose-600' : 'text-amber-600'}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${log.status === 'Completed' || log.status === 'Normal' ? 'bg-emerald-500' : log.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />{log.status}
+                          <div className={`flex items-center justify-center gap-1.5 text-[10px] font-black uppercase whitespace-nowrap ${log.status === 'Completed' || log.status === 'Normal' ? 'text-emerald-600' : (log.status === 'Faulty' ? 'text-rose-600' : 'text-amber-600')}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${log.status === 'Completed' || log.status === 'Normal' ? 'bg-emerald-500' : (log.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500')}`} />{log.status}
                           </div>
                         </td>
                         <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-700 leading-tight">{log.issue}</td>

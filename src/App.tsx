@@ -246,7 +246,7 @@ function App() {
       ? buildingData.floors 
       : Object.entries(buildingData.floors).map(([num, data]: [string, any]) => ({ 
           floor: parseInt(num), 
-          rooms: Object.entries(data).map(([rId, rData]: [string, any]) => ({
+          rooms: Object.entries(data).map(([rId]: [string, any]) => ({
             id: `rm-${rId}`,
             name: `Room ${rId}`,
             assets: [] // Furniture assets not in ac.md yet

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { 
   Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
   ChevronLeft, ShoppingCart, Info, Printer, LayoutDashboard, 
-  PieChart, ClipboardList, Clock, Layers, ArrowUpRight
+  ClipboardList, Clock, ArrowUpRight
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
@@ -28,7 +28,7 @@ interface ACModeProps {
 export const ACLeftPanel: React.FC<ACModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
   expandedFloors, setExpandedFloors, clipFloor, setClipFloor, finalACAssets,
-  selectedFloor, setSelectedFloor, setShowDashboard
+  selectedFloor, setSelectedFloor
 }) => {
   const [expandedRooms, setExpandedRooms] = useState<{[key: string]: boolean}>({})
 
@@ -152,7 +152,7 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 }
 
 export const ACRightPanel: React.FC<any> = ({ 
-  selectedRoomId, setSelectedRoomId, finalACAssets, rooms, selectedFloor, 
+  selectedRoomId, finalACAssets, rooms, selectedFloor, 
   setReportAsset, setSelectedLog, setShowDashboard 
 }) => {
   const [showAddLog, setShowAddLog] = useState(false)
@@ -168,7 +168,7 @@ export const ACRightPanel: React.FC<any> = ({
     const systemId = parts.length >= 3 ? `AC-${parts[1]}-${parts[2]}` : `AC-${parts[1]}`;
     
     // Find all components in this system
-    const components = finalACAssets.filter(a => {
+    const components = finalACAssets.filter((a: any) => {
       const p = a.id.split('-');
       const sId = p.length >= 3 ? `AC-${p[1]}-${p[2]}` : `AC-${p[1]}`;
       return sId === systemId;

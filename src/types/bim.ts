@@ -12,7 +12,7 @@ export interface MaintenanceLog {
   date: string;
   issue: string;
   reporter?: string;
-  status: 'Completed' | 'Pending' | 'In Progress';
+  status: 'Completed' | 'Pending' | 'In Progress' | 'Normal' | 'Faulty';
   note?: string;
 }
 
@@ -27,6 +27,10 @@ export interface ACAsset {
   lastService: string;
   nextService: string;
   logs?: MaintenanceLog[];
+  install?: string;
+  acType?: string;
+  assetId?: string;
+  dbId?: string;
 }
 
 export interface FurnitureAsset {
