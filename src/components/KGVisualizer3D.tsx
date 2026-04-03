@@ -149,12 +149,12 @@ export function KGVisualizer3D() {
   ];
 
   return (
-    <div className="absolute inset-0 bg-[#010409] overflow-hidden">
+    <div className="absolute inset-0 bg-[#010409] overflow-hidden font-mono">
       <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
-        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] font-mono">
           AR15 ASSET TOPOLOGY
         </h2>
-        <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4">
+        <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4 font-mono">
           Hierarchical Infrastructure Intelligence
         </p>
 
