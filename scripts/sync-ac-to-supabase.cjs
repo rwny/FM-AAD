@@ -61,12 +61,10 @@ function parseMDHierarchy(filePath) {
       });
     }
 
-    // Determine if this is a virtual group node
-    const isVirtual = (name === 'AC' || name === 'EE');
-
     // Determine category
     let type = 'unknown';
-    if (name.includes('FCU')) type = 'fcu';
+    if (name === 'AC' || name === 'EE') type = 'system_group';
+    else if (name.includes('FCU')) type = 'fcu';
     else if (name.includes('CDU')) type = 'cdu';
     else if (name.startsWith('AC-')) type = 'ac_set';
     else if (name.startsWith('PIPE-')) type = 'pipe';
@@ -75,36 +73,17 @@ function parseMDHierarchy(filePath) {
     else if (name.startsWith('floor-')) type = 'floor';
     else if (name.toLowerCase() === 'ar15') type = 'building';
 
-    if (!isVirtual) {
-      nodes[name] = { type, metadata };
-    }
+    nodes[name] = { type, metadata };
 
-    // Hierarchy Logic with Virtual Group Support
+    // Hierarchy Logic
     while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {
       stack.pop();
     }
 
     if (stack.length > 0) {
-      let parentNode = stack[stack.length - 1];
-      
-      // If parent is virtual, connect to the grandparent instead
-      if (parentNode.isVirtual) {
-        // Find the first non-virtual ancestor
-        for (let i = stack.length - 2; i >= 0; i--) {
-          if (!stack[i].isVirtual) {
-            if (!isVirtual) {
-              triplets.push({ sub: stack[i].name, pred: 'contains', obj: name });
-            }
-            break;
-          }
-        }
-      } else {
-        if (!isVirtual) {
-          triplets.push({ sub: parentNode.name, pred: 'contains', obj: name });
-        }
-      }
+      triplets.push({ sub: stack[stack.length - 1].name, pred: 'contains', obj: name });
     }
-    stack.push({ indent, name, isVirtual });
+    stack.push({ indent, name });
   }
 
   return { nodes, triplets };
