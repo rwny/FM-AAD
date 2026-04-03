@@ -17,12 +17,32 @@ export function KGVisualizer3D() {
         const { data: edgesData } = await supabase.from('kg_edges').select('subject_id, object_id, predicate');
         
         if (nodesData && edgesData) {
-          const nodes = nodesData.map((n: any) => ({
-            id: n.id,
-            name: n.name,
-            val: n.type === 'building' ? 20 : n.type === 'floor' ? 15 : n.type === 'room' ? 10 : 5,
-            color: n.type === 'building' ? '#f43f5e' : n.type === 'floor' ? '#8b5cf6' : n.type === 'room' ? '#3b82f6' : '#10b981',
-          }));
+          const nodes = nodesData.map((n: any) => {
+            let color = '#10b981'; // Default: Asset/Component (Level 5)
+            let val = 5;
+            
+            if (n.type === 'building') {
+              color = '#f43f5e'; // Level 1: Rose
+              val = 20;
+            } else if (n.type === 'floor') {
+              color = '#f59e0b'; // Level 2: Amber
+              val = 15;
+            } else if (n.type === 'room') {
+              color = '#8b5cf6'; // Level 3: Violet
+              val = 10;
+            } else if (n.type === 'system_group') {
+              color = '#3b82f6'; // Level 4: Blue
+              val = 8;
+            }
+
+            return {
+              id: n.id,
+              name: n.name,
+              type: n.type,
+              val,
+              color
+            };
+          });
           
           const links = edgesData.map((e: any) => ({
             source: e.subject_id,
@@ -51,12 +71,31 @@ export function KGVisualizer3D() {
         </p>
       </div>
 
+      {/* Legend */}
+      <div className="absolute bottom-10 left-10 z-10 bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-700 shadow-2xl flex flex-col gap-3 min-w-[180px]">
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Hierarchy Legend</h3>
+        {[
+          { label: 'Building', color: '#f43f5e', level: 'Level 1' },
+          { label: 'Floor', color: '#f59e0b', level: 'Level 2' },
+          { label: 'Room', color: '#8b5cf6', level: 'Level 3' },
+          { label: 'System Group', color: '#3b82f6', level: 'Level 4' },
+          { label: 'Asset / Component', color: '#10b981', level: 'Level 5' },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color, boxShadow: `0 0 10px ${item.color}44` }} />
+            <div className="flex flex-col">
+              <span className="text-xs font-black text-slate-200 leading-none">{item.label}</span>
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">{item.level}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <ForceGraph3D
         width={dimensions.width}
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#020617"
-        nodeAutoColorBy="group"
         linkDirectionalParticles={4}
         linkDirectionalParticleSpeed={0.005}
         linkWidth={0.5}
