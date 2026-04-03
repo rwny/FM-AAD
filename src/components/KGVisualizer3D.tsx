@@ -25,10 +25,14 @@ export function KGVisualizer3D() {
         const scene = fgRef.current.scene();
         
         // 1. Handle Graph Group Rotation
-        if (isRotating) {
-          const graphGroup = scene.children.find((child: any) => child.type === 'Group');
-          if (graphGroup) {
+        const graphGroup = scene.children.find((child: any) => child.type === 'Group');
+        if (graphGroup) {
+          if (isRotating) {
             graphGroup.rotation.y += 0.0025; 
+          } else {
+            // Smoothly return to initial rotation (0)
+            graphGroup.rotation.y *= 0.95; 
+            if (Math.abs(graphGroup.rotation.y) < 0.001) graphGroup.rotation.y = 0;
           }
         }
 
@@ -240,10 +244,10 @@ export function KGVisualizer3D() {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             const label = node.name || '';
-            ctx.font = 'bold 32px sans-serif';
+            ctx.font = 'bold 32px ui-monospace, monospace';
             const textWidth = ctx.measureText(label).width;
             canvas.width = textWidth + 20; canvas.height = 40;
-            ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = 'bold 32px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
             ctx.shadowBlur = 8; ctx.shadowColor = 'black';
             ctx.fillText(label, canvas.width / 2, canvas.height / 2);
