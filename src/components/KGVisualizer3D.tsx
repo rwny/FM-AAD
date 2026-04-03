@@ -152,10 +152,10 @@ export function KGVisualizer3D() {
     <div className="absolute inset-0 bg-[#010409] overflow-hidden">
       <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
         <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-          3D Knowledge Graph
+          AR15 ASSET TOPOLOGY
         </h2>
         <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4">
-          BIM Intelligence Terminal v0.5.1
+          Hierarchical Infrastructure Intelligence
         </p>
 
         <div className={`flex flex-col gap-0.5 font-mono text-[9px] text-white tracking-tight leading-none transition-all duration-1000 ${isFading ? 'opacity-0 translate-y-[-10px]' : 'opacity-80'}`}>
