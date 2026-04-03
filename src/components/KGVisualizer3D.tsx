@@ -109,16 +109,17 @@ export function KGVisualizer3D() {
         backgroundColor="#010409"
         nodeColor={(node: any) => node.color}
         nodeRelSize={1.5}
+        nodeResolution={24} // Smoother spheres without significant performance hit
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
-        linkDirectionalParticles={6}
+        linkDirectionalParticles={8} // Increased particles for better flow visibility
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
-        linkWidth={0.8}
-        linkOpacity={0.2}
-        linkColor={() => 'rgba(255,255,255,0.1)'}
+        linkWidth={1.2} // Slightly wider links
+        linkOpacity={0.3} // Increased link opacity
+        linkColor={() => 'rgba(255,255,255,0.15)'}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const canvas = document.createElement('canvas');
