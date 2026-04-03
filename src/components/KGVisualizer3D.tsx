@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
+import { RotateCw, Play, Pause } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
@@ -10,50 +11,9 @@ export function KGVisualizer3D() {
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
   const [isFading, setIsFading] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const fadeTimeoutRef = useRef<any>(null);
   const streamIntervalRef = useRef<any>(null);
-
-  // Auto-rotation & Inactivity Logic
-  useEffect(() => {
-    let idleTimeout: any;
-    
-    const startAutoRotate = () => {
-      if (fgRef.current) {
-        const controls = fgRef.current.controls();
-        if (controls) {
-          controls.autoRotate = true;
-          controls.autoRotateSpeed = 0.8; // Slightly faster for visibility
-        }
-      }
-    };
-
-    const stopAutoRotate = () => {
-      if (fgRef.current) {
-        const controls = fgRef.current.controls();
-        if (controls) {
-          controls.autoRotate = false;
-        }
-      }
-      clearTimeout(idleTimeout);
-      idleTimeout = setTimeout(startAutoRotate, 3000); // Resume after 3s of total inactivity
-    };
-
-    // Events that signal intentional user interaction
-    window.addEventListener('mousedown', stopAutoRotate);
-    window.addEventListener('wheel', stopAutoRotate);
-    window.addEventListener('touchstart', stopAutoRotate);
-    // Note: mousemove removed to avoid accidental resets from vibrations
-
-    // Initial trigger after 3s
-    idleTimeout = setTimeout(startAutoRotate, 3000);
-
-    return () => {
-      window.removeEventListener('mousedown', stopAutoRotate);
-      window.removeEventListener('wheel', stopAutoRotate);
-      window.removeEventListener('touchstart', stopAutoRotate);
-      clearTimeout(idleTimeout);
-    };
-  }, []);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -77,7 +37,7 @@ export function KGVisualizer3D() {
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
             else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
-            else if (t === 'pipe') { color = '#444444'; val = 6; level = '7'; } // L7 is now Darker Gray
+            else if (t === 'pipe') { color = '#444444'; val = 6; level = '7'; }
 
             return { id: n.id, name: n.name, type: n.type, level, val, color };
           });
@@ -101,6 +61,21 @@ export function KGVisualizer3D() {
       if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
     };
   }, []);
+
+  const toggleRotation = () => {
+    const nextState = !isRotating;
+    setIsRotating(nextState);
+    if (fgRef.current) {
+      const controls = fgRef.current.controls();
+      if (controls) {
+        controls.autoRotate = nextState;
+        controls.autoRotateSpeed = 1.2;
+      }
+    }
+    
+    const statusMsg = nextState ? "AUTO_ORBIT_ENABLED" : "AUTO_ORBIT_DISABLED";
+    setTerminalLogs(prev => [`[SYSTEM] ${statusMsg}`, ...prev].slice(0, 20));
+  };
 
   const triggerHighlight = (level: string) => {
     setHighlightLevel(level);
@@ -145,7 +120,7 @@ export function KGVisualizer3D() {
     { id: '4', color: '#00ff00' },
     { id: '5', color: '#0ea5e9' },
     { id: '6', color: '#0066ff' },
-    { id: '7', color: '#444444' }, // L7 is Dark Gray
+    { id: '7', color: '#444444' },
   ];
 
   return (
@@ -165,6 +140,18 @@ export function KGVisualizer3D() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Manual Controls */}
+      <div className="absolute top-8 right-8 z-20 flex gap-2">
+        <button 
+          onClick={toggleRotation}
+          className={`p-3 rounded-xl border backdrop-blur-xl transition-all shadow-2xl flex items-center gap-2 group ${isRotating ? 'bg-[#00f2ff]/20 border-[#00f2ff]/50 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
+          title={isRotating ? "Stop Rotation" : "Start Auto-Rotation"}
+        >
+          {isRotating ? <Pause className="w-5 h-5 animate-pulse" /> : <RotateCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />}
+          <span className="text-[10px] font-black uppercase tracking-widest">{isRotating ? "Running" : "Idle"}</span>
+        </button>
       </div>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -207,8 +194,6 @@ export function KGVisualizer3D() {
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const group = new THREE.Group();
-
-          // 1. Radar Target Marker (Visible only when highlighted)
           if (highlightLevel && node.level === highlightLevel) {
             const radarCanvas = document.createElement('canvas');
             radarCanvas.width = 128;
@@ -217,27 +202,19 @@ export function KGVisualizer3D() {
             if (rCtx) {
               rCtx.strokeStyle = '#ffffff';
               rCtx.lineWidth = 6;
-              // Draw 4 corner brackets (More compact tactical style)
               const size = 30;
               const pad = 20;
-              // Top-Left
               rCtx.beginPath(); rCtx.moveTo(pad, pad+size); rCtx.lineTo(pad, pad); rCtx.lineTo(pad+size, pad); rCtx.stroke();
-              // Top-Right
               rCtx.beginPath(); rCtx.moveTo(128-pad-size, pad); rCtx.lineTo(128-pad, pad); rCtx.lineTo(128-pad, pad+size); rCtx.stroke();
-              // Bottom-Left
               rCtx.beginPath(); rCtx.moveTo(pad, 128-pad-size); rCtx.lineTo(pad, 128-pad); rCtx.lineTo(pad+size, 128-pad); rCtx.stroke();
-              // Bottom-Right
               rCtx.beginPath(); rCtx.moveTo(128-pad-size, 128-pad); rCtx.lineTo(128-pad, 128-pad); rCtx.lineTo(128-pad, 128-pad-size); rCtx.stroke();
-              
               const radarTexture = new THREE.CanvasTexture(radarCanvas);
               const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.6 });
               const radarSprite = new THREE.Sprite(radarMaterial);
-              radarSprite.scale.set(15, 15, 1); // Reduced from 30
+              radarSprite.scale.set(15, 15, 1);
               group.add(radarSprite);
             }
           }
-
-          // 2. Text Label
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (ctx) {
@@ -260,7 +237,6 @@ export function KGVisualizer3D() {
             sprite.position.set(0, 12, 0); 
             group.add(sprite);
           }
-          
           return group;
         }}
       />
