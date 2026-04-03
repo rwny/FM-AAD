@@ -29,7 +29,7 @@ export function KGVisualizer3D() {
             else if (t === 'floor') { color = '#ff8800'; val = 20; level = '2'; }
             else if (t === 'room') { color = '#ffff00'; val = 15; level = '3'; }
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
-            else if (t === 'ac_set') { color = '#00ffff'; val = 10; level = '5'; }
+            else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; } // L5 is now Sky Blue
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
             else if (t === 'pipe') { color = '#ffffff'; val = 6; level = '7'; } // L7 is now White
 
@@ -70,9 +70,9 @@ export function KGVisualizer3D() {
     { id: '2', color: '#ff8800' },
     { id: '3', color: '#ffff00' },
     { id: '4', color: '#00ff00' },
-    { id: '5', color: '#00ffff' },
+    { id: '5', color: '#0ea5e9' },
     { id: '6', color: '#0066ff' },
-    { id: '7', color: '#ffffff' }, // L7 is now White
+    { id: '7', color: '#ffffff' },
   ];
 
   return (
@@ -100,13 +100,13 @@ export function KGVisualizer3D() {
                   backgroundColor: item.color, 
                   color: '#000',
                   boxShadow: `0 0 25px ${item.color}88`,
-                  border: highlightLevel === item.id ? '3px solid #ff00ff' : '3px solid rgba(255,255,255,0.3)'
+                  border: highlightLevel === item.id ? '3px solid #00f2ff' : '3px solid rgba(255,255,255,0.3)'
                 }}
               >
                 {item.id}
               </div>
               {highlightLevel === item.id && (
-                <div className="absolute -top-10 bg-[#ff00ff] text-white px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_#ff00ff]">
+                <div className="absolute -top-10 bg-[#00f2ff] text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_#00f2ff]">
                   Focusing Level {item.id}...
                 </div>
               )}
@@ -125,7 +125,7 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#010409"
-        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#ff00ff' : node.color}
+        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#00f2ff' : node.color}
         nodeRelSize={1.5}
         nodeResolution={24}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
@@ -134,7 +134,7 @@ export function KGVisualizer3D() {
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
-          if (highlightLevel && sourceNode?.level === highlightLevel) return '#ff00ff';
+          if (highlightLevel && sourceNode?.level === highlightLevel) return '#00f2ff';
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
         linkWidth={1.2}
@@ -154,8 +154,8 @@ export function KGVisualizer3D() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          // Flash label to Electric Fuchsia if highlighted
-          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ff00ff' : node.color;
+          // Flash label to Electric Sky Blue if highlighted
+          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#00f2ff' : node.color;
           
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
