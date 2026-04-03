@@ -106,11 +106,18 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#020617"
+        nodeColor={(node: any) => node.color}
+        nodeLabel={(node: any) => `${node.name} (${node.type})`}
         linkDirectionalParticles={4}
         linkDirectionalParticleSpeed={0.005}
+        linkDirectionalParticleColor={(link: any) => {
+          // Match particle color to source node's hierarchy level
+          const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
+          return sourceNode ? sourceNode.color : '#ffffff';
+        }}
         linkWidth={0.5}
         linkOpacity={0.4}
-        linkColor={() => 'rgba(255,255,255,0.4)'}
+        linkColor={() => 'rgba(255,255,255,0.2)'}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const canvas = document.createElement('canvas');
