@@ -23,7 +23,7 @@ export function KGVisualizer3D() {
         
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
-            let color = '#ff00ff'; // Default
+            let color = '#64748b'; // Default: L7 (Gray)
             let level = '7';
             let val = 4;
             
@@ -34,7 +34,7 @@ export function KGVisualizer3D() {
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
             else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
-            else if (t === 'pipe') { color = '#ffffff'; val = 6; level = '7'; }
+            else if (t === 'pipe') { color = '#64748b'; val = 6; level = '7'; }
 
             return { id: n.id, name: n.name, type: n.type, level, val, color };
           });
@@ -60,7 +60,6 @@ export function KGVisualizer3D() {
   }, []);
 
   const triggerHighlight = (level: string) => {
-    // 1. Reset state for new scan
     setHighlightLevel(level);
     setIsFading(false);
     setTerminalLogs([]);
@@ -78,25 +77,22 @@ export function KGVisualizer3D() {
       `[SUCCESS] SCAN_LEVEL_0${level}_COMPLETE`
     ];
 
-    // 2. Stream logs quickly
     let currentIdx = 0;
     streamIntervalRef.current = setInterval(() => {
       if (currentIdx < logsToStream.length) {
-        setTerminalLogs(prev => [...prev, logsToStream[currentIdx]].slice(-25)); // Keep only latest 25 for performance
+        setTerminalLogs(prev => [...prev, logsToStream[currentIdx]].slice(-25));
         currentIdx++;
       } else {
         clearInterval(streamIntervalRef.current);
-        // 3. Initiate fade out after 2 seconds
         fadeTimeoutRef.current = setTimeout(() => {
           setIsFading(true);
-          // 4. Clear data after animation completes
           fadeTimeoutRef.current = setTimeout(() => {
             setTerminalLogs([]);
             setHighlightLevel(null);
           }, 1000);
         }, 3000);
       }
-    }, 40); // Fast streaming speed
+    }, 40);
   };
 
   const legendItems = [
@@ -106,24 +102,20 @@ export function KGVisualizer3D() {
     { id: '4', color: '#00ff00' },
     { id: '5', color: '#0ea5e9' },
     { id: '6', color: '#0066ff' },
-    { id: '7', color: '#ffffff' },
+    { id: '7', color: '#64748b' },
   ];
 
   return (
     <div className="absolute inset-0 bg-[#010409] overflow-hidden">
-      {/* Dynamic Console under Heading */}
       <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
-        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,242,255,0.4)]">
+        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
           3D Knowledge Graph
         </h2>
-        <p className="text-[#00f2ff] text-[10px] font-black uppercase tracking-[0.4em] opacity-80 mb-4">
-          BIM Intelligence Terminal v0.5.0
+        <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4">
+          BIM Intelligence Terminal v0.5.1
         </p>
 
-        {/* Rolling Logs without frame */}
-        <div 
-          className={`flex flex-col gap-0.5 font-mono text-[9px] text-[#00f2ff] tracking-tight leading-none transition-all duration-1000 ${isFading ? 'opacity-0 translate-y-[-10px]' : 'opacity-100'}`}
-        >
+        <div className={`flex flex-col gap-0.5 font-mono text-[9px] text-white tracking-tight leading-none transition-all duration-1000 ${isFading ? 'opacity-0 translate-y-[-10px]' : 'opacity-80'}`}>
           {terminalLogs.map((log, i) => (
             <div key={i} className="animate-in fade-in slide-in-from-left-1 duration-150">
               <span className="opacity-30 mr-2">::</span>{log}
@@ -132,31 +124,23 @@ export function KGVisualizer3D() {
         </div>
       </div>
 
-      {/* Horizontal Sequential Legend */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {legendItems.map((item, idx) => (
           <React.Fragment key={item.id}>
-            <button 
-              onClick={() => triggerHighlight(item.id)}
-              className="flex flex-col items-center group relative outline-none"
-            >
+            <button onClick={() => triggerHighlight(item.id)} className="flex flex-col items-center group relative outline-none">
               <div 
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black shadow-lg transition-all duration-300 ${highlightLevel === item.id ? 'scale-125 brightness-150 animate-pulse' : 'hover:scale-125'}`} 
-                style={{ 
-                  backgroundColor: item.color, 
-                  color: '#000',
-                  boxShadow: `0 0 25px ${item.color}88`,
-                  border: highlightLevel === item.id ? '3px solid #00f2ff' : '3px solid rgba(255,255,255,0.3)'
-                }}
+                style={{ backgroundColor: item.color, color: '#000', boxShadow: `0 0 25px ${item.color}88`, border: highlightLevel === item.id ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.3)' }}
               >
                 {item.id}
               </div>
+              {highlightLevel === item.id && (
+                <div className="absolute -top-10 bg-white text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+                  Focusing Level {item.id}...
+                </div>
+              )}
             </button>
-            {idx < legendItems.length - 1 && (
-              <div className="text-white/20 font-black text-lg mx-1">
-                {'>'}
-              </div>
-            )}
+            {idx < legendItems.length - 1 && <div className="text-white/20 font-black text-lg mx-1">{'>'}</div>}
           </React.Fragment>
         ))}
       </div>
@@ -166,7 +150,7 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#010409"
-        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#00f2ff' : node.color}
+        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#ffffff' : node.color}
         nodeRelSize={1.5}
         nodeResolution={24}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
@@ -175,7 +159,7 @@ export function KGVisualizer3D() {
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
-          if (highlightLevel && sourceNode?.level === highlightLevel) return '#00f2ff';
+          if (highlightLevel && sourceNode?.level === highlightLevel) return '#ffffff';
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
         linkWidth={1.2}
@@ -194,7 +178,7 @@ export function KGVisualizer3D() {
           ctx.font = 'bold 32px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#00f2ff' : node.color;
+          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
           ctx.fillText(label, canvas.width / 2, canvas.height / 2);
