@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
+  const fgRef = useRef<any>();
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
@@ -11,6 +12,45 @@ export function KGVisualizer3D() {
   const [isFading, setIsFading] = useState(false);
   const fadeTimeoutRef = useRef<any>(null);
   const streamIntervalRef = useRef<any>(null);
+
+  // Auto-rotation & Inactivity Logic
+  useEffect(() => {
+    let idleTimeout: any;
+    
+    const startAutoRotate = () => {
+      if (fgRef.current) {
+        const controls = fgRef.current.controls();
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.6; // Slow & smooth
+      }
+    };
+
+    const stopAutoRotate = () => {
+      if (fgRef.current) {
+        const controls = fgRef.current.controls();
+        controls.autoRotate = false;
+      }
+      clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(startAutoRotate, 3000); // Resume after 3s
+    };
+
+    // Events that signal user activity
+    window.addEventListener('mousedown', stopAutoRotate);
+    window.addEventListener('wheel', stopAutoRotate);
+    window.addEventListener('touchstart', stopAutoRotate);
+    window.addEventListener('mousemove', stopAutoRotate);
+
+    // Initial trigger
+    idleTimeout = setTimeout(startAutoRotate, 3000);
+
+    return () => {
+      window.removeEventListener('mousedown', stopAutoRotate);
+      window.removeEventListener('wheel', stopAutoRotate);
+      window.removeEventListener('touchstart', stopAutoRotate);
+      window.removeEventListener('mousemove', stopAutoRotate);
+      clearTimeout(idleTimeout);
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -141,6 +181,7 @@ export function KGVisualizer3D() {
       </div>
 
       <ForceGraph3D
+        ref={fgRef}
         width={dimensions.width}
         height={dimensions.height}
         graphData={graphData}
