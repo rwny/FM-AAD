@@ -64,17 +64,18 @@ export function KGVisualizer3D() {
   const triggerHighlight = (level: string) => {
     setHighlightLevel(level);
     
-    // Hacker Terminal Logging Logic
+    // Hacker Terminal Logging Logic (Append to bottom)
     const levelNodes = graphData.nodes.filter(n => n.level === level);
     const newLogs = [
-      `> EXECUTING SCAN: HIERARCHY_LEVEL_${level}`,
-      `> FOUND ${levelNodes.length} NODES IN SCOPE...`,
-      ...levelNodes.slice(0, 8).map(n => `> IDENTIFIED: ${n.name} [TYPE: ${n.type.toUpperCase()}]`),
-      levelNodes.length > 8 ? `> ... AND ${levelNodes.length - 8} MORE` : `> SCAN COMPLETE.`,
+      `EXECUTING SCAN: HIERARCHY_LEVEL_${level}`,
+      `FOUND ${levelNodes.length} NODES IN SCOPE...`,
+      ...levelNodes.slice(0, 5).map(n => `IDENTIFIED: ${n.name}`),
+      levelNodes.length > 5 ? `... AND ${levelNodes.length - 5} MORE` : `SCAN COMPLETE.`,
       `--------------------------------`
     ];
     
-    setTerminalLogs(prev => [...newLogs, ...prev].slice(0, 20));
+    // Keep only last 12 lines for the rolling effect
+    setTerminalLogs(prev => [...prev, ...newLogs].slice(-12));
 
     // Auto-reset after 3 seconds
     setTimeout(() => setHighlightLevel(null), 3000);
@@ -92,36 +93,25 @@ export function KGVisualizer3D() {
 
   return (
     <div className="absolute inset-0 bg-[#010409] overflow-hidden">
-      <div className="absolute top-6 left-24 z-10 text-white pointer-events-none">
-        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(0,242,255,0.3)]">
+      <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
+        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,242,255,0.4)]">
           3D Knowledge Graph
         </h2>
-        <p className="text-[#00f2ff] text-[10px] font-black uppercase tracking-[0.4em] mt-1 opacity-80">
-          BIM Intelligence Terminal v0.4.2
+        <p className="text-[#00f2ff] text-[10px] font-black uppercase tracking-[0.4em] opacity-80 mb-4">
+          BIM Intelligence Terminal v0.4.5
         </p>
-      </div>
 
-      {/* Hacker Terminal Window */}
-      <div className="absolute top-6 right-6 z-10 w-[280px] bg-black/60 backdrop-blur-md border border-[#00f2ff]/20 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-        <div className="bg-[#00f2ff]/10 px-3 py-1.5 border-b border-[#00f2ff]/20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[9px] font-black text-[#00f2ff] uppercase tracking-widest">System Console</span>
-          </div>
-          <span className="text-[8px] font-bold text-[#00f2ff]/40 uppercase tracking-tighter">Live Monitor</span>
-        </div>
-        <div className="p-3 font-mono text-[10px] text-[#00f2ff]/80 leading-relaxed max-h-[250px] overflow-hidden">
-          <div className="flex flex-col-reverse gap-1">
-            {terminalLogs.map((log, i) => (
-              <div key={i} className={`${log.startsWith('>') ? 'opacity-100' : 'opacity-40'} ${log.includes('Scan') ? 'text-white' : ''}`}>
-                {log}
+        {/* Hacker Rolling Logs (Under Heading) */}
+        <div className="flex flex-col gap-1 font-mono text-[10px] text-[#00f2ff] tracking-wider leading-none">
+          {terminalLogs.map((log, i) => {
+            // Calculate opacity based on age (index in the array)
+            const opacity = (i + 1) / terminalLogs.length;
+            return (
+              <div key={i} style={{ opacity }} className="animate-in fade-in slide-in-from-left-2 duration-300">
+                <span className="opacity-40 mr-2">{'>'}</span>{log}
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="px-3 py-1.5 bg-[#00f2ff]/5 border-t border-[#00f2ff]/10 flex justify-between items-center">
-           <div className="text-[8px] font-black text-[#00f2ff]/60 uppercase">Nodes: {graphData.nodes.length}</div>
-           <div className="text-[8px] font-black text-[#00f2ff]/60 uppercase">Edges: {graphData.links.length}</div>
+            );
+          })}
         </div>
       </div>
 
