@@ -23,7 +23,7 @@ export function KGVisualizer3D() {
         const scene = fgRef.current.scene();
         const graphGroup = scene.children.find((child: any) => child.type === 'Group');
         if (graphGroup) {
-          graphGroup.rotation.y += 0.005; 
+          graphGroup.rotation.y += 0.0025; // Smoother and slower rotation
         }
       }
       frameId = requestAnimationFrame(animate);
