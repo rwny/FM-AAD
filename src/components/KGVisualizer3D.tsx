@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { RotateCw, Play, Pause } from 'lucide-react';
+import { RotateCw, Pause } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
@@ -15,6 +15,23 @@ export function KGVisualizer3D() {
   const fadeTimeoutRef = useRef<any>(null);
   const streamIntervalRef = useRef<any>(null);
 
+  // Manual Object Rotation Logic (rotation.y +=)
+  useEffect(() => {
+    let frameId: number;
+    const animate = () => {
+      if (isRotating && fgRef.current) {
+        const scene = fgRef.current.scene();
+        const graphGroup = scene.children.find((child: any) => child.type === 'Group');
+        if (graphGroup) {
+          graphGroup.rotation.y += 0.005; 
+        }
+      }
+      frameId = requestAnimationFrame(animate);
+    };
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [isRotating]);
+
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
@@ -26,7 +43,7 @@ export function KGVisualizer3D() {
         
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
-            let color = '#64748b'; // Default: L7 (Gray)
+            let color = '#64748b'; 
             let level = '7';
             let val = 4;
             
@@ -47,7 +64,6 @@ export function KGVisualizer3D() {
             target: e.object_id,
             name: e.predicate
           }));
-          
           setGraphData({ nodes, links });
         }
       } catch (err) {
@@ -65,15 +81,7 @@ export function KGVisualizer3D() {
   const toggleRotation = () => {
     const nextState = !isRotating;
     setIsRotating(nextState);
-    if (fgRef.current) {
-      const controls = fgRef.current.controls();
-      if (controls) {
-        controls.autoRotate = nextState;
-        controls.autoRotateSpeed = 1.2;
-      }
-    }
-    
-    const statusMsg = nextState ? "AUTO_ORBIT_ENABLED" : "AUTO_ORBIT_DISABLED";
+    const statusMsg = nextState ? "OBJECT_ROTATION_START" : "OBJECT_ROTATION_STOP";
     setTerminalLogs(prev => [`[SYSTEM] ${statusMsg}`, ...prev].slice(0, 20));
   };
 
@@ -142,15 +150,13 @@ export function KGVisualizer3D() {
         </div>
       </div>
 
-      {/* Manual Controls */}
       <div className="absolute top-8 right-8 z-20 flex gap-2">
         <button 
           onClick={toggleRotation}
           className={`p-3 rounded-xl border backdrop-blur-xl transition-all shadow-2xl flex items-center gap-2 group ${isRotating ? 'bg-[#00f2ff]/20 border-[#00f2ff]/50 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
-          title={isRotating ? "Stop Rotation" : "Start Auto-Rotation"}
         >
           {isRotating ? <Pause className="w-5 h-5 animate-pulse" /> : <RotateCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />}
-          <span className="text-[10px] font-black uppercase tracking-widest">{isRotating ? "Running" : "Idle"}</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">{isRotating ? "Rotating" : "Idle"}</span>
         </button>
       </div>
 
@@ -196,14 +202,11 @@ export function KGVisualizer3D() {
           const group = new THREE.Group();
           if (highlightLevel && node.level === highlightLevel) {
             const radarCanvas = document.createElement('canvas');
-            radarCanvas.width = 128;
-            radarCanvas.height = 128;
+            radarCanvas.width = 128; radarCanvas.height = 128;
             const rCtx = radarCanvas.getContext('2d');
             if (rCtx) {
-              rCtx.strokeStyle = '#ffffff';
-              rCtx.lineWidth = 6;
-              const size = 30;
-              const pad = 20;
+              rCtx.strokeStyle = '#ffffff'; rCtx.lineWidth = 6;
+              const size = 30; const pad = 20;
               rCtx.beginPath(); rCtx.moveTo(pad, pad+size); rCtx.lineTo(pad, pad); rCtx.lineTo(pad+size, pad); rCtx.stroke();
               rCtx.beginPath(); rCtx.moveTo(128-pad-size, pad); rCtx.lineTo(128-pad, pad); rCtx.lineTo(128-pad, pad+size); rCtx.stroke();
               rCtx.beginPath(); rCtx.moveTo(pad, 128-pad-size); rCtx.lineTo(pad, 128-pad); rCtx.lineTo(pad+size, 128-pad); rCtx.stroke();
@@ -221,14 +224,10 @@ export function KGVisualizer3D() {
             const label = node.name || '';
             ctx.font = 'bold 32px sans-serif';
             const textWidth = ctx.measureText(label).width;
-            canvas.width = textWidth + 20;
-            canvas.height = 40;
-            ctx.font = 'bold 32px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            canvas.width = textWidth + 20; canvas.height = 40;
+            ctx.font = 'bold 32px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 8; ctx.shadowColor = 'black';
             ctx.fillText(label, canvas.width / 2, canvas.height / 2);
             const texture = new THREE.CanvasTexture(canvas);
             const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
