@@ -50,7 +50,7 @@ function parseMDHierarchy(filePath) {
         if (parts.length >= 2) {
           const k = parts[0].trim().toLowerCase();
           const v = parts.slice(1).join(':').trim();
-          
+
           if (k === 'assetid') metadata.asset_id = v;
           else if (k === 'type') metadata.ac_type = v;
           else if (k === 'installdate') metadata.install_date = v;
@@ -92,7 +92,7 @@ function parseMDHierarchy(filePath) {
 async function sync() {
   console.log(`📖 Reading ${mdPath}...`);
   const { nodes, triplets } = parseMDHierarchy(mdPath);
-  
+
   // Filter for AC-related nodes only as requested (building, floor, room, ac_set, fcu, cdu, pipe, load_panel linked to AC)
   // Actually the user said "เน้นเรื่อง แอร์ก่อน ... เอาแอร์อย่างเดียวกัน"
   const acNodes = {};
@@ -100,8 +100,8 @@ async function sync() {
 
   for (const [name, data] of Object.entries(nodes)) {
     if (data.type !== 'unknown' && !name.startsWith('SW-') && !name.startsWith('LI-') && !name.startsWith('PG-')) {
-        acNodes[name] = data;
-        acNodeNames.add(name);
+      acNodes[name] = data;
+      acNodeNames.add(name);
     }
   }
 
@@ -116,7 +116,7 @@ async function sync() {
         type: data.type,
         metadata: data.metadata
       }, { onConflict: 'name' });
-    
+
     if (error) console.error(`❌ Error upserting node ${name}:`, error.message);
   }
 
@@ -128,7 +128,7 @@ async function sync() {
 
   // 2. Process Edges
   const edgeData = [];
-  
+
   // Containment edges
   triplets.forEach(t => {
     if (nameToId[t.sub] && nameToId[t.obj]) {
