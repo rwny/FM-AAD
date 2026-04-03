@@ -7,10 +7,12 @@ export function KGVisualizer3D() {
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>(["SYSTEM READY...", "INITIALIZING BIM KNOWLEDGE GRAPH..."]);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
+    // ... (fetchData logic remains same)
 
     async function fetchData() {
       try {
@@ -61,29 +63,66 @@ export function KGVisualizer3D() {
 
   const triggerHighlight = (level: string) => {
     setHighlightLevel(level);
-    // Auto-reset after 2 seconds
-    setTimeout(() => setHighlightLevel(null), 2000);
+    
+    // Hacker Terminal Logging Logic
+    const levelNodes = graphData.nodes.filter(n => n.level === level);
+    const newLogs = [
+      `> EXECUTING SCAN: HIERARCHY_LEVEL_${level}`,
+      `> FOUND ${levelNodes.length} NODES IN SCOPE...`,
+      ...levelNodes.slice(0, 8).map(n => `> IDENTIFIED: ${n.name} [TYPE: ${n.type.toUpperCase()}]`),
+      levelNodes.length > 8 ? `> ... AND ${levelNodes.length - 8} MORE` : `> SCAN COMPLETE.`,
+      `--------------------------------`
+    ];
+    
+    setTerminalLogs(prev => [...newLogs, ...prev].slice(0, 20));
+
+    // Auto-reset after 3 seconds
+    setTimeout(() => setHighlightLevel(null), 3000);
   };
 
   const legendItems = [
-    { id: '1', color: '#ff0000' },
-    { id: '2', color: '#ff8800' },
-    { id: '3', color: '#ffff00' },
-    { id: '4', color: '#00ff00' },
-    { id: '5', color: '#0ea5e9' },
-    { id: '6', color: '#0066ff' },
-    { id: '7', color: '#ffffff' },
+    { id: '1', color: '#ff0000', name: 'Building' },
+    { id: '2', color: '#ff8800', name: 'Floor' },
+    { id: '3', color: '#ffff00', name: 'Room' },
+    { id: '4', color: '#00ff00', name: 'System Group' },
+    { id: '5', color: '#0ea5e9', name: 'Asset Set' },
+    { id: '6', color: '#0066ff', name: 'Component' },
+    { id: '7', color: '#ffffff', name: 'Peripheral' },
   ];
 
   return (
     <div className="absolute inset-0 bg-[#010409] overflow-hidden">
       <div className="absolute top-6 left-24 z-10 text-white pointer-events-none">
-        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]">
+        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(0,242,255,0.3)]">
           3D Knowledge Graph
         </h2>
-        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1">
-          High-Contrast Hierarchical BIM Intel
+        <p className="text-[#00f2ff] text-[10px] font-black uppercase tracking-[0.4em] mt-1 opacity-80">
+          BIM Intelligence Terminal v0.4.2
         </p>
+      </div>
+
+      {/* Hacker Terminal Window */}
+      <div className="absolute top-6 right-6 z-10 w-[280px] bg-black/60 backdrop-blur-md border border-[#00f2ff]/20 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+        <div className="bg-[#00f2ff]/10 px-3 py-1.5 border-b border-[#00f2ff]/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-[9px] font-black text-[#00f2ff] uppercase tracking-widest">System Console</span>
+          </div>
+          <span className="text-[8px] font-bold text-[#00f2ff]/40 uppercase tracking-tighter">Live Monitor</span>
+        </div>
+        <div className="p-3 font-mono text-[10px] text-[#00f2ff]/80 leading-relaxed max-h-[250px] overflow-hidden">
+          <div className="flex flex-col-reverse gap-1">
+            {terminalLogs.map((log, i) => (
+              <div key={i} className={`${log.startsWith('>') ? 'opacity-100' : 'opacity-40'} ${log.includes('Scan') ? 'text-white' : ''}`}>
+                {log}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="px-3 py-1.5 bg-[#00f2ff]/5 border-t border-[#00f2ff]/10 flex justify-between items-center">
+           <div className="text-[8px] font-black text-[#00f2ff]/60 uppercase">Nodes: {graphData.nodes.length}</div>
+           <div className="text-[8px] font-black text-[#00f2ff]/60 uppercase">Edges: {graphData.links.length}</div>
+        </div>
       </div>
 
       {/* Horizontal Sequential Legend with Interactivity */}
