@@ -15,22 +15,37 @@ export function KGVisualizer3D() {
   const fadeTimeoutRef = useRef<any>(null);
   const streamIntervalRef = useRef<any>(null);
 
-  // Manual Object Rotation Logic (rotation.y +=)
+  // Animation Loop for Rotation and Tactical Marks
   useEffect(() => {
     let frameId: number;
     const animate = () => {
-      if (isRotating && fgRef.current) {
+      if (fgRef.current) {
         const scene = fgRef.current.scene();
-        const graphGroup = scene.children.find((child: any) => child.type === 'Group');
-        if (graphGroup) {
-          graphGroup.rotation.y += 0.0025; // Smoother and slower rotation
+        
+        // 1. Handle Graph Group Rotation
+        if (isRotating) {
+          const graphGroup = scene.children.find((child: any) => child.type === 'Group');
+          if (graphGroup) {
+            graphGroup.rotation.y += 0.0025; 
+          }
+        }
+
+        // 2. Handle Tactical Radar Animations
+        if (highlightLevel) {
+          scene.traverse((obj: any) => {
+            if (obj.name === 'radarMark') {
+              obj.rotation.z += 0.02; // Rotate crosshair
+              const pulse = 15 + Math.sin(Date.now() * 0.008) * 2; // Subtle breathing effect
+              obj.scale.set(pulse, pulse, 1);
+            }
+          });
         }
       }
       frameId = requestAnimationFrame(animate);
     };
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
-  }, [isRotating]);
+  }, [isRotating, highlightLevel]);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -214,6 +229,7 @@ export function KGVisualizer3D() {
               const radarTexture = new THREE.CanvasTexture(radarCanvas);
               const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.6 });
               const radarSprite = new THREE.Sprite(radarMaterial);
+              radarSprite.name = 'radarMark'; // Essential for identification in animation loop
               radarSprite.scale.set(15, 15, 1);
               group.add(radarSprite);
             }
