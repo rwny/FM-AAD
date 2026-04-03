@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { supabase } from '../utils/supabase';
@@ -7,12 +7,14 @@ export function KGVisualizer3D() {
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
-  const [terminalLogs, setTerminalLogs] = useState<string[]>(["SYSTEM READY...", "INITIALIZING BIM KNOWLEDGE GRAPH..."]);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [isFading, setIsFading] = useState(false);
+  const fadeTimeoutRef = useRef<any>(null);
+  const streamIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
-    // ... (fetchData logic remains same)
 
     async function fetchData() {
       try {
@@ -21,8 +23,7 @@ export function KGVisualizer3D() {
         
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
-            // New High-Contrast Neon Palette
-            let color = '#ff00ff'; // Default: L7
+            let color = '#ff00ff'; // Default
             let level = '7';
             let val = 4;
             
@@ -31,18 +32,11 @@ export function KGVisualizer3D() {
             else if (t === 'floor') { color = '#ff8800'; val = 20; level = '2'; }
             else if (t === 'room') { color = '#ffff00'; val = 15; level = '3'; }
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
-            else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; } // L5 is now Sky Blue
+            else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
-            else if (t === 'pipe') { color = '#ffffff'; val = 6; level = '7'; } // L7 is now White
+            else if (t === 'pipe') { color = '#ffffff'; val = 6; level = '7'; }
 
-            return {
-              id: n.id,
-              name: n.name,
-              type: n.type,
-              level,
-              val,
-              color
-            };
+            return { id: n.id, name: n.name, type: n.type, level, val, color };
           });
           
           const links = edgesData.map((e: any) => ({
@@ -58,64 +52,87 @@ export function KGVisualizer3D() {
       }
     }
     fetchData();
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+      if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
+    };
   }, []);
 
   const triggerHighlight = (level: string) => {
+    // 1. Reset state for new scan
     setHighlightLevel(level);
-    
-    // Hacker Terminal Logging Logic (Append to bottom)
-    const levelNodes = graphData.nodes.filter(n => n.level === level);
-    const newLogs = [
-      `EXECUTING SCAN: HIERARCHY_LEVEL_${level}`,
-      `FOUND ${levelNodes.length} NODES IN SCOPE...`,
-      ...levelNodes.slice(0, 5).map(n => `IDENTIFIED: ${n.name}`),
-      levelNodes.length > 5 ? `... AND ${levelNodes.length - 5} MORE` : `SCAN COMPLETE.`,
-      `--------------------------------`
-    ];
-    
-    // Keep only last 12 lines for the rolling effect
-    setTerminalLogs(prev => [...prev, ...newLogs].slice(-12));
+    setIsFading(false);
+    setTerminalLogs([]);
+    if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+    if (streamIntervalRef.current) clearInterval(streamIntervalRef.current);
 
-    // Auto-reset after 3 seconds
-    setTimeout(() => setHighlightLevel(null), 3000);
+    const levelNodes = graphData.nodes.filter(n => n.level === level);
+    const logsToStream = [
+      `[SYSTEM] INITIATING DEEP SCAN: L${level}`,
+      `[PROCESS] LOCATING ALL HIERARCHY NODES...`,
+      `[INFO] ${levelNodes.length} NODES IDENTIFIED.`,
+      `------------------------------------------`,
+      ...levelNodes.map(n => `DATA_LINK: ${n.name.toUpperCase()} [${n.type.toUpperCase()}]`),
+      `------------------------------------------`,
+      `[SUCCESS] SCAN_LEVEL_0${level}_COMPLETE`
+    ];
+
+    // 2. Stream logs quickly
+    let currentIdx = 0;
+    streamIntervalRef.current = setInterval(() => {
+      if (currentIdx < logsToStream.length) {
+        setTerminalLogs(prev => [...prev, logsToStream[currentIdx]].slice(-25)); // Keep only latest 25 for performance
+        currentIdx++;
+      } else {
+        clearInterval(streamIntervalRef.current);
+        // 3. Initiate fade out after 2 seconds
+        fadeTimeoutRef.current = setTimeout(() => {
+          setIsFading(true);
+          // 4. Clear data after animation completes
+          fadeTimeoutRef.current = setTimeout(() => {
+            setTerminalLogs([]);
+            setHighlightLevel(null);
+          }, 1000);
+        }, 3000);
+      }
+    }, 40); // Fast streaming speed
   };
 
   const legendItems = [
-    { id: '1', color: '#ff0000', name: 'Building' },
-    { id: '2', color: '#ff8800', name: 'Floor' },
-    { id: '3', color: '#ffff00', name: 'Room' },
-    { id: '4', color: '#00ff00', name: 'System Group' },
-    { id: '5', color: '#0ea5e9', name: 'Asset Set' },
-    { id: '6', color: '#0066ff', name: 'Component' },
-    { id: '7', color: '#ffffff', name: 'Peripheral' },
+    { id: '1', color: '#ff0000' },
+    { id: '2', color: '#ff8800' },
+    { id: '3', color: '#ffff00' },
+    { id: '4', color: '#00ff00' },
+    { id: '5', color: '#0ea5e9' },
+    { id: '6', color: '#0066ff' },
+    { id: '7', color: '#ffffff' },
   ];
 
   return (
     <div className="absolute inset-0 bg-[#010409] overflow-hidden">
+      {/* Dynamic Console under Heading */}
       <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
         <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,242,255,0.4)]">
           3D Knowledge Graph
         </h2>
         <p className="text-[#00f2ff] text-[10px] font-black uppercase tracking-[0.4em] opacity-80 mb-4">
-          BIM Intelligence Terminal v0.4.5
+          BIM Intelligence Terminal v0.5.0
         </p>
 
-        {/* Hacker Rolling Logs (Under Heading) */}
-        <div className="flex flex-col gap-1 font-mono text-[10px] text-[#00f2ff] tracking-wider leading-none">
-          {terminalLogs.map((log, i) => {
-            // Calculate opacity based on age (index in the array)
-            const opacity = (i + 1) / terminalLogs.length;
-            return (
-              <div key={i} style={{ opacity }} className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <span className="opacity-40 mr-2">{'>'}</span>{log}
-              </div>
-            );
-          })}
+        {/* Rolling Logs without frame */}
+        <div 
+          className={`flex flex-col gap-0.5 font-mono text-[9px] text-[#00f2ff] tracking-tight leading-none transition-all duration-1000 ${isFading ? 'opacity-0 translate-y-[-10px]' : 'opacity-100'}`}
+        >
+          {terminalLogs.map((log, i) => (
+            <div key={i} className="animate-in fade-in slide-in-from-left-1 duration-150">
+              <span className="opacity-30 mr-2">::</span>{log}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Horizontal Sequential Legend with Interactivity */}
+      {/* Horizontal Sequential Legend */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {legendItems.map((item, idx) => (
           <React.Fragment key={item.id}>
@@ -134,11 +151,6 @@ export function KGVisualizer3D() {
               >
                 {item.id}
               </div>
-              {highlightLevel === item.id && (
-                <div className="absolute -top-10 bg-[#00f2ff] text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_#00f2ff]">
-                  Focusing Level {item.id}...
-                </div>
-              )}
             </button>
             {idx < legendItems.length - 1 && (
               <div className="text-white/20 font-black text-lg mx-1">
@@ -182,14 +194,10 @@ export function KGVisualizer3D() {
           ctx.font = 'bold 32px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          
-          // Flash label to Electric Sky Blue if highlighted
           ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#00f2ff' : node.color;
-          
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
           ctx.fillText(label, canvas.width / 2, canvas.height / 2);
-
           const texture = new THREE.CanvasTexture(canvas);
           texture.minFilter = THREE.LinearFilter;
           const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
