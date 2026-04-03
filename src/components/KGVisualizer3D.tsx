@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { supabase } from '../utils/supabase';
@@ -18,22 +18,17 @@ export function KGVisualizer3D() {
         
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
-            let color = '#10b981'; // Default: Asset/Component (Level 5)
-            let val = 5;
+            let color = '#64748b'; // Default: L7
+            let val = 4;
             
-            if (n.type === 'building') {
-              color = '#f43f5e'; // Level 1: Rose
-              val = 20;
-            } else if (n.type === 'floor') {
-              color = '#f59e0b'; // Level 2: Amber
-              val = 15;
-            } else if (n.type === 'room') {
-              color = '#8b5cf6'; // Level 3: Violet
-              val = 10;
-            } else if (n.type === 'system_group') {
-              color = '#3b82f6'; // Level 4: Blue
-              val = 8;
-            }
+            const t = n.type.toLowerCase();
+            if (t === 'building') { color = '#f43f5e'; val = 22; } // L1: Rose
+            else if (t === 'floor') { color = '#f59e0b'; val = 18; } // L2: Amber
+            else if (t === 'room') { color = '#fbbf24'; val = 14; } // L3: Yellow
+            else if (t === 'system_group') { color = '#10b981'; val = 11; } // L4: Emerald
+            else if (t === 'ac_set') { color = '#06b6d4'; val = 9; } // L5: Cyan
+            else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#3b82f6'; val = 7; } // L6: Blue
+            else if (t === 'pipe') { color = '#8b5cf6'; val = 5; } // L7: Violet
 
             return {
               id: n.id,
@@ -60,34 +55,49 @@ export function KGVisualizer3D() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const legendItems = [
+    { id: '1', color: '#f43f5e' },
+    { id: '2', color: '#f59e0b' },
+    { id: '3', color: '#fbbf24' },
+    { id: '4', color: '#10b981' },
+    { id: '5', color: '#06b6d4' },
+    { id: '6', color: '#3b82f6' },
+    { id: '7', color: '#8b5cf6' },
+  ];
+
   return (
     <div className="absolute inset-0 bg-[#020617] overflow-hidden">
       <div className="absolute top-6 left-24 z-10 text-white pointer-events-none">
         <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
           3D Knowledge Graph
         </h2>
-        <p className="text-slate-400 text-sm font-medium mt-1">
-          Visualizing BIM relationships in 3D Space
+        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1 opacity-60">
+          7-Level Hierarchical BIM Intelligence
         </p>
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-10 left-10 z-10 bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-700 shadow-2xl flex flex-col gap-3 min-w-[180px]">
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Hierarchy Legend</h3>
-        {[
-          { label: 'Building', color: '#f43f5e', level: 'Level 1' },
-          { label: 'Floor', color: '#f59e0b', level: 'Level 2' },
-          { label: 'Room', color: '#8b5cf6', level: 'Level 3' },
-          { label: 'System Group', color: '#3b82f6', level: 'Level 4' },
-          { label: 'Asset / Component', color: '#10b981', level: 'Level 5' },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color, boxShadow: `0 0 10px ${item.color}44` }} />
-            <div className="flex flex-col">
-              <span className="text-xs font-black text-slate-200 leading-none">{item.label}</span>
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">{item.level}</span>
+      {/* Horizontal Sequential Legend */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-slate-900/60 backdrop-blur-xl px-8 py-4 rounded-full border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {legendItems.map((item, idx) => (
+          <React.Fragment key={item.id}>
+            <div className="flex flex-col items-center group cursor-default">
+              <div 
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-lg transition-all duration-300 group-hover:scale-125" 
+                style={{ 
+                  backgroundColor: item.color, 
+                  boxShadow: `0 0 20px ${item.color}66`,
+                  border: '2px solid rgba(255,255,255,0.2)'
+                }}
+              >
+                {item.id}
+              </div>
             </div>
-          </div>
+            {idx < legendItems.length - 1 && (
+              <div className="text-slate-600 font-black text-sm mx-1 opacity-40">
+                {'>'}
+              </div>
+            )}
+          </React.Fragment>
         ))}
       </div>
 
