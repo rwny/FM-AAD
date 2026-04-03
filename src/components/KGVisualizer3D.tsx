@@ -18,17 +18,18 @@ export function KGVisualizer3D() {
         
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
-            let color = '#64748b'; // Default: L7
+            // New High-Contrast Neon Palette
+            let color = '#ff00ff'; // Default: L7 (Magenta)
             let val = 4;
             
             const t = n.type.toLowerCase();
-            if (t === 'building') { color = '#f43f5e'; val = 22; } // L1: Rose
-            else if (t === 'floor') { color = '#f59e0b'; val = 18; } // L2: Amber
-            else if (t === 'room') { color = '#fbbf24'; val = 14; } // L3: Yellow
-            else if (t === 'system_group') { color = '#10b981'; val = 11; } // L4: Emerald
-            else if (t === 'ac_set') { color = '#06b6d4'; val = 9; } // L5: Cyan
-            else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#3b82f6'; val = 7; } // L6: Blue
-            else if (t === 'pipe') { color = '#8b5cf6'; val = 5; } // L7: Violet
+            if (t === 'building') { color = '#ff0000'; val = 25; }      // L1: Bright Red
+            else if (t === 'floor') { color = '#ff8800'; val = 20; }     // L2: Vivid Orange
+            else if (t === 'room') { color = '#ffff00'; val = 15; }      // L3: Electric Yellow
+            else if (t === 'system_group') { color = '#00ff00'; val = 12; } // L4: Neon Green
+            else if (t === 'ac_set') { color = '#00ffff'; val = 10; }     // L5: Electric Cyan
+            else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; } // L6: Azure Blue
+            else if (t === 'pipe') { color = '#aa00ff'; val = 6; }      // L7: Deep Purple
 
             return {
               id: n.id,
@@ -56,44 +57,44 @@ export function KGVisualizer3D() {
   }, []);
 
   const legendItems = [
-    { id: '1', color: '#f43f5e' },
-    { id: '2', color: '#f59e0b' },
-    { id: '3', color: '#fbbf24' },
-    { id: '4', color: '#10b981' },
-    { id: '5', color: '#06b6d4' },
-    { id: '6', color: '#3b82f6' },
-    { id: '7', color: '#8b5cf6' },
+    { id: '1', color: '#ff0000' },
+    { id: '2', color: '#ff8800' },
+    { id: '3', color: '#ffff00' },
+    { id: '4', color: '#00ff00' },
+    { id: '5', color: '#00ffff' },
+    { id: '6', color: '#0066ff' },
+    { id: '7', color: '#aa00ff' },
   ];
 
   return (
-    <div className="absolute inset-0 bg-[#020617] overflow-hidden">
+    <div className="absolute inset-0 bg-[#010409] overflow-hidden">
       <div className="absolute top-6 left-24 z-10 text-white pointer-events-none">
-        <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]">
           3D Knowledge Graph
         </h2>
-        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1 opacity-60">
-          7-Level Hierarchical BIM Intelligence
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-1">
+          High-Contrast Hierarchical BIM Intel
         </p>
       </div>
 
-      {/* Horizontal Sequential Legend */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-slate-900/60 backdrop-blur-xl px-8 py-4 rounded-full border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Horizontal Sequential Legend with High Contrast */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {legendItems.map((item, idx) => (
           <React.Fragment key={item.id}>
             <div className="flex flex-col items-center group cursor-default">
               <div 
-                className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-lg transition-all duration-300 group-hover:scale-125" 
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black text-black shadow-lg transition-all duration-300 group-hover:scale-125" 
                 style={{ 
                   backgroundColor: item.color, 
-                  boxShadow: `0 0 20px ${item.color}66`,
-                  border: '2px solid rgba(255,255,255,0.2)'
+                  boxShadow: `0 0 25px ${item.color}88`,
+                  border: '3px solid rgba(255,255,255,0.3)'
                 }}
               >
                 {item.id}
               </div>
             </div>
             {idx < legendItems.length - 1 && (
-              <div className="text-slate-600 font-black text-sm mx-1 opacity-40">
+              <div className="text-white/20 font-black text-lg mx-1">
                 {'>'}
               </div>
             )}
@@ -105,41 +106,43 @@ export function KGVisualizer3D() {
         width={dimensions.width}
         height={dimensions.height}
         graphData={graphData}
-        backgroundColor="#020617"
+        backgroundColor="#010409"
         nodeColor={(node: any) => node.color}
+        nodeRelSize={1.5}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
-        linkDirectionalParticles={4}
-        linkDirectionalParticleSpeed={0.005}
+        linkDirectionalParticles={6}
+        linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
-          // Match particle color to source node's hierarchy level
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
-        linkWidth={0.5}
-        linkOpacity={0.4}
-        linkColor={() => 'rgba(255,255,255,0.2)'}
+        linkWidth={0.8}
+        linkOpacity={0.2}
+        linkColor={() => 'rgba(255,255,255,0.1)'}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           if (!ctx) return new THREE.Group();
           const label = node.name || '';
-          ctx.font = '28px sans-serif';
+          ctx.font = 'bold 32px sans-serif';
           const textWidth = ctx.measureText(label).width;
-          canvas.width = textWidth + 16;
-          canvas.height = 36;
-          ctx.font = '28px sans-serif';
+          canvas.width = textWidth + 20;
+          canvas.height = 40;
+          ctx.font = 'bold 32px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillStyle = node.color; // Match text color to node level!
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = 'black';
           ctx.fillText(label, canvas.width / 2, canvas.height / 2);
 
           const texture = new THREE.CanvasTexture(canvas);
           texture.minFilter = THREE.LinearFilter;
           const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
           const sprite = new THREE.Sprite(spriteMaterial);
-          sprite.scale.set(canvas.width / 5, canvas.height / 5, 1);
-          sprite.position.set(0, 10, 0); // Offset text above the node
+          sprite.scale.set(canvas.width / 6, canvas.height / 6, 1);
+          sprite.position.set(0, 12, 0); 
           return sprite;
         }}
       />
