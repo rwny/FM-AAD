@@ -6,6 +6,7 @@ import { supabase } from '../utils/supabase';
 export function KGVisualizer3D() {
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -19,22 +20,24 @@ export function KGVisualizer3D() {
         if (nodesData && edgesData) {
           const nodes = nodesData.map((n: any) => {
             // New High-Contrast Neon Palette
-            let color = '#ff00ff'; // Default: L7 (Magenta)
+            let color = '#ff00ff'; // Default: L7
+            let level = '7';
             let val = 4;
             
             const t = n.type.toLowerCase();
-            if (t === 'building') { color = '#ff0000'; val = 25; }      // L1: Bright Red
-            else if (t === 'floor') { color = '#ff8800'; val = 20; }     // L2: Vivid Orange
-            else if (t === 'room') { color = '#ffff00'; val = 15; }      // L3: Electric Yellow
-            else if (t === 'system_group') { color = '#00ff00'; val = 12; } // L4: Neon Green
-            else if (t === 'ac_set') { color = '#00ffff'; val = 10; }     // L5: Electric Cyan
-            else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; } // L6: Azure Blue
-            else if (t === 'pipe') { color = '#aa00ff'; val = 6; }      // L7: Deep Purple
+            if (t === 'building') { color = '#ff0000'; val = 25; level = '1'; }
+            else if (t === 'floor') { color = '#ff8800'; val = 20; level = '2'; }
+            else if (t === 'room') { color = '#ffff00'; val = 15; level = '3'; }
+            else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
+            else if (t === 'ac_set') { color = '#00ffff'; val = 10; level = '5'; }
+            else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
+            else if (t === 'pipe') { color = '#aa00ff'; val = 6; level = '7'; }
 
             return {
               id: n.id,
               name: n.name,
               type: n.type,
+              level,
               val,
               color
             };
@@ -55,6 +58,12 @@ export function KGVisualizer3D() {
     fetchData();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const triggerHighlight = (level: string) => {
+    setHighlightLevel(level);
+    // Auto-reset after 2 seconds
+    setTimeout(() => setHighlightLevel(null), 2000);
+  };
 
   const legendItems = [
     { id: '1', color: '#ff0000' },
@@ -77,22 +86,31 @@ export function KGVisualizer3D() {
         </p>
       </div>
 
-      {/* Horizontal Sequential Legend with High Contrast */}
+      {/* Horizontal Sequential Legend with Interactivity */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {legendItems.map((item, idx) => (
           <React.Fragment key={item.id}>
-            <div className="flex flex-col items-center group cursor-default">
+            <button 
+              onClick={() => triggerHighlight(item.id)}
+              className="flex flex-col items-center group relative outline-none"
+            >
               <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black text-black shadow-lg transition-all duration-300 group-hover:scale-125" 
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black shadow-lg transition-all duration-300 ${highlightLevel === item.id ? 'scale-125 brightness-150 animate-pulse' : 'hover:scale-125'}`} 
                 style={{ 
                   backgroundColor: item.color, 
+                  color: '#000',
                   boxShadow: `0 0 25px ${item.color}88`,
-                  border: '3px solid rgba(255,255,255,0.3)'
+                  border: highlightLevel === item.id ? '3px solid white' : '3px solid rgba(255,255,255,0.3)'
                 }}
               >
                 {item.id}
               </div>
-            </div>
+              {highlightLevel === item.id && (
+                <div className="absolute -top-10 bg-white text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce">
+                  Highlighting...
+                </div>
+              )}
+            </button>
             {idx < legendItems.length - 1 && (
               <div className="text-white/20 font-black text-lg mx-1">
                 {'>'}
@@ -107,19 +125,20 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#010409"
-        nodeColor={(node: any) => node.color}
+        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#ffffff' : node.color}
         nodeRelSize={1.5}
-        nodeResolution={24} // Smoother spheres without significant performance hit
+        nodeResolution={24}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
-        linkDirectionalParticles={8} // Increased particles for better flow visibility
+        nodeVal={(node: any) => highlightLevel && node.level === highlightLevel ? node.val * 3 : node.val}
+        linkDirectionalParticles={8}
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
-        linkWidth={1.2} // Slightly wider links
-        linkOpacity={0.3} // Increased link opacity
-        linkColor={() => 'rgba(255,255,255,0.15)'}
+        linkWidth={1.2}
+        linkOpacity={0.2}
+        linkColor={() => 'rgba(255,255,255,0.1)'}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const canvas = document.createElement('canvas');
@@ -133,7 +152,10 @@ export function KGVisualizer3D() {
           ctx.font = 'bold 32px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = node.color; // Match text color to node level!
+          
+          // Flash label to white if highlighted
+          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
+          
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
           ctx.fillText(label, canvas.width / 2, canvas.height / 2);
