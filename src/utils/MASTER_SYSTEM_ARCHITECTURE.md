@@ -9,7 +9,7 @@
 
 ## 📍 1. ความสำเร็จล่าสุด (Latest Milestones)
 
-1. **System-Centric Architecture (v3.2):**
+1. **System-Centric Architecture (v0.3.2):**
    - เปลี่ยนมุมมองการบริหารจัดการจาก "รายชิ้นส่วน" เป็น **"รายระบบ" (System-based)** เช่น จัดกลุ่ม FCU และ CDU ให้อยู่ภายใต้ `AC-101-1`
    - พัฒนา **Life Cycle Timeline (3 Years)**: แถบประวัติแบบ Visual ย้อนหลัง 3 ปี แสดงสัดส่วนอายุการใช้งานจริง พร้อมจุด Diamond สีเขียวระบุวันติดตั้ง
    - **Chronological History:** ระบบประวัติการซ่อมบำรุงแบบตารางเดียว เรียงตามลำดับเวลาจริง (Oldest to Newest) และแยกแยะชิ้นส่วน (Component-aware)
