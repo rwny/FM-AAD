@@ -34,7 +34,7 @@ export function KGVisualizer3D() {
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
             else if (t === 'ac_set') { color = '#0ea5e9'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
-            else if (t === 'pipe') { color = '#64748b'; val = 6; level = '7'; }
+            else if (t === 'pipe') { color = '#444444'; val = 6; level = '7'; } // L7 is now Darker Gray
 
             return { id: n.id, name: n.name, type: n.type, level, val, color };
           });
@@ -102,7 +102,7 @@ export function KGVisualizer3D() {
     { id: '4', color: '#00ff00' },
     { id: '5', color: '#0ea5e9' },
     { id: '6', color: '#0066ff' },
-    { id: '7', color: '#64748b' },
+    { id: '7', color: '#444444' }, // L7 is Dark Gray
   ];
 
   return (
