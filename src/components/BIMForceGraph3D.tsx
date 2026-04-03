@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 
 interface Node {

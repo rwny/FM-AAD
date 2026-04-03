@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
   Box, ChevronDown, Armchair,
-  ShoppingCart, Activity, ChevronRight, PlusCircle, ChevronLeft, LayoutDashboard
+  ShoppingCart, Activity, ChevronRight, PlusCircle, ChevronLeft
 } from 'lucide-react'
 import type { Room, FurnitureAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
@@ -19,7 +19,6 @@ interface FurnitureModeProps {
   setClipFloor: (floor: number | null) => void;
   selectedFloor: number | null;
   setSelectedFloor: (floor: number | null) => void;
-  setShowDashboard: (show: boolean) => void;
 }
 
 // --- Shared Helper Functions ---
@@ -55,7 +54,7 @@ const getLogBulletColor = (issue: string) => {
 export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
   expandedFloors, setExpandedFloors, clipFloor, setClipFloor, allFurniture,
-  selectedFloor, setSelectedFloor, setShowDashboard
+  selectedFloor, setSelectedFloor
 }) => {
   const [expandedRooms, setExpandedRooms] = useState<{[key: string]: boolean}>({})
   const [expandedCategories, setExpandedCategories] = useState<{[key: string]: boolean}>({})

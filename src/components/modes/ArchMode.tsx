@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { 
-  Building2, Box, ChevronDown, ChevronRight, Wind, LayoutDashboard
+  Building2, Box, ChevronDown, ChevronRight, Wind
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 
@@ -22,7 +22,7 @@ interface ArchModeProps {
 export const ArchLeftPanel: React.FC<ArchModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
   expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-  selectedFloor, setSelectedFloor, finalACAssets, setShowDashboard
+  selectedFloor, setSelectedFloor, finalACAssets
 }) => {
   const [expandedRooms, setExpandedRooms] = useState<{[key: string]: boolean}>({})
 

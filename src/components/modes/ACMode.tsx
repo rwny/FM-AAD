@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { 
   Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
-  ChevronLeft, ShoppingCart, Info, Printer, LayoutDashboard, 
-  ClipboardList, Clock, ArrowUpRight
+  ChevronLeft, ShoppingCart, Info, Printer, 
+  ClipboardList, Clock
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
@@ -67,7 +67,6 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 
   return (
     <div className="space-y-1">
-      {/* Existing Floor List */}
       {Object.keys(floors).sort().map((floorStr) => {
         const floorNum = parseInt(floorStr);
         const isExpanded = !!expandedFloors[floorNum];
@@ -160,7 +159,6 @@ export const ACRightPanel: React.FC<any> = ({
   const LOGS_PER_PAGE = 5
 
   const selectedAC = finalACAssets.find((a: any) => a.id.toLowerCase() === selectedRoomId?.toLowerCase());
-  const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
 
   const systemGroup = useMemo(() => {
     if (!selectedAC) return null;
@@ -333,6 +331,7 @@ export const ACRightPanel: React.FC<any> = ({
     );
   }
 
+  const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
   if (selectedRoom) {
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">

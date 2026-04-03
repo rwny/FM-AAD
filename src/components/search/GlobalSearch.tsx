@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, X, Building2, Wind, Share2, Sofa, Zap, ChevronRight } from 'lucide-react'
-import type { BIMMode } from '../types/bim'
+import type { BIMMode } from '../../types/bim'
 
 interface SearchResult {
   id: string
