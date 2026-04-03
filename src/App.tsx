@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import {
-  Building2, Camera, Info,
+  Building2, Info,
   Wind, Share2,
   PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X,
   LayoutDashboard, ChevronRight
@@ -316,7 +316,6 @@ function App() {
     return stats;
   }, [finalACAssets]);
 
-  const handleCapture = () => window.dispatchEvent(new CustomEvent('take-screenshot'))
 
   const modes = [
     { id: 'AR', label: 'Arch', icon: Building2 },

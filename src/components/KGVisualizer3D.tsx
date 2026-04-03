@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { RotateCw, Pause } from 'lucide-react';
+import { 
+  RotateCw, Pause
+} from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
-  const fgRef = useRef<any>();
+  const fgRef = useRef<any>(null);
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
@@ -229,7 +231,7 @@ export function KGVisualizer3D() {
               const radarTexture = new THREE.CanvasTexture(radarCanvas);
               const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.6 });
               const radarSprite = new THREE.Sprite(radarMaterial);
-              radarSprite.name = 'radarMark'; // Essential for identification in animation loop
+              radarSprite.name = 'radarMark';
               radarSprite.scale.set(15, 15, 1);
               group.add(radarSprite);
             }
