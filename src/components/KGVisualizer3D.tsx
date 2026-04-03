@@ -20,34 +20,37 @@ export function KGVisualizer3D() {
     const startAutoRotate = () => {
       if (fgRef.current) {
         const controls = fgRef.current.controls();
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.6; // Slow & smooth
+        if (controls) {
+          controls.autoRotate = true;
+          controls.autoRotateSpeed = 0.8; // Slightly faster for visibility
+        }
       }
     };
 
     const stopAutoRotate = () => {
       if (fgRef.current) {
         const controls = fgRef.current.controls();
-        controls.autoRotate = false;
+        if (controls) {
+          controls.autoRotate = false;
+        }
       }
       clearTimeout(idleTimeout);
-      idleTimeout = setTimeout(startAutoRotate, 3000); // Resume after 3s
+      idleTimeout = setTimeout(startAutoRotate, 3000); // Resume after 3s of total inactivity
     };
 
-    // Events that signal user activity
+    // Events that signal intentional user interaction
     window.addEventListener('mousedown', stopAutoRotate);
     window.addEventListener('wheel', stopAutoRotate);
     window.addEventListener('touchstart', stopAutoRotate);
-    window.addEventListener('mousemove', stopAutoRotate);
+    // Note: mousemove removed to avoid accidental resets from vibrations
 
-    // Initial trigger
+    // Initial trigger after 3s
     idleTimeout = setTimeout(startAutoRotate, 3000);
 
     return () => {
       window.removeEventListener('mousedown', stopAutoRotate);
       window.removeEventListener('wheel', stopAutoRotate);
       window.removeEventListener('touchstart', stopAutoRotate);
-      window.removeEventListener('mousemove', stopAutoRotate);
       clearTimeout(idleTimeout);
     };
   }, []);
