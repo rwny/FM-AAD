@@ -518,18 +518,6 @@ function App() {
         {renderRightPanel()}
       </aside>
 
-      <div className="absolute bottom-[24px] left-1/2 -translate-x-1/2 flex gap-3 z-10 pointer-events-none items-center">
-        <button onClick={handleCapture} className="p-2.5 bg-white/95 border border-slate-200 rounded-[6px] shadow-xl text-slate-400 hover:text-indigo-600 transition-all pointer-events-auto flex items-center justify-center" title="Capture Screenshot">
-          <Camera className="w-4 h-4" />
-        </button>
-        <div className="px-5 py-2.5 bg-white/95 border border-slate-200 rounded-[6px] shadow-xl flex items-center gap-5 pointer-events-auto text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
-          <div className="flex items-center gap-1.5 text-indigo-500">Orbit <span className="text-slate-300 italic">L-Click</span></div>
-          <div className="w-1 h-1 bg-slate-200 rounded-full" />
-          <div className="flex items-center gap-1.5 text-indigo-500">Pan <span className="text-slate-300 italic">R-Click</span></div>
-          <div className="w-1 h-1 bg-slate-200 rounded-full" />
-          <div className="flex items-center gap-1.5 text-indigo-500">Zoom <span className="text-slate-300 italic">Scroll</span></div>
-        </div>
-      </div>
 
       {reportAsset && (
         <PrintReportModal 
