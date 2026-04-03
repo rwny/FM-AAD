@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Zap, ChevronDown, Box } from 'lucide-react'
+import { Zap, ChevronDown, Box, LayoutDashboard, ChevronRight } from 'lucide-react'
 import type { Room } from '../../types/bim'
 
 interface EEModeProps {
@@ -13,12 +13,13 @@ interface EEModeProps {
   setClipFloor: (floor: number | null) => void;
   selectedFloor: number | null;
   setSelectedFloor: (floor: number | null) => void;
+  setShowDashboard: (show: boolean) => void;
 }
 
 export const EELeftPanel: React.FC<EEModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
   expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-  selectedFloor, setSelectedFloor
+  selectedFloor, setSelectedFloor, setShowDashboard
 }) => {
   const floors = useMemo(() => {
     const filtered = rooms.filter(room => room.name.toLowerCase().includes(searchQuery.toLowerCase()) || room.number.includes(searchQuery))

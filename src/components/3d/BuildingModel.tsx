@@ -34,13 +34,22 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
     if (!buildingData || !buildingData.floors) return assets;
-    buildingData.floors.forEach((f: any) => {
-      const floorNum = f.floor || (parseInt(f.name.replace('FLOOR ', '')) || 1);
-      f.rooms.forEach((r: any) => {
-        r.assets.forEach((a: any) => {
-          assets.push({ ...a, room: r.id, floor: floorNum });
+    
+    const floorsArray = Array.isArray(buildingData.floors) 
+      ? buildingData.floors 
+      : Object.entries(buildingData.floors).map(([num, data]: [string, any]) => ({ floor: parseInt(num), ...data }));
+
+    floorsArray.forEach((f: any) => {
+      const floorNum = f.floor || (parseInt(f.name?.replace('FLOOR ', '')) || 1);
+      if (f.rooms && Array.isArray(f.rooms)) {
+        f.rooms.forEach((r: any) => {
+          if (r.assets && Array.isArray(r.assets)) {
+            r.assets.forEach((a: any) => {
+              assets.push({ ...a, room: r.id, floor: floorNum });
+            });
+          }
         });
-      });
+      }
     });
     return assets;
   }, [buildingData]);
@@ -82,14 +91,22 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
             // Initial status check
             let status = 'Normal';
             if (buildingData && buildingData.floors) {
-               buildingData.floors.forEach((f: any) => {
-                 f.rooms.forEach((r: any) => {
-                   r.assets.forEach((a: any) => {
-                     if (a.id.toLowerCase() === nameLower) {
-                       status = a.status || a.currentStatus || 'Normal';
+               const floorsArray = Array.isArray(buildingData.floors) 
+                 ? buildingData.floors 
+                 : Object.values(buildingData.floors);
+
+               floorsArray.forEach((f: any) => {
+                 if (f.rooms && Array.isArray(f.rooms)) {
+                   f.rooms.forEach((r: any) => {
+                     if (r.assets && Array.isArray(r.assets)) {
+                       r.assets.forEach((a: any) => {
+                         if (a.id && a.id.toLowerCase() === nameLower) {
+                           status = a.status || a.currentStatus || 'Normal';
+                         }
+                       });
                      }
                    });
-                 });
+                 }
                });
             }
             child.userData.status = status;
@@ -136,18 +153,55 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
   useEffect(() => {
     let activeLabel: ACLabelData | null = null
     const cleanSelectedId = selectedRoomId?.toLowerCase().replace(/\./g, '');
+    
+    // Resolve Peer ID if AC is selected
+    let peerId: string | null = null;
+    if (cleanSelectedId && (cleanSelectedId.startsWith('fcu-') || cleanSelectedId.startsWith('cdu-'))) {
+      const parts = cleanSelectedId.split('-');
+      const prefix = parts[0] === 'fcu' ? 'cdu' : 'fcu';
+      peerId = `${prefix}-${parts.slice(1).join('-')}`;
+    }
 
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const nameLower = child.name.toLowerCase()
         const cleanName = nameLower.replace(/\./g, '');
+        
+        // Match either primary or peer
         const isSelected = !!(cleanSelectedId && cleanName === cleanSelectedId);
+        const isPeerSelected = !!(peerId && cleanName === peerId);
+        const isPartofSelection = isSelected || isPeerSelected;
         
         const isAC = nameLower.startsWith('fcu-') || nameLower.startsWith('cdu-')
         const isRoom = nameLower.startsWith('rm-')
         const isFur = nameLower.startsWith('lf-') || nameLower.startsWith('bf-')
         const isStruc = nameLower.startsWith('xr-struc') || nameLower.startsWith('st-')
         const isArch = nameLower.startsWith('xr-') && !isStruc
+
+        // Remove old selection outlines if any
+        if (child.userData.isOutline) {
+          child.visible = false;
+          return;
+        }
+
+        // Handle Selection Visual (Outline Mesh)
+        const existingOutline = child.children.find(c => c.userData.isOutline);
+        if (existingOutline) {
+          existingOutline.visible = isPartofSelection;
+        } else if (isPartofSelection && (isAC || isFur)) {
+          // Create Selection Frame (Blender-like)
+          const outlineGeo = child.geometry.clone();
+          const outlineMat = new THREE.MeshBasicMaterial({ 
+            color: '#ffffff', 
+            side: THREE.BackSide,
+            transparent: true,
+            opacity: 0.5
+          });
+          const outlineMesh = new THREE.Mesh(outlineGeo, outlineMat);
+          outlineMesh.scale.multiplyScalar(1.05); // Slightly larger
+          outlineMesh.userData.isOutline = true;
+          child.add(outlineMesh);
+        }
 
         // Floor Visibility Logic
         let meshFloor = 1;
@@ -201,8 +255,8 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
             roughness: 0.5, metalness: 0.2, transparent: activeMode !== 'AC',
             opacity: activeMode === 'AC' ? 1.0 : 0.1,
             color: statusColor,
-            emissive: isSelected ? statusColor : '#000000',
-            emissiveIntensity: isSelected ? 0.8 : (activeMode === 'AC' ? 0.2 : 0),
+            emissive: isPartofSelection ? statusColor : '#000000',
+            emissiveIntensity: isPartofSelection ? 1.2 : (activeMode === 'AC' ? 0.2 : 0),
           })
           child.raycast = (activeMode === 'AC' && child.visible) ? THREE.Mesh.prototype.raycast : () => null
         }

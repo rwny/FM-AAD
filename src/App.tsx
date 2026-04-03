@@ -1,15 +1,16 @@
 import { Canvas } from '@react-three/fiber'
 import {
-  Building2, Search, Camera, Info,
+  Building2, Camera, Info,
   Wind, Share2,
-  PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X
+  PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X,
+  LayoutDashboard, ChevronRight
 } from 'lucide-react'
 import { Suspense, useState, useMemo, useEffect } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
 import { SceneLighting } from './components/3d/SceneLighting'
 import { SceneControls } from './components/3d/SceneControls'
 import type { Room, ACAsset, BIMMode } from './types/bim'
-import buildingJson from './utils/AR15.json'
+import acSpecsJson from './utils/ac-specs.json'
 import { tgfData } from './data/carrier-tgf'
 
 // --- Mode Components ---
@@ -18,7 +19,9 @@ import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/Furn
 import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
 import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
 import { PrintReportModal } from './components/ui/PrintReportModal'
-import { KGVisualizer } from './components/KGVisualizer'
+import { KGVisualizer3D } from './components/KGVisualizer3D'
+import { GlobalSearch } from './components/search/GlobalSearch'
+import { useGlobalSearch } from './hooks/useGlobalSearch'
 
 // --- Scene Component ---
 
@@ -58,6 +61,8 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
   )
 }
 
+import { ProjectDashboard } from './components/ui/ProjectDashboard'
+
 // --- Main App ---
 
 function App() {
@@ -73,9 +78,10 @@ function App() {
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
   const [reportAsset, setReportAsset] = useState<any>(null)
   const [selectedLog, setSelectedLog] = useState<any>(null)
+  const [showDashboard, setShowDashboard] = useState(false)
 
   // Database State
-  const [buildingData, setBuildingData] = useState<any>(buildingJson)
+  const [buildingData, setBuildingData] = useState<any>(acSpecsJson)
   const [acDbLogs, setAcDbLogs] = useState<any[]>([])
   const [kgNodes, setKgNodes] = useState<any[]>([])
   const [kgEdges, setKgEdges] = useState<any[]>([])
@@ -117,49 +123,75 @@ function App() {
     return acAssets.map(modelAsset => {
       const modelIdLow = modelAsset.id.toLowerCase();
       
-      // Look up in KG
+      // 1. Look up in MD (ac-specs.json) - NEW PRIMARY SOURCE
+      let mdMatch: any = null;
+      let mdTypeInfo: any = null;
+      
+      for (const floorNum in acSpecsJson.floors) {
+        const floorRooms = (acSpecsJson.floors as any)[floorNum];
+        for (const roomNum in floorRooms) {
+          const roomACs = floorRooms[roomNum];
+          for (const acId in roomACs) {
+            const acData = roomACs[acId];
+            if (acData.units && acData.units.some((u: string) => {
+              const uNormalized = u.toLowerCase().replace(/\./g, '-');
+              const modelNormalized = modelIdLow.replace(/\./g, '-');
+              return uNormalized === modelNormalized;
+            })) {
+              mdMatch = { ...acData, systemId: acId };
+              mdTypeInfo = (acSpecsJson.types as any)[acData.type];
+              break;
+            }
+          }
+          if (mdMatch) break;
+        }
+        if (mdMatch) break;
+      }
+
+      // 2. Look up in KG (Supabase) - PREFER LIVE DATA
       const node = kgNodes.find(n => n.name.toLowerCase() === modelIdLow);
-      let acType = '';
-      let assetIdStr = modelAsset.id;
-      let installDate = '';
-      let matchedAcId = '';
+      let acType = mdMatch?.type || '';
+      let assetIdStr = mdMatch?.assetId || modelAsset.id;
+      let installDate = mdMatch?.installedDate || '';
+      let matchedAcId = mdMatch?.systemId || '';
 
       if (node) {
          const edge = kgEdges.find(e => e.object_id === node.id && e.predicate === 'contains');
          const parentNode = edge ? kgNodes.find(n => n.id === edge.subject_id) : null;
          
-         const meta = parentNode?.metadata || node.metadata || {};
-         acType = meta.ac_type || '';
-         assetIdStr = meta.asset_id || modelAsset.id;
-         installDate = meta.install_date || '';
+         const meta = node.metadata || parentNode?.metadata || {};
+         // Override with DB data if present
+         if (meta.ac_type) acType = meta.ac_type;
+         if (meta.asset_id) assetIdStr = meta.asset_id;
+         if (meta.install_date) installDate = meta.install_date;
          if (parentNode) matchedAcId = parentNode.name;
       }
 
-      // 2. Identify the Peer unit
+      // 3. Identify the Peer unit
       const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
       const currentNumber = modelAsset.id.split('-').slice(1).join('-'); // e.g. 101-1
       const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
       const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
 
-      // 3. Collect Logs (Self + Peer + System ID)
-      const assetLogs = acDbLogs.filter(l => {
+      // 4. Collect Logs (Self only for precise history)
+      const selfLogs = acDbLogs.filter(l => l.asset_id.toLowerCase() === modelIdLow);
+      
+      // 5. Collect Logs (System-wide for status/color propagation)
+      const systemWideLogs = acDbLogs.filter(l => {
         const dbId = l.asset_id.toLowerCase();
         return dbId === modelIdLow || 
                (peerId && dbId === peerId.toLowerCase()) || 
                (matchedAcId && dbId === matchedAcId.toLowerCase());
       });
       
-      // 4. Sort all merged logs by time
-      const sortedLogs = [...assetLogs].sort((a, b) => {
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return timeB - timeA;
-      });
+      // 6. Sort logs
+      const sortedSelfLogs = [...selfLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      const sortedSystemLogs = [...systemWideLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
-      // Status based on LATEST log
+      // Status based on SYSTEM-WIDE state (Color propagation)
       let status = 'Normal';
-      if (sortedLogs.length > 0) {
-        const latestLog = sortedLogs[0];
+      if (sortedSystemLogs.length > 0) {
+        const latestLog = sortedSystemLogs[0];
         const issueText = (latestLog.issue || '').toLowerCase();
         const noteText = (latestLog.note || '').toLowerCase();
         
@@ -169,18 +201,29 @@ function App() {
         if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') status = 'Faulty';
       }
 
-      // We need to resolve tgfData, but it's not imported at the top yet, we will add the import next
-      const typeInfo = acType ? (tgfData.models as any)[acType] : null;
+      // Specs lookup logic: MD Priority -> TGF Lookup -> Fallback
+      let brand = mdTypeInfo?.brand || 'Carrier';
+      let model = mdTypeInfo?.model || acType || '---';
+      let capacity = mdTypeInfo?.capacity || '---';
+
+      if (!mdTypeInfo && acType) {
+        const typeInfo = (tgfData.models as any)[acType];
+        if (typeInfo) {
+          brand = typeInfo.Brand || brand;
+          model = acType;
+          capacity = typeInfo.NominalCoolingCapacity ? `${typeInfo.NominalCoolingCapacity} BTU/hr` : capacity;
+        }
+      }
 
       return {
         ...modelAsset,
         assetId: assetIdStr,
         acType: acType || 'Unknown',
-        brand: typeInfo?.Brand || 'Carrier',
-        model: acType || '---',
-        capacity: typeInfo?.NominalCoolingCapacity ? `${typeInfo.NominalCoolingCapacity} BTU/hr` : '---',
+        brand,
+        model,
+        capacity,
         install: installDate || '---',
-        logs: sortedLogs.map(l => ({
+        logs: sortedSelfLogs.map(l => ({
           id: l.id,
           date: l.date,
           created_at: l.created_at,
@@ -190,47 +233,88 @@ function App() {
           note: l.note
         })),
         status: status as any,
-        lastService: sortedLogs.length > 0 ? sortedLogs[0].date : ''
+        lastService: sortedSelfLogs.length > 0 ? sortedSelfLogs[0].date : ''
       }
     })
   }, [acAssets, acDbLogs, kgNodes, kgEdges])
 
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
-    buildingData.floors.forEach((f: any, fIdx: number) => {
+    if (!buildingData || !buildingData.floors) return assets;
+
+    const floorsArray = Array.isArray(buildingData.floors) 
+      ? buildingData.floors 
+      : Object.entries(buildingData.floors).map(([num, data]: [string, any]) => ({ 
+          floor: parseInt(num), 
+          rooms: Object.entries(data).map(([rId, rData]: [string, any]) => ({
+            id: `rm-${rId}`,
+            name: `Room ${rId}`,
+            assets: [] // Furniture assets not in ac.md yet
+          }))
+        }));
+
+    floorsArray.forEach((f: any, fIdx: number) => {
       const floorNum = f.floor || (fIdx + 1);
-      f.rooms.forEach((r: any) => {
-        r.assets.forEach((a: any) => {
-          assets.push({
-            ...a,
-            floor: floorNum,
-            room: r.id,
-            status: a.status || a.currentStatus || 'Normal'
-          });
+      if (f.rooms && Array.isArray(f.rooms)) {
+        f.rooms.forEach((r: any) => {
+          if (r.assets && Array.isArray(r.assets)) {
+            r.assets.forEach((a: any) => {
+              assets.push({
+                ...a,
+                floor: floorNum,
+                room: r.id,
+                status: a.status || a.currentStatus || 'Normal'
+              });
+            });
+          }
         });
-      });
+      }
     });
     return assets;
   }, [buildingData]);
 
-  const handleSearchChange = (val: string) => {
-    setSearchQuery(val)
-    if (val.trim() === '') {
-      if (activeMode === 'AR') setSelectedRoomId(null);
-      return;
+  // Global Search
+  const globalSearchResults = useGlobalSearch(
+    searchQuery,
+    rooms,
+    finalACAssets,
+    allFurniture,
+    kgNodes,
+    kgEdges
+  )
+
+  const handleGlobalSearchSelect = (result: any) => {
+    // Switch to the mode of the result
+    if (result.mode !== activeMode) {
+      setActiveMode(result.mode)
     }
     
-    if (activeMode === 'AR') {
-      const match = rooms.find(room => room.number.includes(val) || room.name.toLowerCase().includes(val.toLowerCase()))
-      if (match) setSelectedRoomId(match.id)
-    } else if (activeMode === 'AC') {
-      const match = finalACAssets.find((a: ACAsset) => a.id.toLowerCase().includes(val.toLowerCase()) || a.name.toLowerCase().includes(val.toLowerCase()))
-      if (match) setSelectedRoomId(match.id)
-    } else if (activeMode === 'Fur') {
-      const match = allFurniture.find(a => a.id.toLowerCase().includes(val.toLowerCase()) || (a.typeName || '').toLowerCase().includes(val.toLowerCase()))
-      if (match) setSelectedRoomId(match.id)
+    // Select the item - resolve correct ID for highlighting + right panel
+    if (result.type === 'room') {
+      setSelectedRoomId(result.data.id)
+    } else if (result.type === 'ac') {
+      // Set selectedRoomId to the AC asset ID (e.g., "fcu-101-1") for 3D highlight
+      setSelectedRoomId(result.data.id)
+    } else if (result.type === 'furniture') {
+      setSelectedRoomId(result.data.id)
+    } else if (result.type === 'connection') {
+      setActiveMode('KG')
     }
   }
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+  }
+
+  const acStats = useMemo(() => {
+    const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
+    finalACAssets.forEach(a => {
+      if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
+      else if (a.status === 'Faulty') stats.red++;
+      else stats.green++;
+    });
+    return stats;
+  }, [finalACAssets]);
 
   const handleCapture = () => window.dispatchEvent(new CustomEvent('take-screenshot'))
 
@@ -247,7 +331,7 @@ function App() {
     const commonProps = { 
       selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
       expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-      selectedFloor, setSelectedFloor
+      selectedFloor, setSelectedFloor, setShowDashboard
     };
     switch (activeMode) {
       case 'AR': return <ArchLeftPanel {...commonProps} finalACAssets={finalACAssets} />;
@@ -262,7 +346,8 @@ function App() {
     const commonProps = { 
       selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
       expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-      selectedFloor, setSelectedFloor, setReportAsset, setSelectedLog
+      selectedFloor, setSelectedFloor, setReportAsset, setSelectedLog,
+      setShowDashboard
     };
     switch (activeMode) {
       case 'AR': return <ArchRightPanel {...commonProps} finalACAssets={finalACAssets} />;
@@ -275,8 +360,25 @@ function App() {
 
   return (
     <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px] gap-[10px]">
+      {/* Dashboard Overlay */}
+      {showDashboard && (
+        <ProjectDashboard 
+          assets={finalACAssets}
+          rooms={rooms}
+          onSelect={(id) => {
+            setSelectedRoomId(id);
+            setShowDashboard(false);
+            // Also ensure we are in AC mode if it's an AC asset
+            if (id.startsWith('fcu') || id.startsWith('cdu')) {
+              setActiveMode('AC');
+            }
+          }}
+          onClose={() => setShowDashboard(false)}
+        />
+      )}
+
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        {activeMode === 'KG' && <KGVisualizer />}
+        {activeMode === 'KG' && <KGVisualizer3D />}
         <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
           <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
           <color attach="background" args={['#bae6fd']} />
@@ -333,6 +435,12 @@ function App() {
                 setExpandedFloors({}); 
                 setSelectedFloor(null);
                 setSearchQuery('');
+                if (m.id === 'KG') {
+                  setShowLeft(false);
+                  setShowRight(false);
+                } else {
+                  setShowLeft(true);
+                }
               }} 
               className={`flex flex-col items-center justify-center gap-1 py-4 rounded-[12px] transition-all ${
                 activeMode === m.id 
@@ -347,16 +455,43 @@ function App() {
         </div>
 
         <nav className="flex-1 p-2 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
-          <div className="relative group">
-            <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input 
-              type="text" 
-              value={searchQuery} 
-              onChange={(e) => handleSearchChange(e.target.value)} 
-              placeholder="Search rooms or assets..." 
-              className="w-full bg-white/50 border border-slate-200 rounded-[8px] py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-slate-700" 
-            />
-          </div>
+          {/* Dashboard Trigger Section - Position Consistent across modes */}
+          {activeMode === 'AC' && (
+            <button 
+              onClick={() => setShowDashboard(true)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 group shrink-0"
+            >
+              <div className="flex items-center gap-2.5">
+                <LayoutDashboard className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-black uppercase tracking-wider italic">AC-DASHBOARD</span>
+              </div>
+              <div className="flex gap-1">
+                {acStats.red > 0 && <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />}
+                {acStats.orange > 0 && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                <ChevronRight className="w-3 h-3 text-indigo-300 group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </button>
+          )}
+
+          {activeMode === 'AR' && (
+            <button 
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-slate-800 border-slate-700 text-white hover:bg-slate-900 shadow-lg shadow-slate-100 group shrink-0"
+              onClick={() => {/* ARCH Dashboard Placeholder */}}
+            >
+              <div className="flex items-center gap-2.5">
+                <LayoutDashboard className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-black uppercase tracking-wider italic">ARCH-DASHBOARD</span>
+              </div>
+              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-all" />
+            </button>
+          )}
+          
+          <GlobalSearch
+            query={searchQuery}
+            onQueryChange={handleSearchChange}
+            results={globalSearchResults}
+            onSelect={handleGlobalSearchSelect}
+          />
           {renderLeftPanel()}
         </nav>
       </aside>

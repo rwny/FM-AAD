@@ -1,7 +1,12 @@
 import React, { useMemo, useState } from 'react'
-import { Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, ChevronLeft, ShoppingCart, Info, Printer, LayoutDashboard, PieChart } from 'lucide-react'
+import { 
+  Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
+  ChevronLeft, ShoppingCart, Info, Printer, LayoutDashboard, 
+  PieChart, ClipboardList, Clock, Layers, ArrowUpRight
+} from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { AddLogModal } from '../ui/AddLogModal'
+import { SystemTimeline } from '../ui/SystemTimeline'
 
 interface ACModeProps {
   selectedRoomId: string | null;
@@ -15,12 +20,15 @@ interface ACModeProps {
   setClipFloor: (floor: number | null) => void;
   selectedFloor: number | null;
   setSelectedFloor: (floor: number | null) => void;
+  setShowDashboard: (show: boolean) => void;
+  setReportAsset?: (asset: any) => void;
+  setSelectedLog?: (log: any) => void;
 }
 
 export const ACLeftPanel: React.FC<ACModeProps> = ({
   selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
   expandedFloors, setExpandedFloors, clipFloor, setClipFloor, finalACAssets,
-  selectedFloor, setSelectedFloor
+  selectedFloor, setSelectedFloor, setShowDashboard
 }) => {
   const [expandedRooms, setExpandedRooms] = useState<{[key: string]: boolean}>({})
 
@@ -52,49 +60,13 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
 
   const getStatusBulletColor = (status: string) => {
     const s = (status || '').toLowerCase();
-    if (s === 'normal') return 'bg-emerald-500'; // 🟢 Green
-    if (s === 'faulty') return 'bg-rose-500';   // 🔴 Red
-    return 'bg-amber-500'; // 🟠 Orange (Maintenance / In Progress / Pending)
+    if (s === 'normal') return 'bg-emerald-500'; 
+    if (s === 'faulty') return 'bg-rose-500';   
+    return 'bg-amber-500'; 
   }
-
-  const projectStats = useMemo(() => {
-    const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
-    finalACAssets.forEach(a => {
-      if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
-      else if (a.status === 'Faulty') stats.red++;
-      else stats.green++;
-    });
-    return stats;
-  }, [finalACAssets]);
 
   return (
     <div className="space-y-1">
-      {/* Project Dashboard Button */}
-      <button 
-        onClick={() => {
-          setSelectedRoomId(null);
-          setSelectedFloor(null);
-          setClipFloor(null);
-          // Special ID to trigger Dashboard in Right Panel
-          setSelectedRoomId('DASHBOARD_OVERVIEW');
-        }}
-        className={`w-full flex items-center justify-between px-3 py-2.5 mb-3 rounded-[10px] transition-all border ${
-          selectedRoomId === 'DASHBOARD_OVERVIEW' 
-            ? 'bg-indigo-600 text-white shadow-lg border-indigo-500' 
-            : 'bg-white/50 border-slate-200 text-slate-700 hover:bg-white hover:shadow-md'
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
-          <LayoutDashboard className={`w-4 h-4 ${selectedRoomId === 'DASHBOARD_OVERVIEW' ? 'text-indigo-200' : 'text-indigo-600'}`} />
-          <span className="text-[11px] font-black uppercase tracking-wider">Project Dashboard</span>
-        </div>
-        <div className="flex gap-1">
-           {projectStats.red > 0 && <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
-           {projectStats.orange > 0 && <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-           <ChevronRight className={`w-3 h-3 ${selectedRoomId === 'DASHBOARD_OVERVIEW' ? 'text-indigo-200' : 'text-slate-300'}`} />
-        </div>
-      </button>
-
       {/* Existing Floor List */}
       {Object.keys(floors).sort().map((floorStr) => {
         const floorNum = parseInt(floorStr);
@@ -179,13 +151,31 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
   )
 }
 
-export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId, finalACAssets, rooms, selectedFloor, setReportAsset, setSelectedLog }) => {
+export const ACRightPanel: React.FC<any> = ({ 
+  selectedRoomId, setSelectedRoomId, finalACAssets, rooms, selectedFloor, 
+  setReportAsset, setSelectedLog, setShowDashboard 
+}) => {
   const [showAddLog, setShowAddLog] = useState(false)
   const [logPage, setLogPage] = useState(0)
   const LOGS_PER_PAGE = 5
 
   const selectedAC = finalACAssets.find((a: any) => a.id.toLowerCase() === selectedRoomId?.toLowerCase());
   const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
+
+  const systemGroup = useMemo(() => {
+    if (!selectedAC) return null;
+    const parts = selectedAC.id.split('-');
+    const systemId = parts.length >= 3 ? `AC-${parts[1]}-${parts[2]}` : `AC-${parts[1]}`;
+    
+    // Find all components in this system
+    const components = finalACAssets.filter(a => {
+      const p = a.id.split('-');
+      const sId = p.length >= 3 ? `AC-${p[1]}-${p[2]}` : `AC-${p[1]}`;
+      return sId === systemId;
+    });
+
+    return { id: systemId, components, installDate: selectedAC.install || '2024-01-01' };
+  }, [selectedAC, finalACAssets]);
 
   const formatTime = (timestamp: string) => {
     if (!timestamp) return '';
@@ -200,85 +190,8 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
     return 'bg-amber-500';
   }
 
-  // NEW: Dashboard Overview Logic
-  if (selectedRoomId === 'DASHBOARD_OVERVIEW') {
-     const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
-     const setsTotal = Math.ceil(finalACAssets.length / 2);
-     finalACAssets.forEach((a: ACAsset) => {
-       if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
-       else if (a.status === 'Faulty') stats.red++;
-       else stats.green++;
-     });
-
-     const faultyAssets = finalACAssets.filter((a: ACAsset) => a.status === 'Faulty' || a.status === 'Maintenance');
-
-     return (
-       <div className="flex-1 p-4 flex flex-col gap-6 overflow-y-auto custom-scrollbar bg-slate-50/50">
-          <div className="space-y-1">
-             <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">Project Dashboard</h3>
-             <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">AR15 Building Master Summary</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
-                <div className="text-[10px] font-black text-slate-400 uppercase">Operational</div>
-                <div className="flex items-baseline gap-1">
-                   <div className="text-3xl font-black text-emerald-500">{Math.round((stats.green/stats.total)*100)}%</div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase">Healty</div>
-                </div>
-             </div>
-             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-1">
-                <div className="text-[10px] font-black text-slate-400 uppercase">Inventory</div>
-                <div className="flex items-baseline gap-1">
-                   <div className="text-3xl font-black text-indigo-600">{setsTotal}</div>
-                   <div className="text-[10px] font-bold text-slate-400 uppercase">Air Sets</div>
-                </div>
-             </div>
-          </div>
-
-          <div className="space-y-3">
-             <div className="flex items-center gap-2 px-1">
-                <Activity className="w-4 h-4 text-rose-500" />
-                <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Priority Action Items</span>
-             </div>
-             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">
-                {faultyAssets.length > 0 ? faultyAssets.map((a: ACAsset) => (
-                   <div 
-                      key={a.id} 
-                      onClick={() => setSelectedRoomId(a.id)}
-                      className="p-3 hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between"
-                   >
-                      <div className="flex items-center gap-3">
-                         <div className={`w-2 h-2 rounded-full ${a.status === 'Faulty' ? 'bg-rose-500 animate-pulse' : 'bg-amber-500'}`} />
-                         <div>
-                            <div className="text-xs font-black text-slate-800">{a.id.toUpperCase()}</div>
-                            <div className="text-[9px] font-bold text-slate-400 italic">Room: {a.id.split('-')[1]} • Floor: {a.id.split('-')[1]?.charAt(0)}</div>
-                         </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-200" />
-                   </div>
-                )) : (
-                   <div className="p-10 text-center space-y-2">
-                       <PieChart className="w-8 h-8 text-emerald-100 mx-auto" />
-                       <p className="text-[10px] font-black text-slate-300 uppercase italic">All Systems Operational</p>
-                   </div>
-                )}
-             </div>
-          </div>
-
-          <div className="p-4 bg-indigo-600 rounded-2xl text-white shadow-xl flex items-center justify-between">
-              <div className="space-y-0.5">
-                  <div className="text-[10px] font-black text-indigo-200 uppercase tracking-widest leading-none">Next Service Window</div>
-                  <div className="text-lg font-black">April 2026</div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-indigo-300" />
-          </div>
-       </div>
-     );
-  }
-
   // Asset Selected Logic
-  if (selectedAC) {
+  if (selectedAC && systemGroup) {
     const sortedLogs = selectedAC.logs || []; 
     const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
     const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
@@ -286,14 +199,34 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar bg-white/40">
         <div className="space-y-4">
-          {/* Header Section */}
           <div className="space-y-0.5">
              <h3 className="text-lg font-black tracking-tighter text-slate-900 leading-tight">{selectedAC.name}</h3>
              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{(selectedAC as any).acType || selectedAC.type}</p>
           </div>
 
+          {/* Life Cycle Timeline in Sidebar */}
+          <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px]">
+                <Clock className="w-3.5 h-3.5" /> <span>3-Year Life Cycle</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowDashboard(true);
+                }}
+                className="p-1.5 bg-slate-50 hover:bg-indigo-50 rounded text-slate-400 hover:text-indigo-600 transition-all shadow-sm"
+                title="View Detailed History"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <SystemTimeline 
+              installDate={systemGroup.installDate} 
+              components={systemGroup.components} 
+            />
+          </div>
+
           <div className="space-y-2">
-            {/* ID Section */}
             <div className="p-3 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Object ID (GLB)</span>
@@ -305,7 +238,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
               </div>
             </div>
 
-            {/* Technical Specs List */}
             <div className="p-4 bg-indigo-600 border border-indigo-500 rounded-[12px] space-y-3 text-white shadow-lg">
               {[
                 { label: 'Brand', value: selectedAC.brand, icon: Box },
@@ -321,16 +253,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
                   <span className="text-sm font-black">{item.value || '---'}</span>
                 </div>
               ))}
-
-              <div className="space-y-1 pt-1">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-indigo-200" />
-                  <span className="text-[10px] font-black uppercase text-indigo-200">Quick Note</span>
-                </div>
-                <p className="text-[10px] font-bold text-indigo-50 leading-tight italic bg-black/10 p-2 rounded-lg border border-white/10">
-                  {selectedAC.log || 'No additional notes'}
-                </p>
-              </div>
             </div>
           </div>
 
@@ -355,18 +277,12 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
                   const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
                   return (
                     <div key={log.id || i} className="p-2.5 leading-tight space-y-0.5 group">
-                      {/* Line 1: Status + Date + Time + Reporter + Detail Button */}
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 overflow-hidden flex-1">
                           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
                           <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
                             <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
                             <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
-                            {log.reporter && (
-                              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight truncate">
-                                • {log.reporter}
-                              </span>
-                            )}
                           </div>
                         </div>
                         <button 
@@ -376,16 +292,7 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
                           Detail
                         </button>
                       </div>
-                      
-                      {/* Line 2: Issue */}
-                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate">
-                        {log.issue}
-                      </div>
-                      
-                      {/* Line 3: Note */}
-                      <div className="ml-3.5 text-[10px] font-bold text-slate-400 italic leading-snug truncate">
-                        {log.note || '---'}
-                      </div>
+                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate">{log.issue}</div>
                     </div>
                   );
                 })
@@ -402,7 +309,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
               </div>
             )}
 
-            {/* Print Report Button at the Bottom */}
             <button
               onClick={() => setReportAsset(selectedAC)}
               className="w-full flex items-center justify-center gap-2 py-2 mt-2 border border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all bg-white shadow-sm"
@@ -427,7 +333,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
     );
   }
 
-  // Room Selected State
   if (selectedRoom) {
     return (
       <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
@@ -442,7 +347,6 @@ export const ACRightPanel: React.FC<any> = ({ selectedRoomId, setSelectedRoomId,
     );
   }
 
-  // Floor Selected State
   if (selectedFloor) {
     const floorACs = finalACAssets.filter((a: ACAsset) => a.id.split('-')[1]?.startsWith(selectedFloor.toString()));
     return (
