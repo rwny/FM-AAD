@@ -172,10 +172,10 @@ export function KGVisualizer3D() {
             const rCtx = radarCanvas.getContext('2d');
             if (rCtx) {
               rCtx.strokeStyle = '#ffffff';
-              rCtx.lineWidth = 4;
-              // Draw 4 corner brackets (Tactical Radar style)
-              const size = 40;
-              const pad = 10;
+              rCtx.lineWidth = 6;
+              // Draw 4 corner brackets (More compact tactical style)
+              const size = 30;
+              const pad = 20;
               // Top-Left
               rCtx.beginPath(); rCtx.moveTo(pad, pad+size); rCtx.lineTo(pad, pad); rCtx.lineTo(pad+size, pad); rCtx.stroke();
               // Top-Right
@@ -186,9 +186,9 @@ export function KGVisualizer3D() {
               rCtx.beginPath(); rCtx.moveTo(128-pad-size, 128-pad); rCtx.lineTo(128-pad, 128-pad); rCtx.lineTo(128-pad, 128-pad-size); rCtx.stroke();
               
               const radarTexture = new THREE.CanvasTexture(radarCanvas);
-              const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.8 });
+              const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.6 });
               const radarSprite = new THREE.Sprite(radarMaterial);
-              radarSprite.scale.set(30, 30, 1); // Large tactical frame
+              radarSprite.scale.set(15, 15, 1); // Reduced from 30
               group.add(radarSprite);
             }
           }
