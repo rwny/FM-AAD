@@ -100,13 +100,13 @@ export function KGVisualizer3D() {
                   backgroundColor: item.color, 
                   color: '#000',
                   boxShadow: `0 0 25px ${item.color}88`,
-                  border: highlightLevel === item.id ? '3px solid #fa8072' : '3px solid rgba(255,255,255,0.3)'
+                  border: highlightLevel === item.id ? '3px solid #ff00ff' : '3px solid rgba(255,255,255,0.3)'
                 }}
               >
                 {item.id}
               </div>
               {highlightLevel === item.id && (
-                <div className="absolute -top-10 bg-[#fa8072] text-white px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce">
+                <div className="absolute -top-10 bg-[#ff00ff] text-white px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_#ff00ff]">
                   Focusing Level {item.id}...
                 </div>
               )}
@@ -125,7 +125,7 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#010409"
-        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#fa8072' : node.color}
+        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#ff00ff' : node.color}
         nodeRelSize={1.5}
         nodeResolution={24}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
@@ -134,7 +134,7 @@ export function KGVisualizer3D() {
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
-          if (highlightLevel && sourceNode?.level === highlightLevel) return '#fa8072';
+          if (highlightLevel && sourceNode?.level === highlightLevel) return '#ff00ff';
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
         linkWidth={1.2}
@@ -154,8 +154,8 @@ export function KGVisualizer3D() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          // Flash label to Salmon if highlighted
-          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#fa8072' : node.color;
+          // Flash label to Electric Fuchsia if highlighted
+          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ff00ff' : node.color;
           
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
