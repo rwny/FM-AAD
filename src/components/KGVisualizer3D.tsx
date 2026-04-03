@@ -70,10 +70,10 @@ export function KGVisualizer3D() {
     const logsToStream = [
       `[SYSTEM] INITIATING DEEP SCAN: L${level}`,
       `[PROCESS] LOCATING ALL HIERARCHY NODES...`,
-      `[INFO] ${levelNodes.length} NODES IDENTIFIED.`,
       `------------------------------------------`,
       ...levelNodes.map(n => `DATA_LINK: ${n.name.toUpperCase()} [${n.type.toUpperCase()}]`),
       `------------------------------------------`,
+      `[INFO] ${levelNodes.length} NODES IDENTIFIED IN SCOPE.`,
       `[SUCCESS] SCAN_LEVEL_0${level}_COMPLETE`
     ];
 
@@ -90,7 +90,7 @@ export function KGVisualizer3D() {
             setTerminalLogs([]);
             setHighlightLevel(null);
           }, 1000);
-        }, 3000);
+        }, 4500);
       }
     }, 40);
   };
@@ -134,11 +134,6 @@ export function KGVisualizer3D() {
               >
                 {item.id}
               </div>
-              {highlightLevel === item.id && (
-                <div className="absolute -top-10 bg-white text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-                  Focusing Level {item.id}...
-                </div>
-              )}
             </button>
             {idx < legendItems.length - 1 && <div className="text-white/20 font-black text-lg mx-1">{'>'}</div>}
           </React.Fragment>
@@ -167,28 +162,62 @@ export function KGVisualizer3D() {
         linkColor={() => 'rgba(255,255,255,0.1)'}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
+          const group = new THREE.Group();
+
+          // 1. Radar Target Marker (Visible only when highlighted)
+          if (highlightLevel && node.level === highlightLevel) {
+            const radarCanvas = document.createElement('canvas');
+            radarCanvas.width = 128;
+            radarCanvas.height = 128;
+            const rCtx = radarCanvas.getContext('2d');
+            if (rCtx) {
+              rCtx.strokeStyle = '#ffffff';
+              rCtx.lineWidth = 4;
+              // Draw 4 corner brackets (Tactical Radar style)
+              const size = 40;
+              const pad = 10;
+              // Top-Left
+              rCtx.beginPath(); rCtx.moveTo(pad, pad+size); rCtx.lineTo(pad, pad); rCtx.lineTo(pad+size, pad); rCtx.stroke();
+              // Top-Right
+              rCtx.beginPath(); rCtx.moveTo(128-pad-size, pad); rCtx.lineTo(128-pad, pad); rCtx.lineTo(128-pad, pad+size); rCtx.stroke();
+              // Bottom-Left
+              rCtx.beginPath(); rCtx.moveTo(pad, 128-pad-size); rCtx.lineTo(pad, 128-pad); rCtx.lineTo(pad+size, 128-pad); rCtx.stroke();
+              // Bottom-Right
+              rCtx.beginPath(); rCtx.moveTo(128-pad-size, 128-pad); rCtx.lineTo(128-pad, 128-pad); rCtx.lineTo(128-pad, 128-pad-size); rCtx.stroke();
+              
+              const radarTexture = new THREE.CanvasTexture(radarCanvas);
+              const radarMaterial = new THREE.SpriteMaterial({ map: radarTexture, transparent: true, opacity: 0.8 });
+              const radarSprite = new THREE.Sprite(radarMaterial);
+              radarSprite.scale.set(30, 30, 1); // Large tactical frame
+              group.add(radarSprite);
+            }
+          }
+
+          // 2. Text Label
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          if (!ctx) return new THREE.Group();
-          const label = node.name || '';
-          ctx.font = 'bold 32px sans-serif';
-          const textWidth = ctx.measureText(label).width;
-          canvas.width = textWidth + 20;
-          canvas.height = 40;
-          ctx.font = 'bold 32px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = 'black';
-          ctx.fillText(label, canvas.width / 2, canvas.height / 2);
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.minFilter = THREE.LinearFilter;
-          const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
-          const sprite = new THREE.Sprite(spriteMaterial);
-          sprite.scale.set(canvas.width / 6, canvas.height / 6, 1);
-          sprite.position.set(0, 12, 0); 
-          return sprite;
+          if (ctx) {
+            const label = node.name || '';
+            ctx.font = 'bold 32px sans-serif';
+            const textWidth = ctx.measureText(label).width;
+            canvas.width = textWidth + 20;
+            canvas.height = 40;
+            ctx.font = 'bold 32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'black';
+            ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(canvas.width / 6, canvas.height / 6, 1);
+            sprite.position.set(0, 12, 0); 
+            group.add(sprite);
+          }
+          
+          return group;
         }}
       />
     </div>
