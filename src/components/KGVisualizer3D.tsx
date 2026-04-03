@@ -31,7 +31,7 @@ export function KGVisualizer3D() {
             else if (t === 'system_group') { color = '#00ff00'; val = 12; level = '4'; }
             else if (t === 'ac_set') { color = '#00ffff'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu' || t === 'load_panel') { color = '#0066ff'; val = 8; level = '6'; }
-            else if (t === 'pipe') { color = '#aa00ff'; val = 6; level = '7'; }
+            else if (t === 'pipe') { color = '#ffffff'; val = 6; level = '7'; } // L7 is now White
 
             return {
               id: n.id,
@@ -72,7 +72,7 @@ export function KGVisualizer3D() {
     { id: '4', color: '#00ff00' },
     { id: '5', color: '#00ffff' },
     { id: '6', color: '#0066ff' },
-    { id: '7', color: '#aa00ff' },
+    { id: '7', color: '#ffffff' }, // L7 is now White
   ];
 
   return (
@@ -100,14 +100,14 @@ export function KGVisualizer3D() {
                   backgroundColor: item.color, 
                   color: '#000',
                   boxShadow: `0 0 25px ${item.color}88`,
-                  border: highlightLevel === item.id ? '3px solid white' : '3px solid rgba(255,255,255,0.3)'
+                  border: highlightLevel === item.id ? '3px solid #fa8072' : '3px solid rgba(255,255,255,0.3)'
                 }}
               >
                 {item.id}
               </div>
               {highlightLevel === item.id && (
-                <div className="absolute -top-10 bg-white text-black px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce">
-                  Highlighting...
+                <div className="absolute -top-10 bg-[#fa8072] text-white px-2 py-1 rounded text-[8px] font-black uppercase whitespace-nowrap animate-bounce">
+                  Focusing Level {item.id}...
                 </div>
               )}
             </button>
@@ -125,7 +125,7 @@ export function KGVisualizer3D() {
         height={dimensions.height}
         graphData={graphData}
         backgroundColor="#010409"
-        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#ffffff' : node.color}
+        nodeColor={(node: any) => highlightLevel && node.level === highlightLevel ? '#fa8072' : node.color}
         nodeRelSize={1.5}
         nodeResolution={24}
         nodeLabel={(node: any) => `${node.name} (${node.type})`}
@@ -134,6 +134,7 @@ export function KGVisualizer3D() {
         linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
+          if (highlightLevel && sourceNode?.level === highlightLevel) return '#fa8072';
           return sourceNode ? sourceNode.color : '#ffffff';
         }}
         linkWidth={1.2}
@@ -153,8 +154,8 @@ export function KGVisualizer3D() {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          // Flash label to white if highlighted
-          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#ffffff' : node.color;
+          // Flash label to Salmon if highlighted
+          ctx.fillStyle = (highlightLevel && node.level === highlightLevel) ? '#fa8072' : node.color;
           
           ctx.shadowBlur = 8;
           ctx.shadowColor = 'black';
