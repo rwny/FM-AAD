@@ -32,6 +32,8 @@ export function KGVisualizer3D() {
     setTerminalLogs(prev => [...prev, { id: logIdRef.current++, text }].slice(-25));
   };
 
+  const rotationVelocityRef = useRef(0.0025);
+
   useEffect(() => {
     let frameId: number;
     const animate = () => {
@@ -39,10 +41,12 @@ export function KGVisualizer3D() {
         const scene = fgRef.current.scene();
         const graphGroup = scene.children.find((child: any) => child.type === 'Group');
         if (graphGroup) {
-          if (isRotating) graphGroup.rotation.y += 0.0025; 
-          else {
-            graphGroup.rotation.y *= 0.95; 
-            if (Math.abs(graphGroup.rotation.y) < 0.001) graphGroup.rotation.y = 0;
+          const targetVelocity = isRotating ? 0.0025 : 0;
+          // Smoothly interpolate velocity towards target (roughly 1s to stop)
+          rotationVelocityRef.current += (targetVelocity - rotationVelocityRef.current) * 0.05;
+          
+          if (Math.abs(rotationVelocityRef.current) > 0.00001) {
+            graphGroup.rotation.y += rotationVelocityRef.current;
           }
         }
         
