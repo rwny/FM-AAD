@@ -4,7 +4,7 @@ import { supabase } from '../utils/supabase';
 import { Search, Target, X } from 'lucide-react';
 
 export function KGVisualizer() {
-  const fgRef = useRef<any>();
+  const fgRef = useRef<any>(null);
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [searchQuery, setSearchQuery] = useState('');

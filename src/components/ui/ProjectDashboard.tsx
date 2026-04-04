@@ -387,7 +387,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {(() => {
-                    const { headers, rows } = getHistoryData(historySystem);
+                    const { rows } = getHistoryData(historySystem);
                     return rows.map((row: any, idx: number) => (
                       <tr key={idx} className={`hover:bg-slate-50 transition-colors ${idx === 0 ? 'bg-emerald-50/30' : ''}`}>
                         <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-500">{row[0]}</td>
