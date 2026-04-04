@@ -1,13 +1,12 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import { supabase } from '../utils/supabase';
-import { Search, Target, X } from 'lucide-react';
+
 
 export function KGVisualizer() {
   const fgRef = useRef<any>(null);
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const [searchQuery, setSearchQuery] = useState('');
   const [focusedNode, setFocusedNode] = useState<any | null>(null);
 
   useEffect(() => {
@@ -45,17 +44,8 @@ export function KGVisualizer() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return graphData.nodes.filter(n => 
-      n.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      n.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 5);
-  }, [searchQuery, graphData.nodes]);
-
-  const handleSearchSelect = (node: any) => {
+  const handleNodeClick = (node: any) => {
     setFocusedNode(node);
-    setSearchQuery('');
     if (fgRef.current) {
       fgRef.current.centerAt(node.x, node.y, 1000);
       fgRef.current.zoom(2.5, 1000);
@@ -74,49 +64,7 @@ export function KGVisualizer() {
         </p>
       </div>
 
-      {/* TACTICAL SEARCH BOX */}
-      <div className="absolute top-6 right-6 z-50 w-72">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-indigo-500/20 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full" />
-          <div className="relative flex items-center bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-2xl overflow-hidden">
-            <div className="p-2.5 text-slate-400">
-              <Search className="w-5 h-5" />
-            </div>
-            <input 
-              type="text"
-              placeholder="TACTICAL SEARCH..."
-              className="bg-transparent border-none outline-none text-white text-xs font-black tracking-widest w-full py-2 placeholder:text-slate-600 uppercase"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-2 text-slate-400 hover:text-white transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          
-          {/* SEARCH RESULTS DROPDOWN */}
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-              {searchResults.map((node, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSearchSelect(node)}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-left transition-colors border-b border-white/5 last:border-none"
-                >
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: node.color }} />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-white tracking-widest uppercase">{node.name}</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">{node.type}</span>
-                  </div>
-                  <Target className="w-3.5 h-3.5 ml-auto text-slate-600 opacity-0 group-hover:opacity-100" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+
 
       {/* LEGEND */}
       <div className="absolute bottom-8 left-8 z-10 flex flex-col gap-3 text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-md bg-white/5 p-5 rounded-3xl border border-white/10 select-none">
@@ -187,7 +135,7 @@ export function KGVisualizer() {
             ctx.fillStyle = focusedNode?.id === node.id ? '#fff' : 'rgba(255,255,255,0.6)';
             ctx.fillText(label, node.x, node.y + size + (fontSize * 1.5));
           }}
-          onNodeClick={(node) => handleSearchSelect(node)}
+          onNodeClick={(node) => handleNodeClick(node)}
         />
       </div>
     </div>

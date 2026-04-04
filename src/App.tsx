@@ -568,7 +568,7 @@ function App() {
       )}
       {/* Version Tag */}
       <div className="absolute bottom-3 right-4 z-[100] text-[10px] font-mono font-bold text-slate-400/80 pointer-events-none select-none mix-blend-difference">
-        rw-0.3.2
+        rw-0.3.24
       </div>
     </div>
   )

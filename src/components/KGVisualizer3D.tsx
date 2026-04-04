@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { RotateCw, Pause, Search, Target, X } from 'lucide-react';
+import { RotateCw, Pause, Target, X } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
@@ -11,11 +11,26 @@ export function KGVisualizer3D() {
   const [highlightLevel, setHighlightLevel] = useState<string | null>(null);
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [terminalLogs, setTerminalLogs] = useState<{ id: number, text: string }[]>([]);
+  const logIdRef = useRef(0);
   const [isRotating, setIsRotating] = useState(true); 
   const fadeTimeoutRef = useRef<any>(null);
   const streamIntervalRef = useRef<any>(null);
+
+  // Auto-expire logs
+  useEffect(() => {
+    if (terminalLogs.length > 0) {
+      const timer = setTimeout(() => {
+        setTerminalLogs(prev => prev.slice(1));
+      }, 5000); 
+      return () => clearTimeout(timer);
+    }
+  }, [terminalLogs]);
+
+  const addLog = (text: string) => {
+    setTerminalLogs(prev => [...prev, { id: logIdRef.current++, text }].slice(-25));
+  };
 
   useEffect(() => {
     let frameId: number;
@@ -54,7 +69,8 @@ export function KGVisualizer3D() {
         const { data: nodesData } = await supabase.from('kg_nodes').select('id, name, type, metadata');
         const { data: edgesData } = await supabase.from('kg_edges').select('subject_id, object_id, predicate');
         if (nodesData && edgesData) {
-          const nodes = nodesData.map((n: any) => {
+          // ... (node mapping)
+          const mappedNodes = nodesData.map((n: any) => {
             let color = '#64748b'; let level = '7'; let val = 4;
             const t = n.type.toLowerCase();
             if (t === 'building') { color = '#ff0000'; val = 25; level = '1'; }
@@ -66,10 +82,23 @@ export function KGVisualizer3D() {
             else if (t === 'pipe') { color = '#444444'; val = 6; level = '7'; }
             
             const displayName = n.metadata?.display_name || n.name;
-            return { id: n.id, name: displayName, fullName: n.name, type: n.type, level, val, color };
+            return { id: n.id, name: displayName, fullName: n.name, type: n.type, level, val, color, metadata: n.metadata };
           });
           const links = edgesData.map((e: any) => ({ source: e.subject_id, target: e.object_id, name: e.predicate }));
-          setGraphData({ nodes, links });
+          setGraphData({ nodes: mappedNodes, links });
+
+          // Start Live Stream effect
+          addLog('[SYSTEM] INITIALIZING TOPOLOGY SCAN...');
+          let count = 0;
+          streamIntervalRef.current = setInterval(() => {
+            if (count < 5) {
+              const randomNode = mappedNodes[Math.floor(Math.random() * mappedNodes.length)];
+              addLog(`[SCAN] DISCOVERED: ${randomNode.name.toUpperCase()}`);
+              count++;
+            } else {
+              clearInterval(streamIntervalRef.current);
+            }
+          }, 800);
         }
       } catch (err) { console.error('Failed to load KG 3D:', err); }
     }
@@ -81,25 +110,16 @@ export function KGVisualizer3D() {
     };
   }, []);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return graphData.nodes.filter(n => 
-      n.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      n.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 5);
-  }, [searchQuery, graphData.nodes]);
-
-  const handleSearchSelect = (node: any) => {
+  const handleNodeClick = (node: any) => {
     if (!node) return;
     setFocusedNodeId(node.id);
-    setSearchQuery('');
-    setTerminalLogs(prev => [...prev, `[TARGET] ACQUIRED: ${node.name.toUpperCase()}`, `[TACTICAL] VECTORING CAMERA TO SOURCE...`].slice(-25));
+    setSelectedNode(node);
+    addLog(`[TARGET] ACQUIRED: ${node.name.toUpperCase()}`);
+    addLog(`[TACTICAL] VECTORING CAMERA TO SOURCE...`);
     
     if (fgRef.current) {
-      // Aim at node from a distance of 150 units
       const distance = 150;
       const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1);
-
       fgRef.current.cameraPosition(
         { 
           x: (node.x || 0) * distRatio, 
@@ -118,19 +138,25 @@ export function KGVisualizer3D() {
       return;
     }
     setHoverNodeId(node.id);
-    const nodeLogs = [`[HOVER] ID: ${node.name.toUpperCase()}`, `[TYPE] ${node.type.toUpperCase()}`];
-    setTerminalLogs(prev => [...prev, ...nodeLogs].slice(-25));
+    addLog(`[HOVER] ID: ${node.name.toUpperCase()}`);
   };
 
   const toggleRotation = () => {
     setIsRotating(!isRotating);
-    setTerminalLogs(prev => [...prev, `[SYSTEM] ROTATION: ${!isRotating ? 'ON' : 'OFF'}`].slice(-25));
+    addLog(`[SYSTEM] ROTATION: ${!isRotating ? 'ON' : 'OFF'}`);
   };
 
   const triggerHighlight = (level: string) => {
     setHighlightLevel(level);
     const levelNodes = graphData.nodes.filter(n => n.level === level);
-    setTerminalLogs(prev => [...prev, `[SCAN] LVL-0${level}: ${levelNodes.length} NODES FOUND`].slice(-25));
+    addLog(`[SCAN] LVL-0${level}: ${levelNodes.length} NODES FOUND`);
+    
+    // BURST ALL NODES TO TERMINAL
+    levelNodes.forEach((n, i) => {
+      setTimeout(() => {
+        addLog(`[TARGET] ${n.name.toUpperCase()}`);
+      }, i * 50); // Fast burst
+    });
     
     if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
     fadeTimeoutRef.current = setTimeout(() => setHighlightLevel(null), 5000);
@@ -144,61 +170,102 @@ export function KGVisualizer3D() {
       <div className="absolute top-8 left-24 z-10 text-white pointer-events-none flex flex-col gap-0.5">
         <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] font-mono">AR15 TOPOLOGY 3D</h2>
         <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4 font-mono">Tactical Network Environment</p>
-        <div className="flex flex-col gap-0.5 font-mono text-[9px] text-white tracking-tight leading-none opacity-80">
-          {terminalLogs.map((log, i) => (
-            <div key={i} className="animate-in fade-in slide-in-from-left-1 duration-150 h-[11px]">
-              {log && <><span className="opacity-30 mr-2">::</span>{log}</>}
+        <div className="flex flex-col gap-0.5 font-mono text-[9px] text-[#00f2ff] tracking-tight leading-none opacity-80">
+          {terminalLogs.map((log) => (
+            <div key={log.id} className="animate-in fade-in slide-out-to-top-2 slide-in-from-left-1 duration-300 h-[11px] flex items-center">
+              <span className="opacity-30 mr-2">::</span>{log.text}
             </div>
           ))}
         </div>
       </div>
 
-      {/* SEARCH BOX 3D */}
-      <div className="absolute top-8 right-8 z-50 flex flex-col gap-2">
-        <div className="relative group w-64">
-           <div className="absolute inset-0 bg-[#00f2ff]/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity rounded-full" />
-           <div className="relative flex items-center bg-black/60 backdrop-blur-2xl border border-white/10 rounded-xl p-1 shadow-2xl overflow-hidden">
-             <div className="p-2.5 text-slate-400">
-               <Search className="w-4 h-4" />
-             </div>
-             <input 
-               type="text"
-               placeholder="TARGET SEARCH..."
-               className="bg-transparent border-none outline-none text-white text-[10px] font-black tracking-widest w-full py-2 placeholder:text-white/20 uppercase"
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-             />
-             {searchQuery && (
-               <button onClick={() => setSearchQuery('')} className="p-2 text-white/40 hover:text-white transition-colors">
-                 <X className="w-3 h-3" />
-               </button>
-             )}
-           </div>
-           
-           {/* SEARCH RESULTS */}
-           {searchResults.length > 0 && (
-             <div className="absolute top-full left-0 right-0 mt-2 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
-               {searchResults.map((node, i) => (
-                 <button
-                   key={i}
-                   onClick={() => handleSearchSelect(node)}
-                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-left transition-colors border-b border-white/5 last:border-none group/item"
-                 >
-                   <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: node.color }} />
-                   <div className="flex flex-col">
-                     <span className="text-[10px] font-black text-white tracking-widest uppercase">{node.name}</span>
-                     <span className="text-[8px] font-bold text-white/40 uppercase">{node.type}</span>
-                   </div>
-                   <Target className="w-3 h-3 ml-auto text-white/20 group-hover/item:text-[#00f2ff] transition-colors" />
-                 </button>
-               ))}
-             </div>
-           )}
-        </div>
+      {/* TACTICAL DETAIL PANEL (LEFT) */}
+      {selectedNode && (
+        <div className="absolute top-32 left-8 z-50 w-[360px] bg-black/80 backdrop-blur-3xl border border-[#00f2ff]/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,242,255,0.15)] animate-in slide-in-from-left-4 duration-500 max-h-[70vh] flex flex-col">
+          <div className="bg-[#00f2ff]/10 border-b border-[#00f2ff]/20 px-5 py-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#00f2ff] animate-pulse" />
+              <span className="text-[10px] font-black text-[#00f2ff] tracking-[0.2em] uppercase">Tactical Acquisition</span>
+            </div>
+            <button onClick={() => setSelectedNode(null)} className="text-white/40 hover:text-[#00f2ff] transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+            <div>
+              <h3 className="text-[22px] font-black text-white leading-tight tracking-tight uppercase">{selectedNode.name}</h3>
+              <p className="text-[10px] font-bold text-[#00f2ff]/60 tracking-widest mt-1 uppercase">{selectedNode.type} // {selectedNode.fullName}</p>
+            </div>
 
-        <button onClick={toggleRotation} className={`p-2.5 rounded-xl border backdrop-blur-xl transition-all shadow-2xl flex items-center justify-center gap-2 group ${isRotating ? 'bg-[#00f2ff]/10 border-[#00f2ff]/30 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}>
+            <div className="space-y-3">
+              <div className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Asset Configuration</div>
+              <div className="grid grid-cols-1 gap-2">
+                {selectedNode.metadata ? Object.entries(selectedNode.metadata).map(([key, val]: [string, any]) => (
+                  <div key={key} className="flex justify-between items-center py-2.5 px-3 bg-white/5 rounded-lg border border-white/5">
+                    <span className="text-[9px] font-bold text-white/40 uppercase">{key.replace(/_/g, ' ')}</span>
+                    <span className="text-[9px] font-black text-[#00f2ff]">{String(val)}</span>
+                  </div>
+                )) : (
+                  <div className="text-[10px] italic text-white/20">NO LOCAL DATA DETECTED</div>
+                )}
+              </div>
+            </div>
+
+            {/* RELATIONSHIPS SECTION */}
+            <div className="space-y-3">
+              <div className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Network Topology / Relationships</div>
+              <div className="space-y-1.5">
+                {(() => {
+                  const related = graphData.links.filter(l => 
+                    (typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id || 
+                    (typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id
+                  );
+
+                  if (related.length === 0) return <div className="text-[10px] italic text-white/20 py-2">NO ACTIVE LINKS DETECTED</div>;
+
+                  return related.map((link, i) => {
+                    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                    const isSubject = sourceId === selectedNode.id;
+                    const otherNodeId = isSubject ? targetId : sourceId;
+                    const otherNode = graphData.nodes.find(n => n.id === otherNodeId);
+                    
+                    return (
+                      <button 
+                        key={i} 
+                        onClick={() => handleNodeClick(otherNode)}
+                        className="w-full flex items-center justify-between p-3 bg-[#00f2ff]/5 hover:bg-[#00f2ff]/10 border border-[#00f2ff]/10 hover:border-[#00f2ff]/30 rounded-xl transition-all group/link"
+                      >
+                        <div className="flex flex-col items-start">
+                          <span className="text-[8px] font-black text-white/40 uppercase tracking-widest leading-none mb-1">{link.name}</span>
+                          <span className="text-[11px] font-black text-[#00f2ff] uppercase tracking-tight">{otherNode?.name || otherNodeId}</span>
+                        </div>
+                        <div className="text-[9px] font-bold text-white/20 uppercase group-hover/link:text-white/60 transition-colors">Vector {'>'}</div>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-black/40 border-t border-white/10 shrink-0">
+             <button 
+                onClick={() => handleNodeClick(selectedNode)}
+                className="w-full bg-[#00f2ff] hover:bg-[#00d2ff] text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(0,242,255,0.2)] active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Target className="w-4 h-4" /> Recenter Network Vector
+              </button>
+          </div>
+        </div>
+      )}
+
+      {/* ROTATION CONTROL */}
+      <div className="absolute top-8 right-8 z-50">
+        <button onClick={toggleRotation} className={`px-4 py-2.5 rounded-xl border backdrop-blur-xl transition-all shadow-2xl flex items-center justify-center gap-3 group ${isRotating ? 'bg-[#00f2ff]/10 border-[#00f2ff]/30 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}>
           {isRotating ? <Pause className="w-4 h-4 animate-pulse" /> : <RotateCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />}
-          <span className="text-[9px] font-black uppercase tracking-widest">{isRotating ? "Rotation: ON" : "Rotation: OFF"}</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isRotating ? "Active" : "Paused"}</span>
         </button>
       </div>
 
@@ -215,9 +282,33 @@ export function KGVisualizer3D() {
 
       <ForceGraph3D
         ref={fgRef} width={dimensions.width} height={dimensions.height} graphData={graphData} backgroundColor="#010409"
-        nodeColor={(node: any) => (highlightLevel && node.level === highlightLevel) || (hoverNodeId === node.id) || (focusedNodeId === node.id) ? '#ffffff' : node.color}
-        nodeRelSize={1.5} nodeResolution={24} onNodeHover={triggerNodeHover} nodeLabel={(node: any) => `${node.name} (${node.type})`}
-        nodeVal={(node: any) => (highlightLevel && node.level === highlightLevel) || (hoverNodeId === node.id) || (focusedNodeId === node.id) ? node.val * 3 : node.val}
+        nodeColor={(node: any) => {
+          const isSelected = selectedNode?.id === node.id;
+          const isRelated = selectedNode && graphData.links.some(l => 
+            ((typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id && (typeof l.target === 'object' ? l.target.id : l.target) === node.id) ||
+            ((typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id && (typeof l.source === 'object' ? l.source.id : l.source) === node.id)
+          );
+          if (highlightLevel && node.level === highlightLevel) return '#ffffff';
+          if (hoverNodeId === node.id) return '#ffffff';
+          if (focusedNodeId === node.id) return '#ffffff';
+          if (isSelected) return '#ffffff';
+          if (isRelated) return '#00f2ff';
+          return node.color;
+        }}
+        nodeRelSize={1.5} nodeResolution={24} onNodeHover={triggerNodeHover} onNodeClick={handleNodeClick} nodeLabel={(node: any) => `${node.name} (${node.type})`}
+        nodeVal={(node: any) => {
+          const isSelected = selectedNode?.id === node.id;
+          const isRelated = selectedNode && graphData.links.some(l => 
+            ((typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id && (typeof l.target === 'object' ? l.target.id : l.target) === node.id) ||
+            ((typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id && (typeof l.source === 'object' ? l.source.id : l.source) === node.id)
+          );
+          if (highlightLevel && node.level === highlightLevel) return node.val * 3;
+          if (hoverNodeId === node.id) return node.val * 3;
+          if (focusedNodeId === node.id) return node.val * 3;
+          if (isSelected) return node.val * 4;
+          if (isRelated) return node.val * 2;
+          return node.val;
+        }}
         linkDirectionalParticles={8} linkDirectionalParticleSpeed={0.006}
         linkDirectionalParticleColor={(link: any) => {
           const sourceNode = graphData.nodes.find(n => n.id === (link.source.id || link.source));
@@ -227,7 +318,7 @@ export function KGVisualizer3D() {
         linkWidth={1.2} linkOpacity={0.2} linkColor={() => 'rgba(255,255,255,0.1)'} nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const group = new THREE.Group();
-          const isTargeted = (highlightLevel && node.level === highlightLevel) || (hoverNodeId === node.id) || (focusedNodeId === node.id);
+          const isTargeted = (highlightLevel && node.level === highlightLevel) || (hoverNodeId === node.id) || (focusedNodeId === node.id) || (selectedNode?.id === node.id);
           
           if (isTargeted) {
             const radarCanvas = document.createElement('canvas'); radarCanvas.width = 128; radarCanvas.height = 128;
