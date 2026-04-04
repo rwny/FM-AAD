@@ -188,6 +188,15 @@ export const ACRightPanel: React.FC<any> = ({
     return 'bg-amber-500';
   }
 
+  const calculateAge = (installDate: string) => {
+    if (!installDate || installDate === '---') return 0;
+    const start = new Date(installDate);
+    const now = new Date();
+    const diffTime = now.getTime() - start.getTime();
+    const totalMonths = diffTime / (1000 * 60 * 60 * 24 * 30.4375);
+    return Math.round(Math.max(0, totalMonths));
+  };
+
   // Asset Selected Logic
   if (selectedAC && systemGroup) {
     const sortedLogs = selectedAC.logs || []; 
@@ -241,6 +250,7 @@ export const ACRightPanel: React.FC<any> = ({
                 { label: 'Brand', value: selectedAC.brand, icon: Box },
                 { label: 'Model', value: (selectedAC as any).model, icon: Info },
                 { label: 'Capacity', value: (selectedAC as any).capacity, icon: Wind },
+                { label: 'Age', value: `${calculateAge(selectedAC.install)} mo`, icon: Clock },
                 { label: 'Install Date', value: selectedAC.install, icon: ShoppingCart }
               ].map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center border-b border-white/20 pb-2 last:border-0 last:pb-0">
@@ -273,6 +283,12 @@ export const ACRightPanel: React.FC<any> = ({
               {currentPageLogs.length > 0 ? (
                 currentPageLogs.map((log: any, i: number) => {
                   const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
+                  
+                  // Calculate age at the time of log
+                  const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
+                  const logMs = new Date(log.date).getTime();
+                  const ageAtLog = Math.round(Math.max(0, (logMs - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
+
                   return (
                     <div key={log.id || i} className="p-2.5 leading-tight space-y-0.5 group">
                       <div className="flex justify-between items-center">
@@ -280,6 +296,7 @@ export const ACRightPanel: React.FC<any> = ({
                           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
                           <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
                             <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
+                            <span className="text-[9px] font-bold text-indigo-500 shrink-0 bg-indigo-50 px-1 rounded-sm border border-indigo-100/50">Age: {ageAtLog}m</span>
                             <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
                           </div>
                         </div>

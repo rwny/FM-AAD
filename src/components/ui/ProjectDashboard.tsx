@@ -82,17 +82,30 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     const uniqueLogs = Array.from(new Map(allLogs.map((l: any) => [l.id || `${l.date}-${l.issue}`, l])).values());
     const sortedLogs = uniqueLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    const headers = ['Date', 'Component', 'Status', 'Activity', 'Notes'];
+    const headers = ['Date', 'Age (mo)', 'Component', 'Status', 'Activity', 'Notes'];
     const rows = [
-      [sys.installDate, 'System Master', 'Activated', 'Initial system deployment', `Project deployment to ${sys.roomName}`],
-      ...sortedLogs.map((l: any) => [l.date, l.assetId || sys.id, l.status, l.issue, l.note || ''])
+      [sys.installDate, '0', 'System Master', 'Activated', 'Initial system deployment', `Project deployment to ${sys.roomName}`],
+      ...sortedLogs.map((l: any) => {
+        const installMs = new Date(sys.installDate).getTime();
+        const logMs = new Date(l.date).getTime();
+        const ageAtLog = Math.round(Math.max(0, (logMs - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
+        return [l.date, ageAtLog.toString(), l.assetId || sys.id, l.status, l.issue, l.note || ''];
+      })
     ];
     return { headers, rows };
   };
 
   const exportToCSV = () => {
-    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Components'];
-    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map((c: any) => c.id).join(' | ')]);
+    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Age', 'Components'];
+    const rows = systemData.map(sys => [
+      sys.roomName, 
+      sys.id, 
+      `Floor ${sys.floor}`, 
+      sys.aggregatedStatus, 
+      sys.installDate, 
+      calculateAge(sys.installDate),
+      sys.components.map((c: any) => c.id).join(' | ')
+    ]);
     const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -104,8 +117,16 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   };
 
   const copyToClipboard = () => {
-    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Components'];
-    const rows = systemData.map(sys => [sys.roomName, sys.id, `Floor ${sys.floor}`, sys.aggregatedStatus, sys.installDate, sys.components.map((c: any) => c.id).join(' | ')]);
+    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Age', 'Components'];
+    const rows = systemData.map(sys => [
+      sys.roomName, 
+      sys.id, 
+      `Floor ${sys.floor}`, 
+      sys.aggregatedStatus, 
+      sys.installDate, 
+      calculateAge(sys.installDate),
+      sys.components.map((c: any) => c.id).join(' | ')
+    ]);
     const textContent = [headers, ...rows].map(e => e.join("\t")).join("\n");
     navigator.clipboard.writeText(textContent).then(() => {
       setCopyFeedback(true);
@@ -151,6 +172,18 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       default: return 'bg-slate-300';
     }
   }
+
+  const calculateAge = (installDate: string) => {
+    if (!installDate || installDate === '---') return 0;
+    const start = new Date(installDate);
+    const now = new Date();
+    
+    // Calculate rounded total months
+    const diffTime = now.getTime() - start.getTime();
+    const totalMonths = diffTime / (1000 * 60 * 60 * 24 * 30.4375); // Average days in month
+    
+    return Math.round(totalMonths);
+  };
 
   return (
     <div className="fixed inset-[10px] bg-white z-[100] rounded-[12px] shadow-2xl border border-slate-200 flex flex-col overflow-hidden font-sans animate-in fade-in zoom-in-95 duration-200">
@@ -217,6 +250,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   </div>
                 </div>
               </th>
+              <th className="px-4 py-1.5 border-r border-slate-100 w-16 text-center">Age</th>
               <th className="px-2 py-1.5 border-r border-slate-100 w-10 text-center">Hist.</th>
               <th className="px-4 py-1.5 border-r border-slate-100">Functional Components</th>
               <th className="px-2 py-1.5 text-right w-12"></th>
@@ -254,7 +288,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                         const markers = sys.components.flatMap((c: any) => (c.logs || []).map((log: any) => ({ ...log, assetId: c.id }))).map((log: any) => {
                           const logDate = new Date(log.date).getTime();
                           const pos = ((logDate - startWindowMs) / windowDuration) * 100;
-                          return { ...log, pos };
+                          
+                          // Calculate age at the time of this log
+                          const ageAtLog = Math.round(Math.max(0, (logDate - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
+                          
+                          return { ...log, pos, ageAtLog };
                         }).filter((m: any) => m.pos >= 0);
                         return (
                           <>
@@ -263,7 +301,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                             {markers.map((m: any, i: number) => {
                                const mColor = m.status === 'Faulty' ? 'bg-rose-500' : (m.status === 'Normal' || m.status === 'Completed' ? 'bg-emerald-500' : 'bg-amber-500');
                                return (
-                                <div key={i} className={`absolute w-2.5 h-2.5 rounded-full border border-white shadow-sm z-30 ${mColor} cursor-help hover:scale-150 transition-transform`} style={{ left: `${m.pos}%` }} title={`Date: ${m.date}\nComp: ${m.assetId}\nIssue: ${m.issue}`} />
+                                <div key={i} className={`absolute w-2.5 h-2.5 rounded-full border border-white shadow-sm z-30 ${mColor} cursor-help hover:scale-150 transition-transform`} style={{ left: `${m.pos}%` }} title={`Date: ${m.date}\nAge: ${m.ageAtLog} mo\nComp: ${m.assetId}\nIssue: ${m.issue}`} />
                                );
                             })}
                             <div className="absolute right-0 w-0.5 h-3 bg-indigo-300 z-10" title="Today" />
@@ -271,6 +309,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                           </>
                         );
                       })()}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 border-r border-slate-100 text-center">
+                    <div className="text-[11px] font-black text-slate-700 whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                      {calculateAge(sys.installDate)}
                     </div>
                   </td>
                   <td className="px-2 py-3 border-r border-slate-100 text-center">
@@ -332,28 +375,31 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                 <span className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">{historySystem.id}</span>
               </div>
               <table className="w-full text-left border-collapse mb-4">
-                <tbody className="divide-y divide-slate-100">
-                  <tr className="bg-emerald-50/30">
-                    <td className="px-4 py-2 border-r border-slate-100 w-32"><div className="flex items-center gap-1.5 whitespace-nowrap"><span className="text-[11px] font-black text-slate-700">{historySystem.installDate}</span><div className="w-2 h-2 bg-emerald-500 rotate-45 shrink-0 ml-auto" /></div></td>
-                    <td className="px-4 py-2 border-r border-slate-100 w-32 text-[10px] font-black text-indigo-600 uppercase tracking-tighter">System Master</td>
-                    <td className="px-4 py-2 border-r border-slate-100 w-36"><div className="flex items-center justify-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Deploy</div></td>
-                    <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-600 italic">Initial system deployment to {historySystem.roomName}</td>
-                    <td className="px-4 py-2 text-[10px] text-slate-400">Standard activation</td>
+                <thead className="sticky top-0 bg-slate-100 z-10 border-b border-slate-200">
+                  <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <th className="px-4 py-2 border-r border-slate-200 w-32">Date</th>
+                    <th className="px-4 py-2 border-r border-slate-200 w-24 text-center">Age (mo)</th>
+                    <th className="px-4 py-2 border-r border-slate-200 w-32">Component</th>
+                    <th className="px-4 py-2 border-r border-slate-200 w-32 text-center">Status</th>
+                    <th className="px-4 py-2 border-r border-slate-200">Activity</th>
+                    <th className="px-4 py-2">Notes</th>
                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
                   {(() => {
-                    const allLogs = historySystem.components.flatMap((c: any) => (c.logs || []).map((l: any) => ({ ...l, assetId: c.id })));
-                    const uniqueLogs = Array.from(new Map(allLogs.map((l: any) => [l.id || `${l.date}-${l.issue}`, l])).values());
-                    return uniqueLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((log: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-500">{log.date}</td>
-                        <td className="px-4 py-2 border-r border-slate-100 text-[10px] font-black text-slate-600 uppercase">{log.assetId || historySystem.id}</td>
+                    const { headers, rows } = getHistoryData(historySystem);
+                    return rows.map((row: any, idx: number) => (
+                      <tr key={idx} className={`hover:bg-slate-50 transition-colors ${idx === 0 ? 'bg-emerald-50/30' : ''}`}>
+                        <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-500">{row[0]}</td>
+                        <td className="px-4 py-2 border-r border-slate-100 text-center text-[11px] font-black text-slate-700 bg-slate-50/50">{row[1]}</td>
+                        <td className="px-4 py-2 border-r border-slate-100 text-[10px] font-black text-slate-600 uppercase">{row[2]}</td>
                         <td className="px-4 py-2 border-r border-slate-100">
-                          <div className={`flex items-center justify-center gap-1.5 text-[10px] font-black uppercase whitespace-nowrap ${log.status === 'Completed' || log.status === 'Normal' ? 'text-emerald-600' : (log.status === 'Faulty' ? 'text-rose-600' : 'text-amber-600')}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${log.status === 'Completed' || log.status === 'Normal' ? 'bg-emerald-500' : (log.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500')}`} />{log.status}
+                          <div className={`flex items-center justify-center gap-1.5 text-[10px] font-black uppercase whitespace-nowrap ${row[3] === 'Completed' || row[3] === 'Normal' || row[3] === 'Activated' ? 'text-emerald-600' : (row[3] === 'Faulty' ? 'text-rose-600' : 'text-amber-600')}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${row[3] === 'Completed' || row[3] === 'Normal' || row[3] === 'Activated' ? 'bg-emerald-500' : (row[3] === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500')}`} />{row[3]}
                           </div>
                         </td>
-                        <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-700 leading-tight">{log.issue}</td>
-                        <td className="px-4 py-2 text-[10px] text-slate-500 italic leading-tight">{log.note || '-'}</td>
+                        <td className="px-4 py-2 border-r border-slate-100 text-[11px] font-bold text-slate-700 leading-tight">{row[4]}</td>
+                        <td className="px-4 py-2 text-[10px] text-slate-500 italic leading-tight">{row[5] || '-'}</td>
                       </tr>
                     ));
                   })()}

@@ -56,6 +56,7 @@ function parseMDHierarchy(filePath) {
           else if (k === 'installdate') metadata.install_date = v;
           else if (k === 'connectsto') metadata.connects_to = v.split(',').map(x => x.trim());
           else if (k === 'connectsfrom') metadata.connects_from = v.split(',').map(x => x.trim());
+          else if (k === 'monitors' || k === 'monitor') metadata.monitors = v.split(',').map(x => x.trim());
           else metadata[k] = v;
         }
       });
@@ -63,27 +64,41 @@ function parseMDHierarchy(filePath) {
 
     // Determine category
     let type = 'unknown';
-    if (name === 'AC' || name === 'EE') type = 'system_group';
+    const genericNames = ['AC', 'EE', 'ARCH', 'FUR', 'CCTV'];
+    if (genericNames.includes(name)) type = 'system_group';
     else if (name.includes('FCU')) type = 'fcu';
     else if (name.includes('CDU')) type = 'cdu';
     else if (name.startsWith('AC-')) type = 'ac_set';
     else if (name.startsWith('PIPE-')) type = 'pipe';
     else if (name.startsWith('LP-')) type = 'load_panel';
+    else if (name.startsWith('PG-')) type = 'power_outlet';
+    else if (name.startsWith('SW-')) type = 'switch';
+    else if (name.startsWith('LI-')) type = 'light_fixture';
     else if (name.startsWith('room-')) type = 'room';
     else if (name.startsWith('floor-')) type = 'floor';
+    else if (name.startsWith('NVR-')) type = 'nvr';
+    else if (name.startsWith('CCTV-')) type = 'cctv_camera';
     else if (name.toLowerCase() === 'ar15') type = 'building';
 
-    nodes[name] = { type, metadata };
-
-    // Hierarchy Logic
+    // Hierarchy Logic: Find parent
     while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {
       stack.pop();
     }
+    const parent = stack.length > 0 ? stack[stack.length - 1] : null;
 
-    if (stack.length > 0) {
-      triplets.push({ sub: stack[stack.length - 1].name, pred: 'contains', obj: name });
+    // Generate Unique Name for generic nodes
+    let uniqueName = name;
+    if (genericNames.includes(name) && parent) {
+      uniqueName = `${parent.uniqueName}-${name}`;
     }
-    stack.push({ indent, name });
+    metadata.display_name = name;
+
+    nodes[uniqueName] = { type, metadata };
+
+    if (parent) {
+      triplets.push({ sub: parent.uniqueName, pred: 'contains', obj: uniqueName });
+    }
+    stack.push({ indent, name, uniqueName });
   }
 
   return { nodes, triplets };
@@ -93,19 +108,18 @@ async function sync() {
   console.log(`📖 Reading ${mdPath}...`);
   const { nodes, triplets } = parseMDHierarchy(mdPath);
 
-  // Filter for AC-related nodes only as requested (building, floor, room, ac_set, fcu, cdu, pipe, load_panel linked to AC)
-  // Actually the user said "เน้นเรื่อง แอร์ก่อน ... เอาแอร์อย่างเดียวกัน"
+  // Filter for allowed nodes (Everything except 'unknown')
   const acNodes = {};
   const acNodeNames = new Set();
 
   for (const [name, data] of Object.entries(nodes)) {
-    if (data.type !== 'unknown' && !name.startsWith('SW-') && !name.startsWith('LI-') && !name.startsWith('PG-')) {
+    if (data.type !== 'unknown') {
       acNodes[name] = data;
       acNodeNames.add(name);
     }
   }
 
-  console.log(`🚀 Syncing ${Object.keys(acNodes).length} AC-related nodes...`);
+  console.log(`🚀 Syncing ${Object.keys(acNodes).length} nodes...`);
 
   // 1. Upsert Nodes
   for (const [name, data] of Object.entries(acNodes)) {
@@ -153,6 +167,13 @@ async function sync() {
       data.metadata.connects_from.forEach(source => {
         if (nameToId[source] && nameToId[name]) {
           edgeData.push({ subject_id: nameToId[source], predicate: 'connectsTo', object_id: nameToId[name] });
+        }
+      });
+    }
+    if (data.metadata.monitors) {
+      data.metadata.monitors.forEach(target => {
+        if (nameToId[name] && nameToId[target]) {
+          edgeData.push({ subject_id: nameToId[name], predicate: 'monitors', object_id: nameToId[target] });
         }
       });
     }
