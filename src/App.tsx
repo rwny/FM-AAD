@@ -377,7 +377,9 @@ function App() {
       )}
 
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        {activeMode === 'KG' && <KGVisualizer3D />}
+        {activeMode === 'KG' && (
+          <KGVisualizer3D />
+        )}
         <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
           <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
           <color attach="background" args={['#bae6fd']} />
@@ -400,7 +402,7 @@ function App() {
       {!showLeft && (
         <button 
           onClick={() => setShowLeft(true)} 
-          className="absolute left-[20px] top-1/2 -translate-y-1/2 p-3 bg-white/90 backdrop-blur-md rounded-[10px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all"
+          className="absolute left-[20px] top-[24px] p-3 bg-white/90 backdrop-blur-md rounded-[10px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
         >
           <PanelLeft className="w-6 h-6" />
         </button>
@@ -500,7 +502,7 @@ function App() {
       {!showRight && (
         <button 
           onClick={() => setShowRight(true)} 
-          className="absolute right-[20px] top-1/2 -translate-y-1/2 p-2 bg-white/90 backdrop-blur-md rounded-[8px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all"
+          className="absolute right-[20px] top-[24px] p-2 bg-white/90 backdrop-blur-md rounded-[8px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
         >
           <PanelRight className="w-5 h-5" />
         </button>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { RotateCw, Pause, Target, X } from 'lucide-react';
@@ -47,6 +47,7 @@ export function KGVisualizer3D() {
           
           if (Math.abs(rotationVelocityRef.current) > 0.00001) {
             graphGroup.rotation.y += rotationVelocityRef.current;
+            graphGroup.rotation.x += rotationVelocityRef.current * 0.1;
           }
         }
         
@@ -142,8 +143,19 @@ export function KGVisualizer3D() {
       return;
     }
     setHoverNodeId(node.id);
-    addLog(`[HOVER] ID: ${node.name.toUpperCase()}`);
   };
+
+  const relatedNodeIds = useMemo(() => {
+    if (!selectedNode) return new Set();
+    const set = new Set();
+    graphData.links.forEach(l => {
+      const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+      const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+      if (sourceId === selectedNode.id) set.add(targetId);
+      if (targetId === selectedNode.id) set.add(sourceId);
+    });
+    return set;
+  }, [selectedNode, graphData.links]);
 
   const toggleRotation = () => {
     setIsRotating(!isRotating);
@@ -185,7 +197,7 @@ export function KGVisualizer3D() {
 
       {/* TACTICAL DETAIL PANEL (LEFT) */}
       {selectedNode && (
-        <div className="absolute top-32 left-8 z-50 w-[360px] bg-black/80 backdrop-blur-3xl border border-[#00f2ff]/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,242,255,0.15)] animate-in slide-in-from-left-4 duration-500 max-h-[70vh] flex flex-col">
+        <div className="absolute top-32 right-8 z-50 w-[360px] bg-black/80 backdrop-blur-3xl border border-[#00f2ff]/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,242,255,0.15)] animate-in slide-in-from-right-4 duration-500 max-h-[70vh] flex flex-col">
           <div className="bg-[#00f2ff]/10 border-b border-[#00f2ff]/20 px-5 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#00f2ff] animate-pulse" />
@@ -265,8 +277,8 @@ export function KGVisualizer3D() {
         </div>
       )}
 
-      {/* ROTATION CONTROL */}
-      <div className="absolute top-8 right-8 z-50">
+      {/* ROTATION CONTROL (BOTTOM RIGHT) */}
+      <div className="absolute bottom-8 right-8 z-50">
         <button onClick={toggleRotation} className={`px-4 py-2.5 rounded-xl border backdrop-blur-xl transition-all shadow-2xl flex items-center justify-center gap-3 group ${isRotating ? 'bg-[#00f2ff]/10 border-[#00f2ff]/30 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}>
           {isRotating ? <Pause className="w-4 h-4 animate-pulse" /> : <RotateCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />}
           <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isRotating ? "Active" : "Paused"}</span>
@@ -288,13 +300,9 @@ export function KGVisualizer3D() {
         ref={fgRef} width={dimensions.width} height={dimensions.height} graphData={graphData} backgroundColor="#010409"
         nodeColor={(node: any) => {
           const isSelected = selectedNode?.id === node.id;
-          const isRelated = selectedNode && graphData.links.some(l => 
-            ((typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id && (typeof l.target === 'object' ? l.target.id : l.target) === node.id) ||
-            ((typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id && (typeof l.source === 'object' ? l.source.id : l.source) === node.id)
-          );
+          const isRelated = relatedNodeIds.has(node.id);
           if (highlightLevel && node.level === highlightLevel) return '#ffffff';
           if (hoverNodeId === node.id) return '#ffffff';
-          if (focusedNodeId === node.id) return '#ffffff';
           if (isSelected) return '#ffffff';
           if (isRelated) return '#00f2ff';
           return node.color;
@@ -302,13 +310,9 @@ export function KGVisualizer3D() {
         nodeRelSize={1.5} nodeResolution={24} onNodeHover={triggerNodeHover} onNodeClick={handleNodeClick} nodeLabel={(node: any) => `${node.name} (${node.type})`}
         nodeVal={(node: any) => {
           const isSelected = selectedNode?.id === node.id;
-          const isRelated = selectedNode && graphData.links.some(l => 
-            ((typeof l.source === 'object' ? l.source.id : l.source) === selectedNode.id && (typeof l.target === 'object' ? l.target.id : l.target) === node.id) ||
-            ((typeof l.target === 'object' ? l.target.id : l.target) === selectedNode.id && (typeof l.source === 'object' ? l.source.id : l.source) === node.id)
-          );
+          const isRelated = relatedNodeIds.has(node.id);
           if (highlightLevel && node.level === highlightLevel) return node.val * 3;
           if (hoverNodeId === node.id) return node.val * 3;
-          if (focusedNodeId === node.id) return node.val * 3;
           if (isSelected) return node.val * 4;
           if (isRelated) return node.val * 2;
           return node.val;
