@@ -70,7 +70,7 @@ function parseMDHierarchy(filePath) {
     else if (name.includes('CDU')) type = 'cdu';
     else if (name.startsWith('AC-')) type = 'ac_set';
     else if (name.startsWith('PIPE-')) type = 'pipe';
-    else if (name.startsWith('LP-')) type = 'load_panel';
+    else if (name.startsWith('LP-') || name.startsWith('CU-')) type = 'load_panel';
     else if (name.startsWith('PG-')) type = 'power_outlet';
     else if (name.startsWith('SW-')) type = 'switch';
     else if (name.startsWith('LI-')) type = 'light_fixture';

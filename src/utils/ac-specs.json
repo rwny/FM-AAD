@@ -55,12 +55,12 @@
           ],
           "type": "42TGF0361CP",
           "assetId": "สถ.2568-123-456-004",
-          "installedDate": "2025-01-01",
+          "installedDate": "2024-02-01",
           "systemId": "AC-101-4",
           "metadata": {
             "Type": "42TGF0361CP",
             "AssetID": "สถ.2568-123-456-004",
-            "InstallDate": "2025-01-01"
+            "InstallDate": "2024-02-01"
           }
         }
       },
@@ -239,19 +239,10 @@
       "properties": {},
       "children": [
         {
-          "name": "LP-123",
+          "name": "CU-1-01",
           "indent": 4,
           "properties": {
-            "Type": "LoadPanel"
-          },
-          "children": []
-        },
-        {
-          "name": "LP-EE-1-4",
-          "indent": 4,
-          "properties": {
-            "Type": "LoadPanel",
-            "ConnectsFrom": "LP-123"
+            "Type": "ConsumerUnitx"
           },
           "children": []
         },
@@ -265,6 +256,18 @@
               "indent": 8,
               "properties": {},
               "children": [
+                {
+                  "name": "ARCH",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
                 {
                   "name": "AC",
                   "indent": 12,
@@ -301,7 +304,7 @@
                               "name": "PIPE-ELE-101-1",
                               "indent": 24,
                               "properties": {
-                                "ConnectsFrom": "LP-123"
+                                "ConnectsFrom": "CU-1-01"
                               },
                               "children": []
                             },
@@ -348,7 +351,7 @@
                               "name": "PIPE-ELE-101-2",
                               "indent": 24,
                               "properties": {
-                                "ConnectsFrom": "LP-123"
+                                "ConnectsFrom": "CU-1-01"
                               },
                               "children": []
                             },
@@ -395,7 +398,7 @@
                               "name": "PIPE-ELE-101-3",
                               "indent": 24,
                               "properties": {
-                                "ConnectsFrom": "LP-123"
+                                "ConnectsFrom": "CU-1-01"
                               },
                               "children": []
                             },
@@ -417,7 +420,7 @@
                       "properties": {
                         "Type": "42TGF0361CP",
                         "AssetID": "สถ.2568-123-456-004",
-                        "InstallDate": "2025-01-01"
+                        "InstallDate": "2024-02-01"
                       },
                       "children": [
                         {
@@ -442,7 +445,7 @@
                               "name": "PIPE-ELE-101-4",
                               "indent": 24,
                               "properties": {
-                                "ConnectsFrom": "LP-123"
+                                "ConnectsFrom": "CU-1-01"
                               },
                               "children": []
                             },
@@ -557,51 +560,76 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-102-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0241CP",
-                    "AssetID": "สถ.2568-123-456-005",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-102-1",
+                      "name": "AC-102-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0241CP",
+                        "AssetID": "สถ.2568-123-456-005",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-102-1",
+                          "name": "FCU-102-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-102-1",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-102-1",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-102-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-102-1",
+                          "name": "CDU-102-1",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-102-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-102-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-102-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-102-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
+                },
+                {
+                  "name": "EE",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
                 }
               ]
             }
@@ -618,145 +646,170 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-201-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0361CP",
-                    "AssetID": "สถ.2568-123-456-006",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-201-1",
+                      "name": "AC-201-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0361CP",
+                        "AssetID": "สถ.2568-123-456-006",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-201-1",
+                          "name": "FCU-201-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-201-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "name": "CDU-201-1",
+                          "indent": 20,
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-201-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-201-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-201-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     },
                     {
-                      "name": "CDU-201-1",
+                      "name": "AC-201-2",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0361CP",
+                        "AssetID": "สถ.2568-123-456-007",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-ELE-201-1",
+                          "name": "FCU-201-2",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-201-2",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-201-1",
+                          "name": "CDU-201-2",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-201-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-201-2",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-201-2",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-201-2"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "AC-201-3",
+                      "indent": 16,
+                      "properties": {
+                        "Type": "42TGF0361CP",
+                        "AssetID": "สถ.2568-123-456-008",
+                        "InstallDate": "2025-01-01"
+                      },
+                      "children": [
+                        {
+                          "name": "FCU-201-3",
+                          "indent": 20,
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-201-3",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "name": "CDU-201-3",
+                          "indent": 20,
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-201-3",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-201-3",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-201-3"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "name": "AC-201-2",
+                  "name": "EE",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0361CP",
-                    "AssetID": "สถ.2568-123-456-007",
-                    "InstallDate": "2025-01-01"
-                  },
-                  "children": [
-                    {
-                      "name": "FCU-201-2",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-DRN-201-2",
-                          "indent": 20,
-                          "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-201-2",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-201-2",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
-                        },
-                        {
-                          "name": "PIPE-REF-201-2",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-201-2"
-                          },
-                          "children": []
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "name": "AC-201-3",
-                  "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0361CP",
-                    "AssetID": "สถ.2568-123-456-008",
-                    "InstallDate": "2025-01-01"
-                  },
-                  "children": [
-                    {
-                      "name": "FCU-201-3",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-DRN-201-3",
-                          "indent": 20,
-                          "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-201-3",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-201-3",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
-                        },
-                        {
-                          "name": "PIPE-REF-201-3",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-201-3"
-                          },
-                          "children": []
-                        }
-                      ]
-                    }
-                  ]
+                  "properties": {},
+                  "children": []
                 }
               ]
             },
@@ -766,51 +819,76 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-202-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0241CP",
-                    "AssetID": "สถ.2568-123-456-009",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-202-1",
+                      "name": "AC-202-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0241CP",
+                        "AssetID": "สถ.2568-123-456-009",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-202-1",
+                          "name": "FCU-202-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-202-1",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-202-1",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-202-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-202-1",
+                          "name": "CDU-202-1",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-202-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-202-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-202-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-202-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
+                },
+                {
+                  "name": "EE",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
                 }
               ]
             },
@@ -820,47 +898,66 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-203-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0241CP",
-                    "AssetID": "สถ.2568-123-456-010",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-203-1",
+                      "name": "AC-203-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0241CP",
+                        "AssetID": "สถ.2568-123-456-010",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-203-1",
+                          "name": "FCU-203-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-203-1",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-203-1",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-203-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-203-1",
+                          "name": "CDU-203-1",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-203-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-203-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-203-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-203-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
@@ -874,51 +971,76 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-204-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0241CP",
-                    "AssetID": "สถ.2568-123-456-011",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-204-1",
+                      "name": "AC-204-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0241CP",
+                        "AssetID": "สถ.2568-123-456-011",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-204-1",
+                          "name": "FCU-204-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-204-1",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-204-1",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-204-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-204-1",
+                          "name": "CDU-204-1",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-204-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-204-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-204-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-204-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
+                },
+                {
+                  "name": "EE",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
                 }
               ]
             },
@@ -928,51 +1050,76 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-205-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0241CP",
-                    "AssetID": "สถ.2568-123-456-012",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-205-1",
+                      "name": "AC-205-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0241CP",
+                        "AssetID": "สถ.2568-123-456-012",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-205-1",
+                          "name": "FCU-205-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-205-1",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-205-1",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-205-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-205-1",
+                          "name": "CDU-205-1",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-205-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-205-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-205-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-205-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
+                },
+                {
+                  "name": "EE",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
                 }
               ]
             },
@@ -982,98 +1129,251 @@
               "properties": {},
               "children": [
                 {
-                  "name": "AC-206-1",
+                  "name": "ARCH",
                   "indent": 12,
-                  "properties": {
-                    "Type": "42TGF0361CP",
-                    "AssetID": "สถ.2568-123-456-013",
-                    "InstallDate": "2025-01-01"
-                  },
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "FUR",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                },
+                {
+                  "name": "AC",
+                  "indent": 12,
+                  "properties": {},
                   "children": [
                     {
-                      "name": "FCU-206-1",
+                      "name": "AC-206-1",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0361CP",
+                        "AssetID": "สถ.2568-123-456-013",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-DRN-206-1",
+                          "name": "FCU-206-1",
                           "indent": 20,
                           "properties": {},
-                          "children": []
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-206-1",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
+                        },
+                        {
+                          "name": "CDU-206-1",
+                          "indent": 20,
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-206-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-206-1",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-206-1"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     },
                     {
-                      "name": "CDU-206-1",
+                      "name": "AC-206-2",
                       "indent": 16,
-                      "properties": {},
+                      "properties": {
+                        "Type": "42TGF0361CP",
+                        "AssetID": "สถ.2568-123-456-014",
+                        "InstallDate": "2025-01-01"
+                      },
                       "children": [
                         {
-                          "name": "PIPE-ELE-206-1",
+                          "name": "FCU-206-2",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-DRN-206-2",
+                              "indent": 24,
+                              "properties": {},
+                              "children": []
+                            }
+                          ]
                         },
                         {
-                          "name": "PIPE-REF-206-1",
+                          "name": "CDU-206-2",
                           "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-206-1"
-                          },
-                          "children": []
+                          "properties": {},
+                          "children": [
+                            {
+                              "name": "PIPE-ELE-206-2",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsFrom": "LP-123"
+                              },
+                              "children": []
+                            },
+                            {
+                              "name": "PIPE-REF-206-2",
+                              "indent": 24,
+                              "properties": {
+                                "ConnectsTo": "FCU-206-2"
+                              },
+                              "children": []
+                            }
+                          ]
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "name": "AC-206-2",
+                  "name": "EE",
+                  "indent": 12,
+                  "properties": {},
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "CCTV",
+          "indent": 4,
+          "properties": {},
+          "children": [
+            {
+              "name": "NVR-1",
+              "indent": 8,
+              "properties": {
+                "Type": "NVR",
+                "AssetID": "สถ.2568-cctv-123-001",
+                "InstallDate": "2025-01-01"
+              },
+              "children": [
+                {
+                  "name": "CCTV-1",
                   "indent": 12,
                   "properties": {
-                    "Type": "42TGF0361CP",
-                    "AssetID": "สถ.2568-123-456-014",
-                    "InstallDate": "2025-01-01"
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-002",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-101"
                   },
-                  "children": [
-                    {
-                      "name": "FCU-206-2",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-DRN-206-2",
-                          "indent": 20,
-                          "properties": {},
-                          "children": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "CDU-206-2",
-                      "indent": 16,
-                      "properties": {},
-                      "children": [
-                        {
-                          "name": "PIPE-ELE-206-2",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsFrom": "LP-123"
-                          },
-                          "children": []
-                        },
-                        {
-                          "name": "PIPE-REF-206-2",
-                          "indent": 20,
-                          "properties": {
-                            "ConnectsTo": "FCU-206-2"
-                          },
-                          "children": []
-                        }
-                      ]
-                    }
-                  ]
+                  "children": []
+                },
+                {
+                  "name": "CCTV-2",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-003",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-102"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-3",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-004",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-201"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-4",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-005",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-202"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-5",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-006",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-203"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-6",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-007",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-204"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-7",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-008",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-205"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-8",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-009",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-206"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-9",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-010",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-101"
+                  },
+                  "children": []
+                },
+                {
+                  "name": "CCTV-10",
+                  "indent": 12,
+                  "properties": {
+                    "Type": "CCTV-xiaomi-home14852pro",
+                    "AssetID": "สถ.2568-cctv-123-011",
+                    "InstallDate": "2025-01-01",
+                    "Monitors": "room-102"
+                  },
+                  "children": []
                 }
               ]
             }

@@ -37,10 +37,25 @@
 
 ---
 
+### 5. 3D Tactical Graph & Knowledge Graph (v2.0)
+- [x] **Advanced Layouts:** ระบบสลับ Layout ระหว่าง **Hierarchy** (Top-down) และ **Radial** (Cluster)
+- [x] **Tactical Search:** ระบบค้นหาโหนดพร้อม Auto Fly-to และ Target Acquisition (Radar Mark)
+- [x] **Hierarchical Layering:** แบ่งชั้นข้อมูล 9 ระดับ พร้อมแผ่น Grid Planes และไล่สี Full Spectrum (Purple -> Red)
+- [x] **Monochrome Alert Mode:** โหมดสีเทาพิเศษที่คงสีแดง/ส้มเฉพาะจุดที่มีสถานะ **Faulty** หรือ **Maintenance**
+- [x] **Terminal-Based Navigation:** 
+  - **Data Terminal (Left):** Infinite stream ข้อมูลพิกัดและสถานะแบบ Hacker Look
+  - **Acquisition EXE (Right):** แผงข้อมูลแบบ Pure Text พร้อม Clickable Links แยกหมวด **UPLINK/DNLINK** ตามทิศทางการไหลจริง
+- [x] **Asset Age Logic:** เพิ่มระบบคำนวณอายุเครื่อง (Rounded Months) และแสดงผลใน Dashboard, History, และ Sidebar
+- [x] **CCTV & Flow Integration:** รองรับความสัมพันธ์แบบ `Monitors` และ `ConnectsTo` อย่างสมบูรณ์ในระบบกราฟ
+
+---
+
 ## 🚀 แผนการพัฒนาในอนาคต (Roadmap)
 
 ### 🛠️ ระยะสั้น (Short-term)
-1. **QR Code Generator:** ระบบเจน QR Code สำหรับแอร์แต่ละเครื่องเพื่อติดหน้างานจริง
+1. **Status Propagation:** ส่งต่อสถานะความผิดปกติจากโหนดลูก (เช่น ท่อ) ไปหาโหนดพ่อ (เช่น แอร์) อัตโนมัติ
+2. **Matrix Layout:** โหมดแสดงความสัมพันธ์แบบตารางสำหรับวิเคราะห์ข้อมูลที่มีความหนาแน่นสูง
+3. **QR Code Generator:** ระบบเจน QR Code สำหรับแอร์แต่ละเครื่องเพื่อติดหน้างานจริง
 2. **Mobile Quick-Log:** หน้าเว็บ/แอป สำหรับช่างสแกน QR แล้วกรอก Log ได้ทันทีโดยไม่ต้องเข้าหน้า 3D
 3. **Image Attachment:** ระบบแนบรูปถ่ายประกอบการแจ้งซ่อมใน Log
 

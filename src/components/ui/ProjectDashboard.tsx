@@ -250,7 +250,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   </div>
                 </div>
               </th>
-              <th className="px-4 py-1.5 border-r border-slate-100 w-16 text-center">Age</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 w-16 text-center uppercase tracking-tighter text-[9px] font-black text-slate-400">AGE(mo)</th>
               <th className="px-2 py-1.5 border-r border-slate-100 w-10 text-center">Hist.</th>
               <th className="px-4 py-1.5 border-r border-slate-100">Functional Components</th>
               <th className="px-2 py-1.5 text-right w-12"></th>
@@ -312,9 +312,20 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100 text-center">
-                    <div className="text-[11px] font-black text-slate-700 whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                      {calculateAge(sys.installDate)}
-                    </div>
+                    {(() => {
+                      const totalMonths = calculateAge(sys.installDate);
+                      const years = Math.floor(totalMonths / 12);
+                      const months = totalMonths % 12;
+                      const yymm = years > 0 ? `${years}y${months}m` : `${months}m`;
+                      return (
+                        <div 
+                          className="text-[11px] font-black text-slate-700 whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded border border-slate-100 cursor-help"
+                          title={`Precise Age: ${yymm}`}
+                        >
+                          {totalMonths}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-2 py-3 border-r border-slate-100 text-center">
                     <button onClick={() => setHistorySystem(sys)} className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-indigo-600 transition-all active:scale-95" title="Full History"><ClipboardList className="w-4 h-4" /></button>
