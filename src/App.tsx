@@ -393,34 +393,31 @@ function App() {
       </div>
 
       {!showLeft && (
-        <button 
-          onClick={() => setShowLeft(true)} 
-          className="absolute left-[20px] top-[24px] p-3 bg-white/90 backdrop-blur-md rounded-[10px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
+        <button
+          onClick={() => setShowLeft(true)}
+          className="absolute left-[20px] top-[20px] px-2.5 py-1.5 bg-[#0f1117] border border-white/10 rounded-[5px] shadow-xl z-20 text-white/40 hover:text-white/80 transition-all font-mono flex items-center gap-1.5"
         >
-          <PanelLeft className="w-6 h-6" />
+          <PanelLeft className="w-3.5 h-3.5" />
+          <span className="text-[8px] font-black uppercase tracking-widest">Menu</span>
         </button>
       )}
 
-      <aside className={`relative w-[320px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[340px] opacity-0'}`}>
+      <aside className={`relative w-[280px] flex flex-col bg-[#0f1117] z-10 rounded-[8px] border border-white/10 shadow-2xl overflow-hidden pointer-events-auto shrink-0 font-mono transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[300px] opacity-0'}`}>
+
         {/* ── Header ── */}
-        <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-indigo-600 rounded-[4px] flex items-center justify-center shadow-md"><Building2 className="w-3.5 h-3.5 text-white" /></div>
-              <h1 className="text-xs font-black tracking-tight leading-none text-slate-800 uppercase italic">FM_AR15</h1>
-            </div>
-            <div className="flex items-center gap-1 mt-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                {isLive ? 'Live DB' : 'Local Data'}
-              </span>
-            </div>
+        <header className="px-3 py-2 border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-[11px] font-black tracking-widest text-white uppercase">FM_AR15</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400' : 'bg-white/20'}`} />
           </div>
-          <button onClick={() => setShowLeft(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelLeftClose className="w-3.5 h-3.5" /></button>
+          <button onClick={() => setShowLeft(false)} className="text-white/20 hover:text-white/60 transition-colors">
+            <PanelLeftClose className="w-3.5 h-3.5" />
+          </button>
         </header>
 
         {/* ── Mode switcher ── */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/30 border-b border-slate-100 shrink-0">
+        <div className="flex border-b border-white/10 shrink-0">
           {modes.map((m) => (
             <button
               key={m.id}
@@ -431,67 +428,64 @@ function App() {
                 setExpandedFloors({});
                 setSelectedFloor(null);
                 setSearchQuery('');
-                if (m.id === 'KG') {
-                  setShowLeft(false);
-                } else {
-                  setShowLeft(true);
-                }
+                if (m.id === 'KG') setShowLeft(false);
+                else setShowLeft(true);
               }}
-              className={`flex flex-col items-center justify-center gap-1 py-4 rounded-[12px] transition-all ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all border-r border-white/10 last:border-r-0 ${
                 activeMode === m.id
-                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                  ? 'bg-indigo-600/20 text-indigo-300'
+                  : 'text-white/25 hover:text-white/60 hover:bg-white/5'
               }`}
             >
-              <m.icon className="w-5 h-5" />
-              <span className="text-[10px] font-black uppercase tracking-tight">{m.label}</span>
+              <m.icon className="w-3.5 h-3.5" />
+              <span className="text-[8px] font-black uppercase tracking-widest">{m.label}</span>
             </button>
           ))}
         </div>
 
         {/* ── Dashboard button ── */}
-        <div className="px-2 pt-2 shrink-0">
-          {activeMode === 'AC' && (
-            <button
-              onClick={() => setShowDashboard(true)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 group"
-            >
-              <div className="flex items-center gap-2.5">
-                <LayoutDashboard className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-black uppercase tracking-wider italic">AC-DASHBOARD</span>
-              </div>
-              <div className="flex gap-1">
-                {acStats.red > 0 && <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />}
-                {acStats.orange > 0 && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-                <ChevronRight className="w-3 h-3 text-indigo-300 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </button>
-          )}
-          {activeMode === 'AR' && (
-            <button
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-slate-800 border-slate-700 text-white hover:bg-slate-900 shadow-lg shadow-slate-100 group"
-              onClick={() => {}}
-            >
-              <div className="flex items-center gap-2.5">
-                <LayoutDashboard className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform" />
-                <span className="text-[11px] font-black uppercase tracking-wider italic">ARCH-DASHBOARD</span>
-              </div>
-              <ChevronRight className="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-all" />
-            </button>
-          )}
-        </div>
+        {(activeMode === 'AC' || activeMode === 'AR') && (
+          <div className="border-b border-white/10 shrink-0">
+            {activeMode === 'AC' && (
+              <button
+                onClick={() => setShowDashboard(true)}
+                className="w-full flex items-center justify-between px-3 py-2 text-white/60 hover:text-white hover:bg-white/5 transition-all group"
+              >
+                <div className="flex items-center gap-2">
+                  <LayoutDashboard className="w-3 h-3 text-indigo-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">AC_DASHBOARD</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {acStats.red > 0 && <span className="text-[8px] font-black text-rose-400">{acStats.red}F</span>}
+                  {acStats.orange > 0 && <span className="text-[8px] font-black text-amber-400">{acStats.orange}M</span>}
+                  <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </button>
+            )}
+            {activeMode === 'AR' && (
+              <button
+                onClick={() => {}}
+                className="w-full flex items-center justify-between px-3 py-2 text-white/60 hover:text-white hover:bg-white/5 transition-all group"
+              >
+                <div className="flex items-center gap-2">
+                  <LayoutDashboard className="w-3 h-3 text-slate-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">ARCH_DASHBOARD</span>
+                </div>
+                <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60 group-hover:translate-x-0.5 transition-all" />
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* ── Data panel (full remaining height) ── */}
+        {/* ── Data panel ── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
           {selectedRoomId || selectedFloor !== null
             ? renderRightPanel()
             : (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6 pb-8">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-slate-300" />
-                </div>
-                <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
-                  Click on 3D model<br />to explore
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-6">
+                <Building2 className="w-5 h-5 text-white/10" />
+                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest leading-relaxed">
+                  Click 3D<br />to explore
                 </p>
               </div>
             )
