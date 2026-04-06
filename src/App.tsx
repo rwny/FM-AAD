@@ -1,9 +1,9 @@
 import { Canvas } from '@react-three/fiber'
 import {
-  Building2, Info,
+  Building2,
   Wind, Share2,
-  PanelLeftClose, PanelLeft, PanelRightClose, PanelRight, X,
-  LayoutDashboard, ChevronRight
+  PanelLeftClose, PanelLeft, X,
+  LayoutDashboard, ChevronRight, ChevronUp, ChevronDown
 } from 'lucide-react'
 import { Suspense, useState, useMemo, useEffect } from 'react'
 import { BuildingModel } from './components/3d/BuildingModel'
@@ -32,17 +32,16 @@ interface SceneProps {
   onACFound: (assets: ACAsset[]) => void;
   onRoomClick: (id: string | null) => void;
   leftVisible: boolean;
-  rightVisible: boolean;
   activeMode: BIMMode;
   clipFloor: number | null;
   buildingData: any;
   finalACAssets: ACAsset[];
 }
 
-function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, rightVisible, activeMode, clipFloor, buildingData, finalACAssets }: SceneProps) {
+function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisible, activeMode, clipFloor, buildingData, finalACAssets }: SceneProps) {
   return (
     <>
-      <SceneControls leftVisible={leftVisible} rightVisible={rightVisible} />
+      <SceneControls leftVisible={leftVisible} rightVisible={false} />
       
       <Suspense fallback={null}>
         <SceneLighting />
@@ -72,7 +71,7 @@ function App() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [expandedFloors, setExpandedFloors] = useState<{[key: number]: boolean}>({})
   const [showLeft, setShowLeft] = useState(true)
-  const [showRight, setShowRight] = useState(true)
+  const [showDetail, setShowDetail] = useState(true)
   const [clipFloor, setClipFloor] = useState<number | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
   const [reportAsset, setReportAsset] = useState<any>(null)
@@ -117,6 +116,13 @@ function App() {
     window.addEventListener('refresh-bim-data', handleRefresh)
     return () => window.removeEventListener('refresh-bim-data', handleRefresh)
   }, [])
+
+  // Auto-open detail panel whenever user selects something
+  useEffect(() => {
+    if (selectedRoomId || selectedFloor !== null) {
+      setShowDetail(true)
+    }
+  }, [selectedRoomId, selectedFloor])
 
   const finalACAssets = useMemo(() => {
     // 0. Pre-calculate Specification Map for O(1) lookup
@@ -384,7 +390,6 @@ function App() {
             onACFound={setAcAssets}
             onRoomClick={setSelectedRoomId}
             leftVisible={showLeft}
-            rightVisible={showRight}
             activeMode={activeMode}
             clipFloor={clipFloor}
             buildingData={buildingData}
@@ -403,8 +408,9 @@ function App() {
         </button>
       )}
 
-      <aside className={`relative w-[280px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[300px] opacity-0'}`}>
-        <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <aside className={`relative w-[320px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[340px] opacity-0'}`}>
+        {/* ── Header ── */}
+        <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-indigo-600 rounded-[4px] flex items-center justify-center shadow-md"><Building2 className="w-3.5 h-3.5 text-white" /></div>
@@ -420,27 +426,27 @@ function App() {
           <button onClick={() => setShowLeft(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelLeftClose className="w-3.5 h-3.5" /></button>
         </header>
 
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/30 border-b border-slate-100">
+        {/* ── Mode switcher ── */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/30 border-b border-slate-100 shrink-0">
           {modes.map((m) => (
-            <button 
-              key={m.id} 
-              onClick={() => { 
-                setActiveMode(m.id as BIMMode); 
-                setSelectedRoomId(null); 
-                setClipFloor(null); 
-                setExpandedFloors({}); 
+            <button
+              key={m.id}
+              onClick={() => {
+                setActiveMode(m.id as BIMMode);
+                setSelectedRoomId(null);
+                setClipFloor(null);
+                setExpandedFloors({});
                 setSelectedFloor(null);
                 setSearchQuery('');
                 if (m.id === 'KG') {
                   setShowLeft(false);
-                  setShowRight(false);
                 } else {
                   setShowLeft(true);
                 }
-              }} 
+              }}
               className={`flex flex-col items-center justify-center gap-1 py-4 rounded-[12px] transition-all ${
-                activeMode === m.id 
-                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200' 
+                activeMode === m.id
+                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200'
                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
               }`}
             >
@@ -450,10 +456,10 @@ function App() {
           ))}
         </div>
 
-        <nav className="flex-1 p-2 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
-          {/* Dashboard Trigger Section - Position Consistent across modes */}
+        {/* ── Navigation tree (top, scrollable) ── */}
+        <nav className="flex-1 p-2 flex flex-col gap-3 overflow-y-auto custom-scrollbar min-h-0">
           {activeMode === 'AC' && (
-            <button 
+            <button
               onClick={() => setShowDashboard(true)}
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 group shrink-0"
             >
@@ -470,7 +476,7 @@ function App() {
           )}
 
           {activeMode === 'AR' && (
-            <button 
+            <button
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-slate-800 border-slate-700 text-white hover:bg-slate-900 shadow-lg shadow-slate-100 group shrink-0"
               onClick={() => {/* ARCH Dashboard Placeholder */}}
             >
@@ -481,7 +487,7 @@ function App() {
               <ChevronRight className="w-3 h-3 text-slate-500 group-hover:translate-x-0.5 transition-all" />
             </button>
           )}
-          
+
           <GlobalSearch
             query={searchQuery}
             onQueryChange={handleSearchChange}
@@ -490,30 +496,47 @@ function App() {
           />
           {renderLeftPanel()}
         </nav>
+
+        {/* ── Detail panel (bottom, slides in when item selected) ── */}
+        {(selectedRoomId || selectedFloor !== null) && (
+          <div className="border-t border-slate-200 flex flex-col shrink-0 transition-all duration-300" style={{ height: showDetail ? '380px' : 'auto' }}>
+            {/* Detail panel header / drag handle */}
+            <div className="flex items-center justify-between px-3 py-2 bg-slate-50/80 border-b border-slate-100 shrink-0 cursor-pointer select-none" onClick={() => setShowDetail(v => !v)}>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                  {selectedRoomId ? selectedRoomId.toUpperCase() : `Floor ${selectedFloor}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  className="p-0.5 rounded hover:bg-slate-200 text-slate-400 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setShowDetail(v => !v); }}
+                  title={showDetail ? 'Collapse details' : 'Expand details'}
+                >
+                  {showDetail ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  className="p-0.5 rounded hover:bg-rose-100 text-slate-400 hover:text-rose-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setSelectedRoomId(null); setSelectedFloor(null); }}
+                  title="Close details"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Detail content */}
+            {showDetail && (
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {renderRightPanel()}
+              </div>
+            )}
+          </div>
+        )}
       </aside>
 
       <main className="flex-1 pointer-events-none" />
-
-      {/* Right sidebar button - hidden in Graph mode */}
-      {!showRight && activeMode !== 'KG' && (
-        <button 
-          onClick={() => setShowRight(true)} 
-          className="absolute right-[20px] top-[24px] p-2 bg-white/90 backdrop-blur-md rounded-[8px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
-        >
-          <PanelRight className="w-5 h-5" />
-        </button>
-      )}
-
-      <aside className={`relative w-[300px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[10px] border border-slate-200 shadow-xl pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showRight ? 'translate-x-0 opacity-100' : 'translate-x-[320px] opacity-0'}`}>
-        <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-indigo-50 rounded-[4px] flex items-center justify-center border border-indigo-100"><Info className="w-3.5 h-3.5 text-indigo-600" /></div>
-            <h1 className="text-xs font-black tracking-tight text-slate-800 uppercase italic">BIM Explorer</h1>
-          </div>
-          <button onClick={() => setShowRight(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelRightClose className="w-3.5 h-3.5" /></button>
-        </header>
-        {renderRightPanel()}
-      </aside>
 
 
       {reportAsset && (
