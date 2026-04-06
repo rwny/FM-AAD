@@ -405,10 +405,17 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
             {currentPageLogs.length > 0 ? (
               currentPageLogs.map((log, i) => (
                 <div key={i} className="p-3 leading-tight">
-                  <div className="flex gap-2.5 items-center">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${getLogBulletColor(log.issue)} shadow-sm`} />
-                    <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
-                    <span className="text-[11px] font-bold text-slate-800 tracking-tight">: {log.issue}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex gap-2.5 items-center">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${getLogBulletColor(log.issue)} shadow-sm`} />
+                      <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
+                      <span className="text-[11px] font-bold text-slate-800 tracking-tight">: {log.issue}</span>
+                    </div>
+                    {log.contractor && (
+                      <div className="ml-4.5 pl-2 border-l border-amber-200">
+                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">BY: {log.contractor}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

@@ -307,7 +307,14 @@ export const ACRightPanel: React.FC<any> = ({
                           Detail
                         </button>
                       </div>
-                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate">{log.issue}</div>
+                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate flex items-center gap-2">
+                        <span>{log.issue}</span>
+                        {log.contractor && (
+                          <span className="px-1 text-[8px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded shrink-0">
+                            {log.contractor}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   );
                 })

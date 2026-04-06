@@ -23,6 +23,9 @@ interface RoomLabelData extends Room {
 interface ACLabelData {
   id: string;
   position: THREE.Vector3;
+  status?: string;
+  isVisible?: boolean;
+  isSelfIssue?: boolean;
 }
 
 export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick, buildingData, finalACAssets }: BuildingModelProps) {
@@ -30,6 +33,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const [roomLabels, setRoomLabels] = useState<RoomLabelData[]>([])
   const [selectedLabel, setSelectedLabel] = useState<ACLabelData | null>(null)
+  const [issueIcons, setIssueIcons] = useState<ACLabelData[]>([])
 
   const allFurniture = useMemo(() => {
     const assets: any[] = [];
@@ -162,6 +166,8 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       peerId = `${prefix}-${parts.slice(1).join('-')}`;
     }
 
+    const issues: ACLabelData[] = []
+
     clonedScene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const nameLower = child.name.toLowerCase()
@@ -204,36 +210,39 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         }
 
         // Floor Visibility Logic
-        let meshFloor = 1;
-        if (isRoom) meshFloor = parseInt(nameLower.replace('rm-', '').charAt(0));
-        else if (nameLower.startsWith('st-')) {
+        const meshBox = new THREE.Box3().setFromObject(child);
+        const meshCenter = new THREE.Vector3();
+        meshBox.getCenter(meshCenter);
+        const yFloor = meshCenter.y > 2.8 ? 2 : 1;
+
+        let meshFloor = yFloor; // Use Y-coordinate as baseline
+        
+        if (isRoom) {
+          meshFloor = parseInt(nameLower.replace('rm-', '').charAt(0));
+        } else if (nameLower.startsWith('st-')) {
           const numPart = nameLower.replace('st-', '').split(/[^0-9]/)[0];
           const num = parseInt(numPart);
           if (!isNaN(num)) {
             meshFloor = Math.floor(num / 1000);
             if (meshFloor === 0) meshFloor = 1; 
-          } else {
-            meshFloor = 1;
+          }
+        } else if (isFur) {
+          const asset = allFurniture.find(a => a.id.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName);
+          if (asset) meshFloor = asset.floor;
+        } else if (isAC) {
+          // Robust AC floor detection: Check hyphen or dot
+          const parts = nameLower.split(/[-.]/);
+          if (parts.length > 1) {
+            const possibleRoom = parts[1];
+            const floorChar = possibleRoom.charAt(0);
+            if (floorChar === '1' || floorChar === '2') {
+              meshFloor = parseInt(floorChar);
+            }
           }
         }
-        else if (isFur) {
-          const asset = allFurniture.find(a => a.id.toLowerCase().replace(/\./g, '') === cleanName);
-          meshFloor = asset?.floor || 1;
-        } else if (isAC) {
-          const roomPart = nameLower.split('-')[1];
-          meshFloor = parseInt(roomPart?.charAt(0) || '1');
-        } else {
-          const meshBox = new THREE.Box3().setFromObject(child);
-          const meshCenter = new THREE.Vector3();
-          meshBox.getCenter(meshCenter);
-          meshFloor = meshCenter.y > 2.8 ? 2 : 1;
-        }
 
-        if (clipFloor !== null && clipFloor !== undefined) {
-          child.visible = meshFloor <= clipFloor;
-        } else {
-          child.visible = true;
-        }
+        const isVisible = (clipFloor !== null && clipFloor !== undefined) ? (meshFloor <= clipFloor) : true;
+        child.visible = isVisible;
 
         const materialConfig = {
           side: THREE.DoubleSide,
@@ -242,8 +251,33 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
         if (isAC) {
           // Dynamic status color from finalACAssets
           const liveAsset = (finalACAssets || []).find(a => a.id.toLowerCase() === cleanName);
-          const statusColor = getStatusColor(liveAsset?.status || child.userData.status);
+          const status = liveAsset?.status || child.userData.status || 'Normal';
+          const systemStatus = (liveAsset as any)?.systemStatus || status;
+          const statusColor = getStatusColor(status);
           
+          if (systemStatus === 'Faulty' || systemStatus === 'Maintenance') {
+            const acBox = new THREE.Box3().setFromObject(child)
+            const acCenter = new THREE.Vector3()
+            acBox.getCenter(acCenter)
+            
+            const isSelf = status !== 'Normal';
+            const iconPos = acCenter.clone();
+            
+            // If it's the actual faulty unit, float the triangle above
+            if (isSelf) {
+              iconPos.y += 0.5;
+            }
+            // Otherwise (peer unit), keep the small dot at the object center/origin
+            
+            issues.push({ 
+              id: cleanName, 
+              position: iconPos, 
+              status: systemStatus,
+              isVisible: isVisible,
+              isSelfIssue: isSelf
+            })
+          }
+
           if (isSelected) {
             const acBox = new THREE.Box3().setFromObject(child)
             const acCenter = new THREE.Vector3()
@@ -325,6 +359,7 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
       }
     })
     setSelectedLabel(activeLabel)
+    setIssueIcons(activeMode === 'AC' ? issues : [])
   }, [clonedScene, selectedRoomId, activeMode, clipFloor, allFurniture, finalACAssets])
 
   return (
@@ -348,6 +383,38 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
           </div>
         </Html>
       )}
+
+      {activeMode === 'AC' && issueIcons.filter(issue => issue.isVisible).map((issue) => (
+        <Html key={issue.id} position={issue.position} className="pointer-events-none">
+          <div className="flex flex-col items-center gap-1 -translate-x-1/2 -translate-y-full mb-2">
+            <div className={`relative flex items-center justify-center`}>
+              {issue.isSelfIssue ? (
+                /* 🔻 Triangle with White Border for self-issue */
+                <div className="relative flex flex-col items-center animate-bounce">
+                   {/* Outer Pulse */}
+                   <div className={`absolute -top-1 w-8 h-8 rounded-full animate-ping opacity-40 ${issue.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                   
+                   {/* Downward Triangle SVG */}
+                   <svg width="22" height="20" viewBox="0 0 22 20" className="drop-shadow-xl overflow-visible">
+                     <path 
+                       d="M2 2 L20 2 L11 17 Z" 
+                       fill={issue.status === 'Faulty' ? '#e11d48' : '#d97706'} 
+                       stroke="white" 
+                       strokeWidth="2.5"
+                       strokeLinejoin="round"
+                     />
+                   </svg>
+                </div>
+              ) : (
+                /* 🟠 Small static dot for peer-issue */
+                <div className={`relative w-2 h-2 rounded-full border border-white shadow-lg opacity-80 ${
+                  issue.status === 'Faulty' ? 'bg-rose-400' : 'bg-amber-400'
+                }`} />
+              )}
+            </div>
+          </div>
+        </Html>
+      ))}
     </group>
   )
 }

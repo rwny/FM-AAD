@@ -132,7 +132,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-32">Date / Time</th>
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200">Issue & Description</th>
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-24 text-center">Status</th>
-                      <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-32">Reporter</th>
+                      <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-24">Reporter</th>
+                      <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-32 text-indigo-600">Contractor</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -156,8 +157,11 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                               {log.status}
                             </span>
                           </td>
-                          <td className="p-3 text-sm font-bold text-slate-600">
+                          <td className="p-3 text-xs font-bold text-slate-600">
                             {log.reporter || '---'}
+                          </td>
+                          <td className="p-3 text-xs font-black text-indigo-700">
+                            {log.contractor || '---'}
                           </td>
                         </tr>
                       ))

@@ -10,8 +10,10 @@ export interface Room {
 export interface MaintenanceLog {
   id: string;
   date: string;
+  created_at?: string;
   issue: string;
   reporter?: string;
+  contractor?: string;
   status: 'Completed' | 'Pending' | 'In Progress' | 'Normal' | 'Faulty';
   note?: string;
 }
@@ -24,6 +26,7 @@ export interface ACAsset {
   model: string;
   capacity: string;
   status: 'Normal' | 'Warning' | 'Maintenance' | 'Faulty';
+  systemStatus?: 'Normal' | 'Warning' | 'Maintenance' | 'Faulty';
   lastService: string;
   nextService: string;
   logs?: MaintenanceLog[];

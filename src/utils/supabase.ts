@@ -15,7 +15,9 @@ export async function addMaintenanceLog(assetId: string, logData: {
   date: string
   issue: string
   note?: string
-  status: 'Completed' | 'Pending' | 'In Progress'
+  reporter?: string
+  contractor?: string
+  status: 'Completed' | 'Pending' | 'In Progress' | 'Faulty'
 }) {
   const { data, error } = await supabase
     .from('maintenance_logs')
@@ -63,7 +65,8 @@ export async function addACMaintenanceLog(assetId: string, logData: {
   date: string
   issue: string
   reporter?: string
-  status: 'Completed' | 'Pending' | 'In Progress'
+  contractor?: string
+  status: 'Completed' | 'Pending' | 'In Progress' | 'Faulty'
   note?: string
 }) {
   const { data, error } = await supabase
@@ -193,7 +196,8 @@ export async function fetchBuildingData(buildingCode: string) {
             date: l.date,
             issue: l.issue,
             note: l.note,
-            status: l.status
+            status: l.status,
+            contractor: l.contractor
           }))
         }))
       }))

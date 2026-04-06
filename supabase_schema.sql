@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS maintenance_logs (
     date DATE NOT NULL,
     issue TEXT NOT NULL,
     reporter TEXT,
+    contractor TEXT, -- e.g., 'ModernForm Service Team'
     status TEXT CHECK (status IN ('Completed', 'Pending', 'In Progress')),
     note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

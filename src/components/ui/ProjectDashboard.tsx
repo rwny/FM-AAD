@@ -24,7 +24,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [historyCopyFeedback, setHistoryCopyFeedback] = useState(false)
 
-  const systemData = useMemo(() => {
+  const allSystems = useMemo(() => {
     const groups: { [key: string]: any } = {};
 
     assets.forEach(asset => {
@@ -57,7 +57,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       if (asset.lastService && (!groups[systemId].lastService || asset.lastService > groups[systemId].lastService)) groups[systemId].lastService = asset.lastService;
     });
 
-    return Object.values(groups)
+    return Object.values(groups);
+  }, [assets, rooms]);
+
+  const systemData = useMemo(() => {
+    return allSystems
       .filter(sys => {
         const matchesSearch = sys.id.toLowerCase().includes(searchQuery.toLowerCase()) || sys.roomName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All' || sys.aggregatedStatus === statusFilter;
@@ -68,14 +72,16 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
         if (a.floor !== b.floor) return a.floor - b.floor;
         return a.id.localeCompare(b.id);
       });
-  }, [assets, rooms, searchQuery, statusFilter, floorFilter]);
+  }, [allSystems, searchQuery, statusFilter, floorFilter]);
 
   const stats = useMemo(() => {
-    const total = systemData.length;
-    const faulty = systemData.filter(s => s.aggregatedStatus === 'Faulty').length;
-    const healthy = total - faulty;
-    return { total, faulty, health: total > 0 ? Math.round((healthy / total) * 100) : 100 };
-  }, [systemData]);
+    const total = allSystems.length;
+    const faulty = allSystems.filter(s => s.aggregatedStatus === 'Faulty').length;
+    const maintenance = allSystems.filter(s => s.aggregatedStatus === 'Maintenance').length;
+    const normal = allSystems.filter(s => s.aggregatedStatus === 'Normal').length;
+    const healthPercent = total > 0 ? Math.round((normal / total) * 100) : 100;
+    return { total, faulty, maintenance, normal, health: healthPercent };
+  }, [allSystems]);
 
   const getHistoryData = (sys: any) => {
     const allLogs = sys.components.flatMap((c: any) => (c.logs || []).map((l: any) => ({ ...l, assetId: c.id })));
@@ -187,17 +193,51 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
   return (
     <div className="fixed inset-[10px] bg-white z-[100] rounded-[12px] shadow-2xl border border-slate-200 flex flex-col overflow-hidden font-sans animate-in fade-in zoom-in-95 duration-200">
-      <header className="px-4 py-1.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-        <div className="flex items-center gap-3">
-          <Layers className="w-5 h-5 text-indigo-600" />
-          <h1 className="text-base font-black text-slate-800 tracking-tight">SYSTEM-CENTRIC ASSET MASTER</h1>
-          <div className="h-4 w-px bg-slate-200 mx-2" />
-          <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-tight">
-            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> <span className="text-slate-400">Health:</span> <span className="text-slate-900">{stats.health}%</span></div>
-            <div className="flex items-center gap-1.5"><Box className="w-4 h-4 text-indigo-500" /> <span className="text-slate-400">Systems:</span> <span className="text-slate-900">{stats.total}</span></div>
-            <div className="flex items-center gap-1.5"><AlertCircle className="w-4 h-4 text-rose-500" /> <span className="text-slate-400">Alerts:</span> <span className="text-rose-600">{stats.faulty}</span></div>
+      <header className="px-4 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Layers className="w-5 h-5 text-indigo-600" />
+            <h1 className="text-base font-black text-slate-800 tracking-tight">SYSTEM-CENTRIC ASSET MASTER</h1>
+          </div>
+          
+          <div className="h-6 w-px bg-slate-200" />
+          
+          {/* Interactive Summary Stats as Filters */}
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight">
+            <button 
+              onClick={() => setStatusFilter('All')}
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'All' ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-300'}`}
+            >
+              <Box className={`w-4 h-4 ${statusFilter === 'All' ? 'text-white' : 'text-indigo-500'}`} /> 
+              <span>Systems: <span className={statusFilter === 'All' ? 'text-white' : 'text-slate-900'}>{stats.total}</span></span>
+            </button>
+
+            <button 
+              onClick={() => setStatusFilter('Normal')}
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Normal' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-emerald-300'}`}
+            >
+              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Normal' ? 'bg-white' : 'bg-emerald-500'}`} /> 
+              <span>Health: <span className={statusFilter === 'Normal' ? 'text-white' : 'text-slate-900'}>{stats.health}%</span></span>
+            </button>
+
+            <button 
+              onClick={() => setStatusFilter('Maintenance')}
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Maintenance' ? 'bg-amber-600 text-white border-amber-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-amber-300'}`}
+            >
+              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Maintenance' ? 'bg-white' : 'bg-amber-500'}`} />
+              <span>Maintenance: <span className={statusFilter === 'Maintenance' ? 'text-white' : 'text-amber-600'}>{stats.maintenance}</span></span>
+            </button>
+
+            <button 
+              onClick={() => setStatusFilter('Faulty')}
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Faulty' ? 'bg-rose-600 text-white border-rose-500 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:border-rose-300'}`}
+            >
+              <AlertCircle className={`w-4 h-4 ${statusFilter === 'Faulty' ? 'text-white' : 'text-rose-500'}`} /> 
+              <span>Faulty: <span className={statusFilter === 'Faulty' ? 'text-white' : 'text-rose-600'}>{stats.faulty}</span></span>
+            </button>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           {copyFeedback && (
             <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500 text-white rounded text-[10px] font-black animate-in fade-in slide-in-from-right-2">
@@ -215,22 +255,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
           <input 
             type="text" 
-            placeholder="Search System, Room..."
+            placeholder="Search System, Room, Brand, Model..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1 bg-slate-50 border border-slate-100 rounded text-[12px] font-bold outline-none transition-all focus:bg-white focus:ring-1 focus:ring-indigo-500/20 shadow-inner"
           />
-        </div>
-        <div className="flex items-center gap-1">
-          {['All', 'Normal', 'Maintenance', 'Faulty'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setStatusFilter(f as any)}
-              className={`px-3 py-0.5 rounded text-[10px] font-black uppercase border transition-all ${statusFilter === f ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
-            >
-              {f}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -333,7 +362,12 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   <td className="px-4 py-3 border-r border-slate-100">
                     <div className="inline-flex flex-wrap items-center gap-1 p-1 bg-slate-50/50 rounded-lg border border-slate-100 shadow-inner">
                       {sys.components.map((comp: any) => (
-                        <div key={comp.id} onClick={() => onSelect(comp.id)} className="flex items-center gap-2 px-2.5 py-1 bg-white hover:bg-indigo-600 rounded border border-slate-200 transition-all cursor-pointer group/comp shadow-sm hover:scale-105 active:scale-95 group/btn" title={`${comp.id} [${comp.status}]\nLast: ${comp.logs?.[0]?.date || 'N/A'}`}>
+                        <div 
+                          key={comp.id} 
+                          onClick={() => setHistorySystem({ ...sys, id: comp.id, components: [comp] })} 
+                          className="flex items-center gap-2 px-2.5 py-1 bg-white hover:bg-indigo-600 rounded border border-slate-200 transition-all cursor-pointer group/comp shadow-sm hover:scale-105 active:scale-95 group/btn" 
+                          title={`View History for ${comp.id}\nStatus: ${comp.status}\nLast: ${comp.logs?.[0]?.date || 'N/A'}`}
+                        >
                           <div className={`w-2 h-2 rounded-full ${getCompStatusColor(comp.status)} group-hover/btn:bg-white`} />
                           <span className="text-[10px] font-black text-slate-500 group-hover/btn:text-white uppercase tracking-tighter">{comp.id}</span>
                         </div>
@@ -341,7 +375,16 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                     </div>
                   </td>
                   <td className="px-2 py-3 text-right">
-                    <button onClick={() => { const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]; if (primary) onSelect(primary.id); }} className="p-1.5 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg transition-all shadow-sm border border-transparent hover:border-indigo-500"><ArrowUpRight className="w-4 h-4" /></button>
+                    <button 
+                      onClick={() => { 
+                        const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]; 
+                        if (primary) onSelect(primary.id); 
+                      }} 
+                      className="p-1.5 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-lg transition-all shadow-sm border border-transparent hover:border-indigo-500"
+                      title="Locate in 3D Model"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               );

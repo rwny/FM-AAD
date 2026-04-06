@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { RotateCw, Pause, Search, Layers, Palette } from 'lucide-react';
+import { RotateCw, Pause, Search, Layers, Palette, Sun, Moon, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 export function KGVisualizer3D() {
@@ -16,7 +16,8 @@ export function KGVisualizer3D() {
   const logIdRef = useRef(0);
   const [isRotating, setIsRotating] = useState(true); 
   const [layoutMode, setLayoutMode] = useState<'hierarchy' | 'radial'>('radial');
-  const [visualMode, setVisualMode] = useState<'color' | 'monochrome'>('color');
+  const [visualMode, setVisualMode] = useState<'color' | 'monochrome'>('monochrome');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const fadeTimeoutRef = useRef<any>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +64,7 @@ export function KGVisualizer3D() {
   useEffect(() => {
     if (fgRef.current && graphData.nodes.length > 0) {
       const levelHeights: { [key: string]: number } = {
-        '1': 200, '2': 150, '3': 100, '4': 50, '5': 0, '6': -50, '7': -100, '8': -150, '9': -200
+        '1': 300, '2': 220, '3': 140, '4': 60, '5': -20, '6': -100, '7': -180, '8': -260, '9': -340
       };
 
       graphData.nodes.forEach(node => {
@@ -73,12 +74,13 @@ export function KGVisualizer3D() {
 
       const chargeForce = fgRef.current.d3Force('charge');
       if (chargeForce && typeof chargeForce.strength === 'function') {
-        chargeForce.strength(layoutMode === 'hierarchy' ? -40 : -100); 
+        chargeForce.strength(layoutMode === 'hierarchy' ? -80 : -150); 
+        chargeForce.distanceMax(800);
       }
 
       const linkForce = fgRef.current.d3Force('link');
       if (linkForce && typeof linkForce.distance === 'function') {
-        linkForce.distance(layoutMode === 'hierarchy' ? 20 : 35);
+        linkForce.distance(layoutMode === 'hierarchy' ? 60 : 100);
       }
 
       const scene = fgRef.current.scene();
@@ -86,34 +88,37 @@ export function KGVisualizer3D() {
       oldPlanes.forEach((p: any) => scene.remove(p));
 
       if (layoutMode === 'hierarchy') {
-        const planeColors: { [key: string]: string } = visualMode === 'monochrome' 
+        const planeColors: { [key: string]: string } = theme === 'light'
+        ? { '1': '#000000', '2': '#333333', '3': '#666666', '4': '#999999', '5': '#cccccc', '6': '#eeeeee' }
+        : visualMode === 'monochrome' 
           ? { '1': '#ffffff', '2': '#dddddd', '3': '#bbbbbb', '4': '#999999', '5': '#777777', '6': '#555555' }
           : { '1': '#4A007B', '2': '#0000ff', '3': '#00ccff', '4': '#00ffaa', '5': '#00ff00', '6': '#aaff00' };
 
         Object.entries(levelHeights).forEach(([lvl, height]) => {
           if (planeColors[lvl]) {
-            const geometry = new THREE.RingGeometry(250, 251, 64);
+            const geometry = new THREE.RingGeometry(400, 402, 64);
             const material = new THREE.MeshBasicMaterial({ color: planeColors[lvl], transparent: true, opacity: 0.1, side: THREE.DoubleSide });
             const plane = new THREE.Mesh(geometry, material);
             plane.rotation.x = Math.PI / 2; plane.position.y = height; plane.name = 'tacticalPlane';
             scene.add(plane);
-            const grid = new THREE.GridHelper(500, 10, material.color, material.color);
+            const grid = new THREE.GridHelper(800, 10, material.color, material.color);
             grid.position.y = height; grid.material.opacity = 0.05; grid.material.transparent = true; grid.name = 'tacticalPlane';
             scene.add(grid);
           }
         });
       }
 
-      if (fgRef.current.d3Alpha) fgRef.current.d3Alpha(1);
+      // Reheat only when layout mode changes or data is fresh
+      if (fgRef.current.d3Alpha) fgRef.current.d3Alpha(0.3);
       if (fgRef.current.d3ReheatSimulation) fgRef.current.d3ReheatSimulation();
 
       const controls = fgRef.current.controls();
       if (layoutMode === 'hierarchy') {
-        fgRef.current.cameraPosition({ x: 0, y: 150, z: 800 }, { x: 0, y: 0, z: 0 }, 1200);
+        fgRef.current.cameraPosition({ x: 0, y: 300, z: 1000 }, { x: 0, y: 0, z: 0 }, 1200);
         if (controls) {
           controls.minPolarAngle = Math.PI / 2.5; controls.maxPolarAngle = Math.PI / 1.8;
-          controls.minAzimuthAngle = -Math.PI / 12; controls.maxAzimuthAngle = Math.PI / 12;
-          controls.enablePan = false; controls.minDistance = 200; controls.maxDistance = 1200;
+          controls.minAzimuthAngle = -Math.PI / 6; controls.maxAzimuthAngle = Math.PI / 6;
+          controls.enablePan = true; controls.minDistance = 200; controls.maxDistance = 2000;
           controls.update();
         }
       } else {
@@ -125,7 +130,7 @@ export function KGVisualizer3D() {
         }
       }
     }
-  }, [graphData, layoutMode, visualMode]);
+  }, [graphData.nodes.length, layoutMode, theme]); // Reduced dependencies to prevent frequent reheating
 
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return [];
@@ -139,17 +144,29 @@ export function KGVisualizer3D() {
     const animate = () => {
       if (fgRef.current) {
         const scene = fgRef.current.scene();
+        
+        // 1. Graph Rotation
         const graphGroup = scene.children.find((child: any) => child.type === 'Group');
         if (graphGroup) {
           const targetVelocity = isRotating ? 0.0025 : 0;
           rotationVelocityRef.current += (targetVelocity - rotationVelocityRef.current) * 0.05;
           if (Math.abs(rotationVelocityRef.current) > 0.00001) graphGroup.rotation.y += rotationVelocityRef.current;
         }
+
+        // 2. Objects Animation (Radar marks and Pulsing nodes)
+        const now = Date.now();
         scene.traverse((obj: any) => {
           if (obj.name === 'radarMark') {
             obj.rotation.z += 0.02;
-            const pulse = 15 + Math.sin(Date.now() * 0.008) * 2;
+            const pulse = 15 + Math.sin(now * 0.008) * 2;
             obj.scale.set(pulse, pulse, 1);
+          }
+          
+          if (obj.userData?.isPulsing) {
+            const freq = 0.005; // Same slow speed for both red and orange
+            const amplitude = obj.userData.pulseType === 'faulty' ? 0.15 : 0.1;
+            const s = 1.0 + Math.sin(now * freq) * amplitude;
+            obj.scale.set(s, s, s);
           }
         });
       }
@@ -158,6 +175,7 @@ export function KGVisualizer3D() {
     frameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frameId);
   }, [isRotating]);
+
 
   useEffect(() => {
     const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
@@ -173,53 +191,66 @@ export function KGVisualizer3D() {
         // --- 2. FETCH AC LOGS ---
         const { data: acLogs } = await supabase
           .from('ac_maintenance_logs')
-          .select('asset_id, status')
+          .select('asset_id, status, issue')
           .order('date', { ascending: false });
 
         // --- 3. FETCH GENERAL LOGS ---
         const { data: genLogs } = await supabase
           .from('maintenance_logs')
-          .select('status, assets!inner(asset_id)')
+          .select('status, issue, assets!inner(asset_id)')
           .order('date', { ascending: false });
 
         const statusMap: { [key: string]: string } = {};
+        const logMap: { [key: string]: string } = {}; 
         
-        // Map Assets status (Matches n.name or n.metadata.asset_id)
-        if (assetsData) {
-          assetsData.forEach(a => {
-            const status = a.status || 'Normal';
-            if (a.asset_id) statusMap[a.asset_id.toUpperCase()] = status;
-            if (a.metadata?.id) statusMap[String(a.metadata.id).toUpperCase()] = status;
-          });
-        }
-
-        // Overlay with AC Logs (Specific for AC-XXX IDs)
+        // 1. Build a map of the absolute LATEST status for each asset ID
+        // Because logs are sorted by date DESC, the first time we see an ID, it's the latest.
+        
         if (acLogs) {
           acLogs.forEach(log => {
-            const id = log.asset_id?.toUpperCase();
-            if (id && !statusMap[id]) statusMap[id] = log.status;
+            const aid = log.asset_id?.toUpperCase();
+            if (aid && !statusMap[aid]) {
+              statusMap[aid] = log.status;
+              logMap[aid] = log.issue || '';
+            }
           });
         }
 
-        // Overlay with General Logs
         if (genLogs) {
           genLogs.forEach((log: any) => {
-            const id = log.assets?.asset_id?.toUpperCase();
-            if (id && !statusMap[id]) statusMap[id] = log.status;
+            const aid = log.assets?.asset_id?.toUpperCase();
+            if (aid && !statusMap[aid]) {
+              statusMap[aid] = log.status;
+              logMap[aid] = log.issue || '';
+            }
+          });
+        }
+
+        // 2. Fallback to assets table for basic status if no logs exist
+        if (assetsData) {
+          assetsData.forEach(a => {
+            const aid = a.asset_id?.toUpperCase();
+            if (aid && !statusMap[aid]) {
+              statusMap[aid] = a.status || 'Normal';
+            }
           });
         }
 
         if (nodesData && edgesData) {
           const mappedNodes = nodesData.map((n: any) => {
             let color = '#64748b'; let level = '9'; let val = 4;
-            const t = n.type.toLowerCase();
-            const nodeNameUC = n.name.toUpperCase();
+            const t = (n.type || 'unknown').toLowerCase();
+            const nodeNameUC = (n.name || '').toUpperCase();
             const metaAssetID = n.metadata?.asset_id?.toUpperCase();
             
-            // AGGRESSIVE STATUS MATCHING
-            const currentStatus = statusMap[nodeNameUC] || statusMap[metaAssetID] || n.metadata?.status || 'Normal';
-            const mergedMetadata = { ...n.metadata, status: currentStatus };
-
+            // --- INDEPENDENT STATUS CHECK ---
+            // Each node checks its own latest log status from the map
+            const currentStatus = statusMap[nodeNameUC] || (metaAssetID ? statusMap[metaAssetID] : 'Normal');
+            const latestLog = logMap[nodeNameUC] || (metaAssetID ? logMap[metaAssetID] : '');
+            
+            const mergedMetadata = { ...n.metadata, status: currentStatus, latest_log: latestLog };
+            
+            // Base colors by type
             if (t === 'building') { color = '#4A007B'; val = 25; level = '1'; }
             else if (t === 'floor') { color = '#0000ff'; val = 20; level = '2'; }
             else if (t === 'room') { color = '#00ccff'; val = 15; level = '3'; }
@@ -228,27 +259,117 @@ export function KGVisualizer3D() {
             else if (t === 'fcu' || t === 'cdu') { color = '#aaff00'; val = 9; level = '6'; }
             else if (t === 'cctv_camera') { color = '#ffcc00'; val = 8; level = '7'; }
             else if (t.includes('power') || t.includes('switch') || t.includes('light')) { color = '#ff7700'; val = 7; level = '8'; }
-            else if (t === 'pipe' || t === 'unknown') { color = '#ff0000'; val = 6; level = '9'; }
+            else { color = '#64748b'; val = 4; level = '9'; }
+            
+            // --- OVERRIDE COLOR & BLINK BASED ON STATUS ---
+            const statusLower = (currentStatus || 'normal').toLowerCase();
+            if (statusLower === 'faulty') {
+              color = '#ff0000'; // RED
+            } else if (['maintenance', 'warning', 'pending', 'in progress', 'faulty_unit'].includes(statusLower)) {
+              color = '#ff8800'; // ORANGE
+            }
+            
             const displayName = n.metadata?.display_name || n.name;
             return { id: n.id, name: displayName, fullName: n.name, type: n.type, level, val, color, metadata: mergedMetadata };
           });
+          
           setGraphData({ nodes: mappedNodes, links: edgesData.map((e: any) => ({ source: e.subject_id, target: e.object_id, name: e.predicate })) });
-          addLog('[SYSTEM] TOPOLOGY SYNC COMPLETE.');
+          addLog('[DATABASE] INDEPENDENT SYNC COMPLETE.');
         }
       } catch (err) { console.error('Failed to load KG 3D:', err); }
     }
     fetchData();
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
+
+  // Function to fetch latest log for a specific node
+  const fetchLatestLogForNode = async (node: any) => {
+    try {
+      const nodeName = node.name?.toUpperCase();
+      const metaAssetId = node.metadata?.asset_id?.toUpperCase();
+      
+      console.log('[DEBUG] Fetching logs for node:', nodeName, 'metaAssetId:', metaAssetId);
+      
+      // Fetch latest AC log for this node - EXACT MATCH ONLY
+      const { data: acLogs, error: acError } = await supabase
+        .from('ac_maintenance_logs')
+        .select('asset_id, status, issue, date')
+        .or(`asset_id.eq.${nodeName}${metaAssetId ? `,asset_id.eq.${metaAssetId}` : ''}`)
+        .order('date', { ascending: false })
+        .limit(1);
+      
+      if (acError) console.log('[DEBUG] AC log error:', acError.message);
+      const acLog = acLogs && acLogs.length > 0 ? acLogs[0] : null;
+      
+      // Fetch latest general log for this node - EXACT MATCH ONLY
+      const { data: genLogs, error: genError } = await supabase
+        .from('maintenance_logs')
+        .select('status, issue, date, assets!inner(asset_id)')
+        .or(`assets.asset_id.eq.${nodeName}${metaAssetId ? `,assets.asset_id.eq.${metaAssetId}` : ''}`)
+        .order('date', { ascending: false })
+        .limit(1);
+      
+      if (genError) console.log('[DEBUG] Gen log error:', genError.message);
+      const genLog = genLogs && genLogs.length > 0 ? genLogs[0] : null;
+      
+      console.log('[DEBUG] AC Log:', acLog, 'Gen Log:', genLog);
+      
+      // Determine which log is more recent
+      let latestLog = null;
+      if (acLog && genLog) {
+        latestLog = new Date(acLog.date) > new Date(genLog.date) ? acLog : genLog;
+      } else if (acLog) {
+        latestLog = acLog;
+      } else if (genLog) {
+        latestLog = genLog;
+      }
+      
+      if (latestLog) {
+        const issueText = latestLog.issue || '';
+        const newStatus = latestLog.status;
+        
+        console.log('[DEBUG] Found log - Status:', newStatus, 'Issue:', issueText);
+        
+        // Update the node's metadata with latest info
+        setSelectedNode((prev: any) => ({
+          ...prev,
+          metadata: {
+            ...prev.metadata,
+            status: newStatus,
+            latest_log: issueText
+          }
+        }));
+        
+        // Also update the node in graphData
+        setGraphData(prev => ({
+          ...prev,
+          nodes: prev.nodes.map((n: any) => 
+            n.id === node.id 
+              ? { ...n, metadata: { ...n.metadata, status: newStatus, latest_log: issueText } }
+              : n
+          )
+        }));
+      }
+    } catch (err) {
+      // No log found or error - silently ignore
+    }
+  };
 
   const handleNodeClick = (node: any) => {
     if (!node) return;
     setFocusedNodeId(node.id); setSelectedNode(node);
     addLog(`[TARGET] ACQUIRED: ${node.name.toUpperCase()}`);
-    if (fgRef.current) {
-      const distance = 120; const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1);
-      fgRef.current.cameraPosition({ x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio }, { x: node.x, y: node.y, z: node.z }, 2000);
-    }
+    
+    // Fetch latest log data for this node
+    fetchLatestLogForNode(node);
+    
+    // Camera focus zoom disabled - view stays static
+    // if (fgRef.current) {
+    //   const distance = 120; const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1);
+    //   fgRef.current.cameraPosition({ x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio }, { x: node.x, y: node.y, z: node.z }, 2000);
+    // }
   };
 
   const triggerNodeHover = (node: any) => {
@@ -286,33 +407,55 @@ export function KGVisualizer3D() {
     { id: '7', color: '#ffcc00', label: 'CCTV' }, { id: '8', color: '#ff7700', label: 'Endpoint' }, { id: '9', color: '#ff0000', label: 'Infras' }
   ];
 
+  const themeColors = theme === 'light' 
+    ? {
+        bg: '#FFFFFF',
+        text: '#000000',
+        textMuted: 'rgba(0,0,0,0.6)',
+        accent: '#000000',
+        border: 'rgba(0,0,0,0.2)',
+        panelBg: 'rgba(255,255,255,0.95)',
+        link: 'rgba(0,0,0,0.3)',
+        linkHighlight: 'rgba(0,0,0,0.8)',
+      }
+    : {
+        bg: '#010409',
+        text: '#ffffff',
+        textMuted: 'rgba(255,255,255,0.6)',
+        accent: '#ffffff',
+        border: 'rgba(0,242,255,0.2)',
+        panelBg: 'rgba(0,0,0,0.95)',
+        link: 'rgba(255,255,255,0.2)',
+        linkHighlight: 'rgba(0,242,255,0.8)',
+      };
+
   return (
-    <div className="absolute inset-0 bg-[#010409] overflow-hidden font-mono">
+    <div className={`absolute inset-0 overflow-hidden font-mono ${theme === 'light' ? 'bg-white' : 'bg-[#010409]'}`}>
       {/* LEFT HEADING & LOGS */}
-      <div className="absolute top-8 left-24 z-10 text-white flex flex-col gap-0.5">
-        <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] font-mono pointer-events-none">AR15 TOPOLOGY 3D</h2>
-        <p className="text-white text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4 font-mono pointer-events-none">Tactical Network Environment</p>
+      <div className="absolute top-8 left-24 z-10 flex flex-col gap-0.5" style={{ color: themeColors.text }}>
+        <h2 className={`text-3xl font-black tracking-tighter font-mono pointer-events-none ${theme === 'light' ? '' : 'drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]'}`} style={{ color: themeColors.text }}>AR15 ASSET TOPOLOGY</h2>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60 mb-4 font-mono pointer-events-none" style={{ color: themeColors.text }}>Tactical Network Environment</p>
         
         {/* SEARCH BOX UNDER HEADING */}
         <div className="relative w-64 mb-4">
           <div className="relative group">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#00f2ff]/40 group-focus-within:text-[#00f2ff] transition-colors" />
+            <Search className="absolute left-3 top-2.5 w-4 h-4 transition-colors" style={{ color: theme === 'light' ? 'rgba(0,0,0,0.4)' : 'rgba(0,242,255,0.4)' }} />
             <input
               type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setShowSearchResults(true); }}
               onFocus={() => setShowSearchResults(true)} placeholder="SEARCH NETWORK..."
-              className="w-full bg-black/40 backdrop-blur-md border border-[#00f2ff]/20 rounded-xl py-2 pl-10 pr-4 text-xs font-mono text-white focus:outline-none focus:border-[#00f2ff]/60"
+              className={`w-full border rounded-[5px] py-2 pl-10 pr-4 text-xs font-mono focus:outline-none ${theme === 'light' ? 'bg-white/80 border-black/20 text-black focus:border-black/60' : 'bg-black/40 backdrop-blur-md border-white/20 text-white focus:border-white/60'}`}
             />
           </div>
           {showSearchResults && searchQuery.length >= 2 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-black/90 backdrop-blur-xl border border-[#00f2ff]/30 rounded-xl overflow-hidden shadow-2xl z-50">
-              {searchResults.length === 0 ? <div className="p-4 text-[10px] text-white/40 text-center uppercase">No Assets</div> : 
+            <div className={`absolute top-full left-0 right-0 mt-2 border rounded-[5px] overflow-hidden shadow-2xl z-50 ${theme === 'light' ? 'bg-white/95 border-black/20' : 'bg-black/90 backdrop-blur-xl border-white/30'}`}>
+              {searchResults.length === 0 ? <div className={`p-4 text-[10px] text-center uppercase ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>No Assets</div> :
                 <div className="max-h-64 overflow-y-auto custom-scrollbar">
                   {searchResults.map((node) => (
                     <button key={node.id} onClick={() => { handleNodeClick(node); setShowSearchResults(false); setSearchQuery(''); }}
-                      className="w-full px-4 py-3 flex flex-col items-start hover:bg-[#00f2ff]/10 border-b border-white/5 transition-colors text-left"
+                      className={`w-full px-4 py-3 flex flex-col items-start border-b transition-colors text-left ${theme === 'light' ? 'hover:bg-black/5 border-black/5' : 'hover:bg-white/10 border-white/5'}`}
                     >
-                      <span className="text-[10px] font-black text-[#00f2ff] uppercase">{node.name}</span>
-                      <span className="text-[8px] font-bold text-white/30 uppercase">{node.type}</span>
+                      <span className={`text-[10px] font-black uppercase ${theme === 'light' ? 'text-black' : 'text-white'}`}>{node.name}</span>
+                      <span className={`text-[8px] font-bold uppercase ${theme === 'light' ? 'text-black/40' : 'text-white/50'}`}>{node.type}</span>
                     </button>
                   ))}
                 </div>
@@ -322,39 +465,57 @@ export function KGVisualizer3D() {
         </div>
 
         {/* TERMINAL LOGS */}
-        <div className="flex flex-col gap-0.5 font-mono text-[9px] text-[#00f2ff] tracking-tight leading-none opacity-80 pointer-events-none">
+        <div className="flex flex-col gap-0.5 font-mono text-[9px] tracking-tight leading-none opacity-80 pointer-events-none" style={{ color: themeColors.accent }}>
           {terminalLogs.map((log) => (<div key={log.id} className="animate-in fade-in duration-300 h-[11px] flex items-center"><span className="opacity-30 mr-2">::</span>{log.text}</div>))}
         </div>
       </div>
 
       {/* TACTICAL ACQUISITION: TEXT TERMINAL MODE (RIGHT ALIGNED) */}
       {selectedNode && (
-        <div className="absolute top-32 right-8 z-50 w-[380px] bg-black/95 border border-[#00f2ff]/40 rounded-none shadow-[0_0_40px_rgba(0,242,255,0.1)] flex flex-col font-mono animate-in slide-in-from-right-4 duration-300 max-h-[70vh]">
+        <div className={`absolute top-0 right-0 z-50 w-[380px] rounded-none flex flex-col font-mono animate-in slide-in-from-right-4 duration-300 h-screen ${theme === 'light' ? 'bg-white/10' : 'bg-black/10'}`}>
           {/* TERMINAL HEADER */}
-          <div className="bg-[#00f2ff]/10 border-b border-[#00f2ff]/20 px-4 py-2 flex items-center justify-between shrink-0">
+          <div className={`border-b px-4 py-2 flex items-center justify-between shrink-0 ${theme === 'light' ? 'bg-black/5 border-black/20' : 'bg-white/10 border-white/20'}`}>
             <div className="flex items-center gap-2">
-              <span className="text-[#00f2ff] text-xs font-bold tracking-widest">RAW_DATA_ACQUISITION.EXE</span>
-              <span className="w-1.5 h-3 bg-[#00f2ff] animate-pulse" />
+              <span className={`text-xs font-bold tracking-widest ${theme === 'light' ? 'text-black' : 'text-white'}`}>RAW_DATA_ACQUISITION.EXE</span>
+              <span className={`w-1.5 h-3 animate-pulse ${theme === 'light' ? 'bg-black' : 'bg-white'}`} />
             </div>
-            <button onClick={() => setSelectedNode(null)} className="text-[#00f2ff]/60 hover:text-[#ff0000] transition-colors text-xs">[X]</button>
+            <button onClick={() => setSelectedNode(null)} className={`transition-colors text-xs ${theme === 'light' ? 'text-black/60 hover:text-red-600' : 'text-white/60 hover:text-red-500'}`}>[X]</button>
           </div>
           
           <div className="p-5 space-y-6 overflow-y-auto custom-scrollbar flex-1 text-[11px] leading-relaxed">
             {/* SUBJECT IDENTIFICATION */}
             <div>
-              <div className="text-[#00f2ff]/40 mb-1">// SUBJECT_IDENTIFICATION</div>
-              <div className="text-white font-bold text-lg tracking-tighter uppercase">{`> ${selectedNode.name}`}</div>
-              <div className="text-[#00f2ff] opacity-80">{`CLASS: ${selectedNode.type.toUpperCase()}`}</div>
-              <div className="text-[#00f2ff]/60">{`UUID: ${selectedNode.id}`}</div>
+              <div className={`mb-1 ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>// SUBJECT_IDENTIFICATION</div>
+              {(() => {
+                const nodeStatus = (selectedNode.metadata?.status || '').toLowerCase();
+                const isNodeFaulty = nodeStatus === 'faulty';
+                const isNodeWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(nodeStatus);
+                const statusColor = isNodeFaulty ? 'text-red-500' : (isNodeWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'));
+                const latestLog = selectedNode.metadata?.latest_log || selectedNode.metadata?.last_maintenance_log || '';
+                
+                return (
+                  <>
+                    <div className={`font-bold text-lg tracking-tighter uppercase ${statusColor}`}>{`> ${selectedNode.name}`}</div>
+                    <div className={`opacity-80 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{`CLASS: ${selectedNode.type.toUpperCase()}`}</div>
+                    <div className={`${theme === 'light' ? 'text-black/60' : 'text-white/60'}`}>{`UUID: ${selectedNode.id}`}</div>
+                    {/* Latest Maintenance Log Symptom */}
+                    {latestLog && (
+                      <div className={`mt-2 text-[12px] uppercase tracking-wider px-3 py-2 rounded ${isNodeFaulty ? 'bg-red-500 text-white font-black' : (isNodeWarning ? 'bg-orange-500 text-white font-black' : (theme === 'light' ? 'text-black/60' : 'text-white/60'))}`}>
+                        :: {latestLog}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* METADATA BLOCK */}
             <div className="space-y-1">
-              <div className="text-[#00f2ff]/40 mb-2">// LOCAL_REGISTRY_DATA</div>
+              <div className={`mb-2 ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>// LOCAL_REGISTRY_DATA</div>
               {selectedNode.metadata ? Object.entries(selectedNode.metadata).map(([key, val]: [string, any]) => (
-                <div key={key} className="flex gap-4 border-l border-[#00f2ff]/20 pl-3 py-0.5">
-                  <span className="text-[#00f2ff]/50 uppercase w-32 shrink-0">{key.replace(/_/g, '_')}:</span>
-                  <span className="text-white font-medium break-all">{String(val)}</span>
+                <div key={key} className={`flex gap-4 border-l pl-3 py-0.5 ${theme === 'light' ? 'border-black/20' : 'border-white/20'}`}>
+                  <span className={`uppercase w-32 shrink-0 ${theme === 'light' ? 'text-black/50' : 'text-white/50'}`}>{key.replace(/_/g, '_')}:</span>
+                  <span className={`font-medium break-all ${theme === 'light' ? 'text-black' : 'text-white'}`}>{String(val)}</span>
                 </div>
               )) : (
                 <div className="text-rose-500 italic px-3">! NO_METADATA_FOUND</div>
@@ -363,7 +524,7 @@ export function KGVisualizer3D() {
 
             {/* TOPOLOGY / NETWORK LINKS AS COMMANDS */}
             <div className="space-y-2">
-              <div className="text-[#00f2ff]/40 mb-2">// NETWORK_TOPOLOGY_VECTORS</div>
+              <div className={`mb-2 ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>// NETWORK_TOPOLOGY_VECTORS</div>
               <div className="space-y-1">
                 {(() => {
                   const related = graphData.links.filter(l => 
@@ -403,39 +564,93 @@ export function KGVisualizer3D() {
                     }
                   });
 
-                  const renderNodeLink = (r: any, i: number) => {
+                  // Helper function to check if a node has children with status issues
+                  const getChildStatusIndicator = (nodeId: string) => {
+                    const childLinks = graphData.links.filter(l => {
+                      const s = typeof l.source === 'object' ? l.source.id : l.source;
+                      return s === nodeId;
+                    });
+                    
+                    let hasFaultyChild = false;
+                    let hasWarningChild = false;
+                    
+                    childLinks.forEach(link => {
+                      const t = typeof link.target === 'object' ? link.target.id : link.target;
+                      const childNode = graphData.nodes.find(n => n.id === t);
+                      if (childNode) {
+                        const childStatus = (childNode.metadata?.status || '').toLowerCase();
+                        if (childStatus === 'faulty') hasFaultyChild = true;
+                        if (['maintenance', 'warning', 'pending', 'in progress'].includes(childStatus)) hasWarningChild = true;
+                      }
+                    });
+                    
+                    return { hasFaultyChild, hasWarningChild };
+                  };
+
+                  const renderNodeLink = (r: any, i: number, indentLevel: number) => {
                     const isUp = upward.includes(r);
+                    const otherStatus = (r.otherNode?.metadata?.status || '').toLowerCase();
+                    const isWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(otherStatus);
+                    const isFaulty = otherStatus === 'faulty';
+                    
+                    // Calculate indent padding based on level
+                    const indentPadding = indentLevel * 12; // 12px per level
                     
                     return (
                       <button 
-                        key={i} 
+                        key={i}
                         onClick={() => handleNodeClick(r.otherNode)}
-                        className="w-full text-left hover:bg-[#00f2ff]/10 group flex items-start gap-2 py-1 px-2 border border-transparent hover:border-[#00f2ff]/30 transition-all"
+                        style={{ paddingLeft: `${8 + indentPadding}px` }}
+                        className={`w-full text-left group flex items-center gap-2 py-1 px-2 border transition-all ${theme === 'light' ? 'hover:bg-black/5 border-transparent hover:border-black/30' : 'hover:bg-white/10 border-transparent hover:border-white/30'}`}
                       >
-                        <span className="text-[#00f2ff] group-hover:translate-x-1 transition-transform opacity-50">{isUp ? 'UPLINK^' : 'DNLINK_'}</span>
-                        <div className="flex flex-col">
-                          <span className="text-white font-bold uppercase">{`[ ${r.otherNode?.name || r.otherId} ]`}</span>
-                          <span className="text-[#00f2ff]/40 text-[9px] uppercase">{`${r.link.name.toUpperCase()} (LVL-${r.otherNode?.level || '?'})`}</span>
+                        <span className={`group-hover:translate-x-1 transition-transform opacity-50 flex items-center ${theme === 'light' ? 'text-black' : 'text-white'}`}>
+                          {isUp ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                        </span>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-bold uppercase ${isFaulty ? 'text-red-500' : (isWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'))}`}>{`[ ${r.otherNode?.name || r.otherId} ]`}</span>
+                            {/* Simple Status Indicator Dot */}
+                            {isFaulty && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                            {isWarning && <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />}
+                          </div>
+                          <span className={`text-[9px] uppercase ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>{`${r.link.name.toUpperCase()} (LVL-${r.otherNode?.level || '?'})`}</span>
                         </div>
                       </button>
                     );
                   };
 
+                  // Get current node status for color
+                  const currentNodeStatus = (selectedNode.metadata?.status || '').toLowerCase();
+                  const isCurrentFaulty = currentNodeStatus === 'faulty';
+                  const isCurrentWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(currentNodeStatus);
+                  const currentNodeTextColor = isCurrentFaulty ? 'text-red-500' : (isCurrentWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'));
+                  const currentNodeBorderColor = isCurrentFaulty ? 'border-red-500/60' : (isCurrentWarning ? 'border-orange-500/60' : (theme === 'light' ? 'border-black/40' : 'border-white/40'));
+                  const currentNodeBgColor = isCurrentFaulty ? 'bg-red-500/10' : (isCurrentWarning ? 'bg-orange-500/10' : (theme === 'light' ? 'bg-black/5' : 'bg-white/5'));
+
                   return (
                     <>
-                      {upward.map((r, i) => renderNodeLink(r, i))}
+                      {/* UPLINK Section - Grandparents (level -2) */}
+                      {upward.filter(r => r.otherNode && parseInt(r.otherNode.level) <= parseInt(selectedNode.level) - 2).map((r, i) => renderNodeLink(r, i, 0))}
                       
-                      <div className="py-3 flex flex-col items-start opacity-80 pl-2">
-                        <div className="text-[#00f2ff] font-black tracking-[0.1em] flex items-center gap-2">
+                      {/* UPLINK Section - Parents (level -1) */}
+                      {upward.filter(r => r.otherNode && parseInt(r.otherNode.level) === parseInt(selectedNode.level) - 1).map((r, i) => renderNodeLink(r, i + 50, 1))}
+                      
+                      {/* CURRENT NODE - With Border Frame (color based on status) */}
+                      <div className={`my-2 py-2 px-3 border-2 rounded ${currentNodeBorderColor} ${currentNodeBgColor}`}>
+                        <div className={`text-[9px] uppercase tracking-wider mb-1 ${isCurrentFaulty ? 'text-red-500/70' : (isCurrentWarning ? 'text-orange-500/70' : (theme === 'light' ? 'text-black/50' : 'text-white/50'))}`}>// CURRENT_TARGET</div>
+                        <div className={`font-black tracking-[0.1em] flex items-center gap-2 ${currentNodeTextColor}`}>
                           <span className="text-[12px] animate-pulse">{`< ${selectedNode.name.toUpperCase()} >`}</span>
-                          <span className="text-[10px] opacity-40">-----------------------</span>
                         </div>
-                        <div className="text-[7px] text-[#00f2ff]/40 uppercase tracking-[0.2em] mt-0.5 ml-7">
+                        <div className={`text-[7px] uppercase tracking-[0.2em] mt-0.5 ${isCurrentFaulty ? 'text-red-500/60' : (isCurrentWarning ? 'text-orange-500/60' : (theme === 'light' ? 'text-black/40' : 'text-white/40'))}`}>
                           Subject_Acquired_In_Current_Sector
                         </div>
                       </div>
 
-                      {downward.map((r, i) => renderNodeLink(r, i + 100))}
+                      {/* DOWNLINK Section - Children (level +1) */}
+                      {downward.filter(r => r.otherNode && parseInt(r.otherNode.level) === parseInt(selectedNode.level) + 1).map((r, i) => renderNodeLink(r, i + 100, 2))}
+                      
+                      {/* DOWNLINK Section - Grandchildren (level +2 and beyond) */}
+                      {downward.filter(r => r.otherNode && parseInt(r.otherNode.level) >= parseInt(selectedNode.level) + 2).map((r, i) => renderNodeLink(r, i + 200, 3))}
                     </>
                   );
                 })()}
@@ -444,14 +659,14 @@ export function KGVisualizer3D() {
           </div>
           
           {/* TERMINAL FOOTER BUTTONS */}
-          <div className="p-4 bg-black border-t border-[#00f2ff]/20 space-y-2 shrink-0 text-[10px]">
+          <div className={`p-4 border-t space-y-2 shrink-0 text-[10px] ${theme === 'light' ? 'bg-gray-50 border-black/20' : 'bg-black border-white/20'}`}>
              <button 
                 onClick={() => handleNodeClick(selectedNode)}
-                className="w-full border border-[#00f2ff] text-[#00f2ff] hover:bg-[#00f2ff] hover:text-black py-2 transition-all flex items-center justify-center gap-2 group"
+                className={`w-full border py-2 transition-all flex items-center justify-center gap-2 group ${theme === 'light' ? 'border-black text-black hover:bg-black hover:text-white' : 'border-white text-white hover:bg-white hover:text-black'}`}
               >
                 {`>> RE_INITIALIZE_NODE_FOCUS <<`}
               </button>
-              <div className="text-center text-[#00f2ff]/30 animate-pulse tracking-widest uppercase">
+              <div className={`text-center animate-pulse tracking-widest uppercase ${theme === 'light' ? 'text-black/30' : 'text-white/30'}`}>
                 -- SYSTEM_READY_FOR_INPUT --
               </div>
           </div>
@@ -460,17 +675,27 @@ export function KGVisualizer3D() {
 
       {/* TACTICAL CONTROLS (BOTTOM CENTER) - FLOATING BUTTONS */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4">
+        {/* THEME TOGGLE BUTTON */}
         <button 
+          onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')} 
+          className={`px-4 py-2.5 rounded-[5px] border transition-all flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-white border-black/30 text-black hover:bg-gray-100 shadow-md' : 'bg-black/40 border-white/30 text-white hover:bg-white/10 shadow-2xl'}`}
+        >
+          {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <span className="text-[10px] font-black uppercase tracking-widest">{theme === 'light' ? 'Light' : 'Dark'}</span>
+        </button>
+
+        {/* Visual mode button hidden - defaults to monochrome */}
+        {/* <button 
           onClick={() => setVisualMode(prev => prev === 'color' ? 'monochrome' : 'color')} 
-          className={`px-4 py-2.5 rounded-xl border transition-all shadow-2xl flex items-center gap-3 shrink-0 ${visualMode === 'monochrome' ? 'bg-white/10 border-white/30 text-white' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20'}`}
+          className={`px-4 py-2.5 rounded-[5px] border transition-all flex items-center gap-3 shrink-0 ${theme === 'light' ? 'shadow-md' : 'shadow-2xl'} ${visualMode === 'monochrome' ? (theme === 'light' ? 'bg-black/10 border-black/30 text-black' : 'bg-white/10 border-white/30 text-white') : (theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20')}`}
         >
           <Palette className="w-4 h-4" />
           <span className="text-[10px] font-black uppercase tracking-widest">Visual: {visualMode === 'color' ? 'Full' : 'Mono'}</span>
-        </button>
+        </button> */}
 
         <button 
           onClick={() => setLayoutMode(prev => prev === 'hierarchy' ? 'radial' : 'hierarchy')} 
-          className="px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-all flex items-center gap-3 shrink-0 shadow-2xl"
+          className={`px-4 py-2.5 rounded-[5px] border transition-all flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200 shadow-md' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 shadow-2xl'}`}
         >
           <Layers className="w-4 h-4" />
           <span className="text-[10px] font-black uppercase tracking-widest">Mode: {layoutMode === 'hierarchy' ? 'Hierarchy' : 'Radial'}</span>
@@ -478,7 +703,7 @@ export function KGVisualizer3D() {
 
         <button 
           onClick={toggleRotation} 
-          className={`px-4 py-2.5 rounded-xl border transition-all flex items-center gap-3 shrink-0 shadow-2xl ${isRotating ? 'bg-[#00f2ff]/10 border-[#00f2ff]/30 text-[#00f2ff]' : 'bg-black/40 border-white/10 text-white/40 hover:text-white'}`}
+          className={`px-4 py-2.5 rounded-[5px] border transition-all flex items-center gap-3 shrink-0 ${theme === 'light' ? 'shadow-md' : 'shadow-2xl'} ${isRotating ? (theme === 'light' ? 'bg-black/10 border-black/30 text-black' : 'bg-white/10 border-white/30 text-white') : (theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-500 hover:text-black' : 'bg-black/40 border-white/10 text-white/40 hover:text-white')}`}
         >
           {isRotating ? <Pause className="w-4 h-4 animate-pulse" /> : <RotateCw className="w-4 h-4" />}
           <span className="text-[10px] font-black uppercase tracking-widest">{isRotating ? "Active" : "Paused"}</span>
@@ -486,7 +711,7 @@ export function KGVisualizer3D() {
       </div>
 
       {/* LEGEND (BOTTOM CENTER) - HIDDEN BUT PRESERVED */}
-      <div className="hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-full border border-white/5 shadow-2xl flex items-center gap-5">
+      <div className="hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-2xl px-10 py-5 rounded-[5px] border border-white/5 shadow-2xl flex items-center gap-5">
         {legendItems.map((item, idx) => {
           const grayVal = Math.round(255 - (parseInt(item.id) * 20));
           const displayColor = visualMode === 'monochrome' ? `rgb(${grayVal}, ${grayVal}, ${grayVal})` : item.color;
@@ -494,7 +719,7 @@ export function KGVisualizer3D() {
           return (
             <React.Fragment key={item.id}>
               <button onClick={() => triggerHighlight(item.id)} className="flex flex-col items-center outline-none group">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black shadow-lg transition-all duration-300 ${highlightLevel === item.id ? 'scale-125 brightness-150 animate-pulse' : 'hover:scale-125'}`} style={{ backgroundColor: displayColor, color: '#000', boxShadow: `0 0 25px ${glowColor}`, border: highlightLevel === item.id ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.3)' }}>{item.id}</div>
+                <div className={`w-8 h-8 rounded-[5px] flex items-center justify-center text-[12px] font-black shadow-lg transition-all duration-300 ${highlightLevel === item.id ? 'scale-125 brightness-150 animate-pulse' : 'hover:scale-125'}`} style={{ backgroundColor: displayColor, color: '#000', boxShadow: `0 0 25px ${glowColor}`, border: highlightLevel === item.id ? '3px solid #ffffff' : '3px solid rgba(255,255,255,0.3)' }}>{item.id}</div>
               </button>
               {idx < legendItems.length - 1 && <div className="text-white/20 font-black text-lg mx-1">{'>'}</div>}
             </React.Fragment>
@@ -503,7 +728,8 @@ export function KGVisualizer3D() {
       </div>
 
       <ForceGraph3D
-        ref={fgRef} width={dimensions.width} height={dimensions.height} graphData={graphData} backgroundColor="#010409"
+        ref={fgRef} width={dimensions.width} height={dimensions.height} graphData={graphData} backgroundColor={themeColors.bg}
+        d3VelocityDecay={0.3}
         nodeColor={(node: any) => {
           const isSelected = selectedNode?.id === node.id; const isRelated = relatedNodeIds.has(node.id);
           
@@ -511,7 +737,17 @@ export function KGVisualizer3D() {
           const status = (node.metadata?.status || '').toLowerCase();
           
           let base = node.color;
-          if (visualMode === 'monochrome') { 
+          if (theme === 'light') {
+            // Light theme: black-based colors with varying opacity
+            if (status === 'faulty') {
+              base = '#cc0000'; // Critical Red (darker for light bg)
+            } else if (['maintenance', 'warning', 'pending', 'in progress'].includes(status)) {
+              base = '#cc6600'; // Warning Orange (darker for light bg)
+            } else {
+              const g = Math.round(30 + (parseInt(node.level) * 25)); 
+              base = `rgb(${g},${g},${g})`; 
+            }
+          } else if (visualMode === 'monochrome') { 
             if (status === 'faulty') {
               base = '#ff0000'; // Critical Red
             } else if (['maintenance', 'warning', 'pending', 'in progress'].includes(status)) {
@@ -522,12 +758,16 @@ export function KGVisualizer3D() {
             }
           }
           
-          if (highlightLevel && node.level === highlightLevel) return '#ffffff';
-          if (hoverNodeId === node.id || isSelected) return '#ffffff';
-          if (isRelated) return '#00f2ff';
+          if (highlightLevel && node.level === highlightLevel) return theme === 'light' ? '#000000' : '#ffffff';
+          if (hoverNodeId === node.id || isSelected) return theme === 'light' ? '#000000' : '#ffffff';
+          if (isRelated) return theme === 'light' ? '#000000' : '#ffffff';
           return base;
         }}
-        nodeRelSize={1.5} nodeResolution={24} onNodeHover={triggerNodeHover} onNodeClick={handleNodeClick} nodeLabel={(node: any) => `${node.name} (${node.type})`}
+        nodeRelSize={1.5} 
+        nodeResolution={24} 
+        onNodeHover={triggerNodeHover} 
+        onNodeClick={handleNodeClick} 
+        nodeLabel={(node: any) => `${node.name} (${node.type})`}
         nodeVal={(node: any) => {
           const isSelected = selectedNode?.id === node.id;
           if (highlightLevel && node.level === highlightLevel || hoverNodeId === node.id) return node.val * 3;
@@ -535,7 +775,7 @@ export function KGVisualizer3D() {
           return node.val;
         }}
         linkDirectionalParticles={8} linkDirectionalParticleSpeed={0.006}
-        linkDirectionalParticleColor={() => '#ffffff'}
+        linkDirectionalParticleColor={() => theme === 'light' ? '#000000' : '#ffffff'}
         linkWidth={(link: any) => {
           const s = typeof link.source === 'object' ? link.source.id : link.source;
           const t = typeof link.target === 'object' ? link.target.id : link.target;
@@ -545,16 +785,30 @@ export function KGVisualizer3D() {
         linkColor={(link: any) => {
           const s = typeof link.source === 'object' ? link.source.id : link.source;
           const t = typeof link.target === 'object' ? link.target.id : link.target;
+          if (theme === 'light') {
+            return (focusedNodeId === s || focusedNodeId === t) ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.15)';
+          }
           return (focusedNodeId === s || focusedNodeId === t) ? 'rgba(0, 242, 255, 0.8)' : 'rgba(255, 255, 255, 0.2)';
         }}
         nodeThreeObjectExtend={true}
         nodeThreeObject={(node: any) => {
           const group = new THREE.Group();
           const isT = (highlightLevel && node.level === highlightLevel) || (hoverNodeId === node.id) || (focusedNodeId === node.id) || (selectedNode?.id === node.id);
+          
+          // Set pulsing flags for animation
+          const status = (node.metadata?.status || '').toLowerCase();
+          const isFaulty = status === 'faulty';
+          const isWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(status);
+          
+          if (isFaulty || isWarning) {
+            group.userData.isPulsing = true;
+            group.userData.pulseType = isFaulty ? 'faulty' : 'warning';
+          }
+
           if (isT) {
             const rC = document.createElement('canvas'); rC.width = 128; rC.height = 128; const rX = rC.getContext('2d');
             if (rX) {
-              rX.strokeStyle = '#ffffff'; rX.lineWidth = 6; const s = 30; const p = 20;
+              rX.strokeStyle = theme === 'light' ? '#000000' : '#ffffff'; rX.lineWidth = 6; const s = 30; const p = 20;
               rX.beginPath(); rX.moveTo(p, p+s); rX.lineTo(p, p); rX.lineTo(p+s, p); rX.stroke();
               rX.beginPath(); rX.moveTo(128-p-s, p); rX.lineTo(128-p, p); rX.lineTo(128-p, p+s); rX.stroke();
               rX.beginPath(); rX.moveTo(p, 128-p-s); rX.lineTo(p, 128-p); rX.lineTo(p+s, 128-p); rX.stroke();
@@ -568,8 +822,17 @@ export function KGVisualizer3D() {
             const label = node.name || ''; ctx.font = 'bold 24px ui-monospace, monospace';
             const tw = ctx.measureText(label).width; canvas.width = tw + 15; canvas.height = 30;
             ctx.font = 'bold 24px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            let tC = node.color; if (visualMode === 'monochrome') { const g = Math.round(255 - (parseInt(node.level) * 20)); tC = `rgb(${g},${g},${g})`; }
-            ctx.fillStyle = isT ? '#ffffff' : tC; ctx.shadowBlur = 6; ctx.shadowColor = 'black';
+            let tC = node.color; 
+            if (theme === 'light') {
+              const g = Math.round(30 + (parseInt(node.level) * 25)); 
+              tC = `rgb(${g},${g},${g})`;
+            } else if (visualMode === 'monochrome') { 
+              const g = Math.round(255 - (parseInt(node.level) * 20)); 
+              tC = `rgb(${g},${g},${g})`; 
+            }
+            ctx.fillStyle = isT ? (theme === 'light' ? '#000000' : '#ffffff') : tC; 
+            ctx.shadowBlur = theme === 'light' ? 0 : 6; 
+            ctx.shadowColor = theme === 'light' ? 'transparent' : 'black';
             ctx.fillText(label, canvas.width / 2, canvas.height / 2);
             const texture = new THREE.CanvasTexture(canvas); const sM = new THREE.SpriteMaterial({ map: texture, depthTest: false });
             const s = new THREE.Sprite(sM); s.scale.set(canvas.width / 4, canvas.height / 4, 1);

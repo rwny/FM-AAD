@@ -174,31 +174,54 @@ function App() {
       const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
 
       // 4. Collect Logs (Self only for precise history)
-      const selfLogs = acDbLogs.filter(l => l.asset_id.toLowerCase() === modelIdLow);
+      const normalizedModelId = modelIdLow.replace(/[^a-z0-9]/g, '');
+      const selfLogs = acDbLogs.filter(l => {
+        const normalizedDbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return normalizedDbId === normalizedModelId;
+      });
       
       // 5. Collect Logs (System-wide for status/color propagation)
       const systemWideLogs = acDbLogs.filter(l => {
-        const dbId = l.asset_id.toLowerCase();
-        return dbId === modelIdLow || 
-               (peerId && dbId === peerId.toLowerCase()) || 
-               (matchedAcId && dbId === matchedAcId.toLowerCase());
+        const normalizedDbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalizedPeerId = peerId ? peerId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
+        const normalizedMatchedAcId = matchedAcId ? matchedAcId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
+
+        return normalizedDbId === normalizedModelId || 
+               (normalizedPeerId && normalizedDbId === normalizedPeerId) || 
+               (normalizedMatchedAcId && normalizedDbId === normalizedMatchedAcId);
       });
       
       // 6. Sort logs
       const sortedSelfLogs = [...selfLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       const sortedSystemLogs = [...systemWideLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
-      // Status based on SYSTEM-WIDE state (Color propagation)
+      // Status calculation logic
       let status = 'Normal';
-      if (sortedSystemLogs.length > 0) {
-        const latestLog = sortedSystemLogs[0];
+      
+      // 1. Check if this specific node has a recent status log (MOST PRECISE)
+      if (sortedSelfLogs.length > 0) {
+        const latestLog = sortedSelfLogs[0];
         const issueText = (latestLog.issue || '').toLowerCase();
-        const noteText = (latestLog.note || '').toLowerCase();
         
         if (latestLog.status === 'Completed') status = 'Normal';
-        else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending' || noteText.includes('พอใช้')) status = 'Maintenance';
+        else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending') status = 'Maintenance';
         
-        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') status = 'Faulty';
+        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') {
+          status = 'Faulty';
+        }
+      } 
+      // 2. System-wide status (For Warning Icons)
+      let systemStatus = 'Normal';
+      if (sortedSystemLogs.length > 0) {
+        const latestSysLog = sortedSystemLogs[0];
+        const sysIssueText = (latestSysLog.issue || '').toLowerCase();
+        
+        if (latestSysLog.status === 'Completed') systemStatus = 'Normal';
+        else if (latestSysLog.status === 'In Progress' || latestSysLog.status === 'Pending') systemStatus = 'Maintenance';
+        
+        if (sysIssueText.includes('เสีย') || sysIssueText.includes('พัง') || sysIssueText.includes('faulty') || latestSysLog.status === 'Faulty') {
+          systemStatus = 'Faulty';
+        }
       }
 
       // Specs lookup logic: MD Priority -> TGF Lookup -> Fallback
@@ -229,10 +252,12 @@ function App() {
           created_at: l.created_at,
           issue: l.issue,
           reporter: l.reporter,
+          contractor: l.contractor,
           status: l.status,
           note: l.note
         })),
         status: status as any,
+        systemStatus: systemStatus as any,
         lastService: sortedSelfLogs.length > 0 ? sortedSelfLogs[0].date : ''
       }
     })
@@ -551,6 +576,10 @@ function App() {
                 <div className="space-y-1">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Reporter</div>
                   <div className="text-xl font-black text-indigo-600">{selectedLog.reporter || '---'}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Contractor</div>
+                  <div className="text-xl font-black text-amber-600">{selectedLog.contractor || '---'}</div>
                 </div>
               </div>
               <div className="space-y-2">

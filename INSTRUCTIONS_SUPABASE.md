@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS ac_maintenance_logs (
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     issue TEXT NOT NULL,
     reporter TEXT,
+    contractor TEXT, -- ชื่อบริษัท/ช่างผู้ดำเนินการ
     status TEXT CHECK (status IN ('Completed', 'Pending', 'In Progress', 'Faulty')),
     note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

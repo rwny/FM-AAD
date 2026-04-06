@@ -22,6 +22,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [issue, setIssue] = useState('')
   const [reporter, setReporter] = useState('')
+  const [contractor, setContractor] = useState('')
   const [note, setNote] = useState('')
   const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>('Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,6 +43,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             date,
             issue,
             reporter: reporter || null,
+            contractor: contractor || null,
             note: note || null,
             status
           })
@@ -65,6 +67,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             date,
             issue,
             reporter: reporter || null,
+            contractor: contractor || null,
             note: note || null,
             status
           })
@@ -139,6 +142,18 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
               onChange={(e) => setReporter(e.target.value)}
               placeholder="Your name"
               maxLength={50}
+              className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Contractor (Optional)</label>
+            <input
+              type="text"
+              value={contractor}
+              onChange={(e) => setContractor(e.target.value)}
+              placeholder="e.g., ModernForm, Carrier"
+              maxLength={100}
               className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
           </div>
