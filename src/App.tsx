@@ -395,29 +395,35 @@ function App() {
       {!showLeft && (
         <button
           onClick={() => setShowLeft(true)}
-          className="absolute right-[20px] top-[20px] px-2.5 py-1.5 bg-[#0f1117] border border-white/10 rounded-[5px] shadow-xl z-20 text-white/40 hover:text-white/80 transition-all font-mono flex items-center gap-1.5"
+          className="absolute right-[20px] top-[20px] px-2.5 py-1.5 bg-white/70 backdrop-blur-md border border-slate-300 rounded-[5px] shadow-lg z-20 text-slate-600 hover:text-slate-900 hover:bg-white/90 transition-all flex items-center gap-1.5"
         >
           <PanelLeft className="w-3.5 h-3.5" />
-          <span className="text-[8px] font-black uppercase tracking-widest">Menu</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">Panel</span>
         </button>
       )}
 
-      <aside className={`relative w-[280px] flex flex-col bg-[#0f1117] z-10 rounded-[8px] border border-white/10 shadow-2xl overflow-hidden pointer-events-auto shrink-0 font-mono transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : 'translate-x-[300px] opacity-0'}`}>
+      {/* ── Sidebar (Gundam OO: glass + sharp + crisp) ── */}
+      <aside className={`relative w-[280px] flex flex-col bg-white/75 backdrop-blur-xl z-10 rounded-[5px] border border-slate-300/80 shadow-2xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-400 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : 'translate-x-[300px] opacity-0'}`}>
 
-        {/* ── Header ── */}
-        <header className="px-3 py-2 border-b border-white/10 flex items-center justify-between shrink-0">
+        {/* Header */}
+        <header className="px-3 py-2 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white/60">
           <div className="flex items-center gap-2">
-            <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-[11px] font-black tracking-widest text-white uppercase">FM_AR15</span>
-            <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-400' : 'bg-white/20'}`} />
+            <div className="w-4 h-4 bg-slate-800 rounded-[2px] flex items-center justify-center shrink-0">
+              <Building2 className="w-2.5 h-2.5 text-white" />
+            </div>
+            <span className="text-[11px] font-black tracking-widest text-slate-800 uppercase">FM_AR15</span>
+            <div className="flex items-center gap-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{isLive ? 'Live' : 'Local'}</span>
+            </div>
           </div>
-          <button onClick={() => setShowLeft(false)} className="text-white/20 hover:text-white/60 transition-colors">
+          <button onClick={() => setShowLeft(false)} className="text-slate-300 hover:text-slate-700 transition-colors">
             <PanelLeftClose className="w-3.5 h-3.5" />
           </button>
         </header>
 
-        {/* ── Mode switcher ── */}
-        <div className="flex border-b border-white/10 shrink-0">
+        {/* Mode switcher */}
+        <div className="flex border-b border-slate-200 shrink-0 bg-slate-50/60">
           {modes.map((m) => (
             <button
               key={m.id}
@@ -431,10 +437,10 @@ function App() {
                 if (m.id === 'KG') setShowLeft(false);
                 else setShowLeft(true);
               }}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all border-r border-white/10 last:border-r-0 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all border-r border-slate-200 last:border-r-0 ${
                 activeMode === m.id
-                  ? 'bg-indigo-600/20 text-indigo-300'
-                  : 'text-white/25 hover:text-white/60 hover:bg-white/5'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-700 hover:bg-white/60'
               }`}
             >
               <m.icon className="w-3.5 h-3.5" />
@@ -443,49 +449,46 @@ function App() {
           ))}
         </div>
 
-        {/* ── Dashboard button ── */}
+        {/* Dashboard button */}
         {(activeMode === 'AC' || activeMode === 'AR') && (
-          <div className="border-b border-white/10 shrink-0">
+          <div className="border-b border-slate-200 shrink-0">
             {activeMode === 'AC' && (
               <button
                 onClick={() => setShowDashboard(true)}
-                className="w-full flex items-center justify-between px-3 py-2 text-white/60 hover:text-white hover:bg-white/5 transition-all group"
+                className="w-full flex items-center justify-between px-3 py-2 text-slate-500 hover:text-slate-900 hover:bg-white/50 transition-all group"
               >
                 <div className="flex items-center gap-2">
-                  <LayoutDashboard className="w-3 h-3 text-indigo-400" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">AC_DASHBOARD</span>
+                  <LayoutDashboard className="w-3 h-3 text-slate-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">AC Dashboard</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {acStats.red > 0 && <span className="text-[8px] font-black text-rose-400">{acStats.red}F</span>}
-                  {acStats.orange > 0 && <span className="text-[8px] font-black text-amber-400">{acStats.orange}M</span>}
-                  <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60 group-hover:translate-x-0.5 transition-all" />
+                  {acStats.red > 0 && <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-1 rounded-[2px]">{acStats.red}F</span>}
+                  {acStats.orange > 0 && <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1 rounded-[2px]">{acStats.orange}M</span>}
+                  <ChevronRight className="w-3 h-3 text-slate-300 group-hover:translate-x-0.5 transition-all" />
                 </div>
               </button>
             )}
             {activeMode === 'AR' && (
-              <button
-                onClick={() => {}}
-                className="w-full flex items-center justify-between px-3 py-2 text-white/60 hover:text-white hover:bg-white/5 transition-all group"
-              >
+              <button onClick={() => {}} className="w-full flex items-center justify-between px-3 py-2 text-slate-500 hover:text-slate-900 hover:bg-white/50 transition-all group">
                 <div className="flex items-center gap-2">
                   <LayoutDashboard className="w-3 h-3 text-slate-400" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">ARCH_DASHBOARD</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Arch Dashboard</span>
                 </div>
-                <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60 group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight className="w-3 h-3 text-slate-300 group-hover:translate-x-0.5 transition-all" />
               </button>
             )}
           </div>
         )}
 
-        {/* ── Data panel ── */}
+        {/* Data panel */}
         <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
           {selectedRoomId || selectedFloor !== null
             ? renderRightPanel()
             : (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-6">
-                <Building2 className="w-5 h-5 text-white/10" />
-                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest leading-relaxed">
-                  Click 3D<br />to explore
+                <Building2 className="w-6 h-6 text-slate-200" />
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">
+                  Click 3D to explore
                 </p>
               </div>
             )

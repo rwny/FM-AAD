@@ -207,24 +207,24 @@ export const ACRightPanel: React.FC<any> = ({
     const statusDot = selectedAC.status === 'Faulty' ? 'bg-rose-400' : selectedAC.status === 'Maintenance' ? 'bg-amber-400' : 'bg-emerald-400';
 
     return (
-      <div className="flex flex-col text-white font-mono text-[11px]">
+      <div className="flex flex-col text-slate-800 text-[11px]">
         {/* Asset header */}
-        <div className="px-3 py-2.5 border-b border-white/10">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
           <div className="flex items-center gap-2 mb-0.5">
             <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
             <span className={`text-[9px] font-black uppercase tracking-widest ${statusColor}`}>{selectedAC.status}</span>
           </div>
-          <div className="text-white font-black tracking-tight text-[13px]">{selectedAC.name}</div>
-          <div className="text-white/40 text-[9px] uppercase tracking-widest mt-0.5">{(selectedAC as any).acType || selectedAC.type}</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">{selectedAC.name}</div>
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mt-0.5">{(selectedAC as any).acType || selectedAC.type}</div>
         </div>
 
         {/* Life Cycle Timeline */}
-        <div className="px-3 py-2 border-b border-white/10 space-y-2">
+        <div className="px-3 py-2 border-b border-slate-200 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-white/40 text-[9px] uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 text-slate-400 text-[9px] uppercase tracking-widest">
               <Clock className="w-3 h-3" /><span>Life Cycle</span>
             </div>
-            <button onClick={() => setShowDashboard(true)} className="text-white/30 hover:text-indigo-400 transition-colors" title="View History">
+            <button onClick={() => setShowDashboard(true)} className="text-slate-300 hover:text-slate-600 transition-colors" title="View History">
               <ClipboardList className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -232,20 +232,20 @@ export const ACRightPanel: React.FC<any> = ({
         </div>
 
         {/* IDs */}
-        <div className="border-b border-white/10">
+        <div className="border-b border-slate-200">
           {[
-            { label: 'GLB ID', value: selectedAC.id.toUpperCase(), color: 'text-white/80' },
-            { label: 'Asset Tag', value: (selectedAC as any).assetId || 'N/A', color: 'text-indigo-400' },
+            { label: 'GLB ID', value: selectedAC.id.toUpperCase(), cls: 'text-slate-800' },
+            { label: 'Asset Tag', value: (selectedAC as any).assetId || 'N/A', cls: 'text-indigo-600' },
           ].map((row, i) => (
-            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 last:border-0">
-              <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
-              <span className={`font-black text-[11px] ${row.color}`}>{row.value}</span>
+            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-slate-100 last:border-0 hover:bg-white/60 transition-colors">
+              <span className="text-slate-400 uppercase tracking-widest text-[9px]">{row.label}</span>
+              <span className={`font-black text-[11px] ${row.cls}`}>{row.value}</span>
             </div>
           ))}
         </div>
 
         {/* Specs */}
-        <div className="border-b border-white/10">
+        <div className="border-b border-slate-200">
           {[
             { label: 'Brand', value: selectedAC.brand },
             { label: 'Model', value: (selectedAC as any).model },
@@ -253,61 +253,61 @@ export const ACRightPanel: React.FC<any> = ({
             { label: 'Age', value: `${calculateAge(selectedAC.install)} mo` },
             { label: 'Install', value: selectedAC.install },
           ].map((row, i) => (
-            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-              <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
-              <span className="text-white/80 font-black text-[11px]">{row.value || '---'}</span>
+            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-slate-100 last:border-0 hover:bg-white/60 transition-colors">
+              <span className="text-slate-400 uppercase tracking-widest text-[9px]">{row.label}</span>
+              <span className="text-slate-800 font-black text-[11px]">{row.value || '---'}</span>
             </div>
           ))}
         </div>
 
         {/* Service Logs header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-          <div className="flex items-center gap-1.5 text-white/40 text-[9px] uppercase tracking-widest">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-slate-50/40">
+          <div className="flex items-center gap-1.5 text-slate-500 text-[9px] uppercase tracking-widest">
             <Activity className="w-3 h-3" /><span>Logs</span>
-            {sortedLogs.length > 0 && <span className="text-indigo-400 font-black">{sortedLogs.length}</span>}
+            {sortedLogs.length > 0 && <span className="text-slate-800 font-black">{sortedLogs.length}</span>}
           </div>
-          <button onClick={() => setShowAddLog(true)} className="flex items-center gap-1 px-2 py-0.5 border border-white/20 text-white/50 hover:text-white hover:border-white/40 transition-all text-[9px] font-black uppercase tracking-widest">
+          <button onClick={() => setShowAddLog(true)} className="flex items-center gap-1 px-2 py-0.5 border border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-500 transition-all text-[9px] font-black uppercase tracking-widest rounded-[3px]">
             <PlusCircle className="w-3 h-3" /><span>Add</span>
           </button>
         </div>
 
         {/* Log entries */}
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-slate-100">
           {currentPageLogs.length > 0 ? currentPageLogs.map((log: any, i: number) => {
-            const dot = log.status === 'Completed' ? 'bg-emerald-400' : log.status === 'Faulty' ? 'bg-rose-400' : 'bg-amber-400';
+            const dot = log.status === 'Completed' ? 'bg-emerald-500' : log.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500';
             const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
             const ageAtLog = Math.round(Math.max(0, (new Date(log.date).getTime() - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
             return (
-              <div key={log.id || i} className="px-3 py-2 hover:bg-white/5 transition-colors">
+              <div key={log.id || i} className="px-3 py-2 hover:bg-white/60 transition-colors">
                 <div className="flex items-center justify-between mb-0.5">
                   <div className="flex items-center gap-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                    <span className="text-white/60 text-[10px] font-black">{log.date}</span>
-                    <span className="text-indigo-400/70 text-[9px]">{ageAtLog}m</span>
+                    <span className="text-slate-700 text-[10px] font-black">{log.date}</span>
+                    <span className="text-slate-400 text-[9px] bg-slate-100 px-1 rounded-[2px]">{ageAtLog}m</span>
                   </div>
-                  <button onClick={() => setSelectedLog(log)} className="text-[8px] font-black text-white/20 hover:text-indigo-400 uppercase tracking-widest transition-colors">detail</button>
+                  <button onClick={() => setSelectedLog(log)} className="text-[8px] font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest transition-colors">detail</button>
                 </div>
-                <div className="pl-3 text-white/50 text-[10px] leading-snug truncate">{log.issue}</div>
-                {log.contractor && <div className="pl-3 text-amber-400/60 text-[9px] truncate">{log.contractor}</div>}
+                <div className="pl-3 text-slate-600 text-[10px] leading-snug truncate">{log.issue}</div>
+                {log.contractor && <div className="pl-3 text-amber-600 text-[9px] truncate">{log.contractor}</div>}
               </div>
             );
           }) : (
-            <div className="px-3 py-4 text-center text-white/20 text-[9px] uppercase tracking-widest">// no logs</div>
+            <div className="px-3 py-4 text-center text-slate-300 text-[9px] uppercase tracking-widest">no logs recorded</div>
           )}
         </div>
 
         {/* Log pagination */}
         {sortedLogs.length > LOGS_PER_PAGE && (
-          <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/10">
-            <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
-            <span className="text-[9px] font-black text-white/20 uppercase">{logPage + 1} / {totalPages}</span>
-            <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
+          <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-200">
+            <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="text-slate-400 hover:text-slate-800 disabled:opacity-20 transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <span className="text-[9px] font-black text-slate-400 uppercase">{logPage + 1} / {totalPages}</span>
+            <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="text-slate-400 hover:text-slate-800 disabled:opacity-20 transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
           </div>
         )}
 
         {/* Print report */}
-        <div className="px-3 py-2 border-t border-white/10">
-          <button onClick={() => setReportAsset(selectedAC)} className="w-full flex items-center justify-center gap-2 py-1.5 border border-white/10 text-white/30 hover:text-white/70 hover:border-white/30 transition-all text-[9px] font-black uppercase tracking-widest">
+        <div className="px-3 py-2 border-t border-slate-200">
+          <button onClick={() => setReportAsset(selectedAC)} className="w-full flex items-center justify-center gap-2 py-1.5 border border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-500 transition-all text-[9px] font-black uppercase tracking-widest rounded-[3px]">
             <Printer className="w-3 h-3" /><span>Generate Report</span>
           </button>
         </div>
@@ -329,14 +329,14 @@ export const ACRightPanel: React.FC<any> = ({
   const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
   if (selectedRoom) {
     return (
-      <div className="flex flex-col font-mono text-[11px] text-white">
-        <div className="px-3 py-2.5 border-b border-white/10">
-          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Room</div>
-          <div className="text-white font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
-          <div className="text-indigo-400/60 text-[9px] uppercase tracking-widest mt-0.5">Air Conditioning</div>
+      <div className="flex flex-col text-[11px]">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mb-0.5">Room</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mt-0.5">Air Conditioning</div>
         </div>
-        <div className="px-3 py-4 text-center text-white/20 text-[9px] uppercase tracking-widest border-b border-white/5">
-          // select AC unit for details
+        <div className="px-3 py-4 text-center text-slate-300 text-[9px] uppercase tracking-widest">
+          select AC unit in 3D for details
         </div>
       </div>
     );
@@ -345,23 +345,23 @@ export const ACRightPanel: React.FC<any> = ({
   if (selectedFloor) {
     const floorACs = finalACAssets.filter((a: ACAsset) => a.id.split('-')[1]?.startsWith(selectedFloor.toString()));
     return (
-      <div className="flex flex-col font-mono text-[11px] text-white">
-        <div className="px-3 py-2.5 border-b border-white/10">
-          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
-          <div className="text-white font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
+      <div className="flex flex-col text-[11px]">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
         </div>
-        <div className="flex justify-between items-center px-3 py-2 border-b border-white/10">
-          <span className="text-white/30 text-[9px] uppercase tracking-widest">Total Sets</span>
-          <span className="text-indigo-400 font-black text-[16px]">{Math.ceil(floorACs.length / 2)}</span>
+        <div className="flex justify-between items-center px-3 py-2 border-b border-slate-100 hover:bg-white/60 transition-colors">
+          <span className="text-slate-400 text-[9px] uppercase tracking-widest">Total Sets</span>
+          <span className="text-slate-900 font-black text-[16px]">{Math.ceil(floorACs.length / 2)}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-32 gap-2 font-mono">
-      <Wind className="w-5 h-5 text-white/10" />
-      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Select unit in 3D</p>
+    <div className="flex flex-col items-center justify-center h-32 gap-2">
+      <Wind className="w-5 h-5 text-slate-200" />
+      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Select unit in 3D</p>
     </div>
   );
 }

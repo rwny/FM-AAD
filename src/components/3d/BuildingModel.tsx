@@ -363,10 +363,12 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
   }, [clonedScene, selectedRoomId, activeMode, clipFloor, allFurniture, finalACAssets])
 
   return (
-    <group onPointerDown={(e) => { 
-      e.stopPropagation(); 
+    <group onPointerDown={(e) => {
+      e.stopPropagation();
       const clickedName = e.object.name.toLowerCase();
-      onRoomClick?.(clickedName); 
+      // Only fire for recognized asset/room prefixes — ignore structure (columns, floors, walls, etc.)
+      const isAsset = /^(rm-|fcu-|cdu-|lf-|bf-|db-|ac-)/.test(clickedName);
+      if (isAsset) onRoomClick?.(clickedName);
     }}>
       <primitive object={clonedScene} />
       {activeMode === 'AR' && roomLabels.filter(r => !clipFloor || r.floor === clipFloor || (clipFloor === 2 && r.floor <= 2)).map((room) => (

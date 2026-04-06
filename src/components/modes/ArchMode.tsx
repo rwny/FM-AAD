@@ -134,24 +134,25 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
 
   // Case 1: Asset Selected
   if (selectedAsset) {
-    const statusDot = selectedAsset.status === 'Faulty' ? 'bg-rose-400' : selectedAsset.status === 'Maintenance' ? 'bg-amber-400' : 'bg-emerald-400';
+    const statusDot = selectedAsset.status === 'Faulty' ? 'bg-rose-500' : selectedAsset.status === 'Maintenance' ? 'bg-amber-500' : 'bg-emerald-500';
+    const statusColor = selectedAsset.status === 'Faulty' ? 'text-rose-600' : selectedAsset.status === 'Maintenance' ? 'text-amber-600' : 'text-emerald-600';
     return (
-      <div className="flex flex-col font-mono text-[11px] text-white">
-        <div className="px-3 py-2.5 border-b border-white/10">
+      <div className="flex flex-col text-[11px]">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
           <div className="flex items-center gap-2 mb-0.5">
             <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
-            <span className="text-white/40 text-[9px] uppercase tracking-widest">Equipment</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest ${statusColor}`}>{selectedAsset.status || 'Active'}</span>
           </div>
-          <div className="text-white font-black tracking-tight text-[13px]">{selectedAsset.id.toUpperCase()}</div>
-          <div className="text-white/40 text-[9px] uppercase tracking-widest mt-0.5">{selectedAsset.type}</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">{selectedAsset.id.toUpperCase()}</div>
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mt-0.5">{selectedAsset.type}</div>
         </div>
         {[
           { label: 'Status', value: selectedAsset.status || 'Active' },
           { label: 'Brand', value: selectedAsset.brand },
         ].map((row, i) => (
-          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
-            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
-            <span className="text-white/80 font-black text-[11px]">{row.value || '---'}</span>
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-slate-100 last:border-0 hover:bg-white/60 transition-colors">
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-slate-800 font-black text-[11px]">{row.value || '---'}</span>
           </div>
         ))}
       </div>
@@ -161,21 +162,21 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
   // Case 2: Room Selected
   if (selectedRoom) {
     return (
-      <div className="flex flex-col font-mono text-[11px] text-white">
-        <div className="px-3 py-2.5 border-b border-white/10">
+      <div className="flex flex-col text-[11px]">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <Building2 className="w-3 h-3 text-indigo-400" />
-            <span className="text-white/40 text-[9px] uppercase tracking-widest">Room</span>
+            <Building2 className="w-3 h-3 text-slate-400" />
+            <span className="text-slate-400 text-[9px] uppercase tracking-widest">Room</span>
           </div>
-          <div className="text-white font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
         </div>
         {[
           { label: 'BIM ID', value: selectedRoom.number },
           { label: 'Level', value: `Level 0${selectedRoom.floor}` },
         ].map((row, i) => (
-          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
-            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
-            <span className="text-white/80 font-black text-[11px]">{row.value}</span>
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-slate-100 last:border-0 hover:bg-white/60 transition-colors">
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-slate-800 font-black text-[11px]">{row.value}</span>
           </div>
         ))}
       </div>
@@ -185,18 +186,18 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
   // Case 3: Floor Selected
   if (selectedFloor) {
     return (
-      <div className="flex flex-col font-mono text-[11px] text-white">
-        <div className="px-3 py-2.5 border-b border-white/10">
-          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
-          <div className="text-white font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
+      <div className="flex flex-col text-[11px]">
+        <div className="px-3 py-2.5 border-b border-slate-200 bg-slate-50/60">
+          <div className="text-slate-400 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
+          <div className="text-slate-900 font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
         </div>
         {[
           { label: 'Rooms', value: rooms.filter(r => r.floor === selectedFloor).length },
           { label: 'Assets', value: finalACAssets.filter(a => a.id.split('-')[1]?.startsWith(selectedFloor.toString())).length },
         ].map((row, i) => (
-          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
-            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
-            <span className="text-indigo-400 font-black text-[16px]">{row.value}</span>
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-slate-100 last:border-0 hover:bg-white/60 transition-colors">
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-slate-900 font-black text-[16px]">{row.value}</span>
           </div>
         ))}
       </div>
@@ -204,9 +205,9 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-32 gap-2 font-mono">
-      <Building2 className="w-5 h-5 text-white/10" />
-      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Select in 3D</p>
+    <div className="flex flex-col items-center justify-center h-32 gap-2">
+      <Building2 className="w-5 h-5 text-slate-200" />
+      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Select in 3D</p>
     </div>
   );
 }
