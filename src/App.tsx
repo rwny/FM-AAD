@@ -22,6 +22,7 @@ import { PrintReportModal } from './components/ui/PrintReportModal'
 import { KGVisualizer3D } from './components/KGVisualizer3D'
 import { GlobalSearch } from './components/search/GlobalSearch'
 import { useGlobalSearch } from './hooks/useGlobalSearch'
+import { ProjectDashboard } from './components/ui/ProjectDashboard'
 
 // --- Scene Component ---
 
@@ -60,8 +61,6 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
     </>
   )
 }
-
-import { ProjectDashboard } from './components/ui/ProjectDashboard'
 
 // --- Main App ---
 
@@ -120,47 +119,48 @@ function App() {
   }, [])
 
   const finalACAssets = useMemo(() => {
+    // 0. Pre-calculate Specification Map for O(1) lookup
+    const specsMap: { [key: string]: { spec: any, typeInfo: any, systemId: string } } = {};
+    if (acSpecsJson.floors) {
+      Object.values(acSpecsJson.floors).forEach((floorRooms: any) => {
+        Object.values(floorRooms).forEach((roomACs: any) => {
+          Object.entries(roomACs).forEach(([acId, acData]: [string, any]) => {
+            if (acData.units) {
+              acData.units.forEach((u: string) => {
+                const normalizedU = u.toLowerCase().replace(/\./g, '-');
+                specsMap[normalizedU] = { 
+                  spec: acData, 
+                  typeInfo: (acSpecsJson.types as any)[acData.type],
+                  systemId: acId
+                };
+              });
+            }
+          });
+        });
+      });
+    }
+
     return acAssets.map(modelAsset => {
       const modelIdLow = modelAsset.id.toLowerCase();
+      const modelNormalized = modelIdLow.replace(/\./g, '-');
       
-      // 1. Look up in MD (ac-specs.json) - NEW PRIMARY SOURCE
-      let mdMatch: any = null;
-      let mdTypeInfo: any = null;
-      
-      for (const floorNum in acSpecsJson.floors) {
-        const floorRooms = (acSpecsJson.floors as any)[floorNum];
-        for (const roomNum in floorRooms) {
-          const roomACs = floorRooms[roomNum];
-          for (const acId in roomACs) {
-            const acData = roomACs[acId];
-            if (acData.units && acData.units.some((u: string) => {
-              const uNormalized = u.toLowerCase().replace(/\./g, '-');
-              const modelNormalized = modelIdLow.replace(/\./g, '-');
-              return uNormalized === modelNormalized;
-            })) {
-              mdMatch = { ...acData, systemId: acId };
-              mdTypeInfo = (acSpecsJson.types as any)[acData.type];
-              break;
-            }
-          }
-          if (mdMatch) break;
-        }
-        if (mdMatch) break;
-      }
+      // 1. Look up in Spec Map (Extremely Fast)
+      const mdMatchData = specsMap[modelNormalized];
+      const mdMatch = mdMatchData?.spec;
+      const mdTypeInfo = mdMatchData?.typeInfo;
+      let matchedAcId = mdMatchData?.systemId || '';
 
       // 2. Look up in KG (Supabase) - PREFER LIVE DATA
       const node = kgNodes.find(n => n.name.toLowerCase() === modelIdLow);
       let acType = mdMatch?.type || '';
       let assetIdStr = mdMatch?.assetId || modelAsset.id;
       let installDate = mdMatch?.installedDate || '';
-      let matchedAcId = mdMatch?.systemId || '';
 
       if (node) {
          const edge = kgEdges.find(e => e.object_id === node.id && e.predicate === 'contains');
          const parentNode = edge ? kgNodes.find(n => n.id === edge.subject_id) : null;
          
          const meta = node.metadata || parentNode?.metadata || {};
-         // Override with DB data if present
          if (meta.ac_type) acType = meta.ac_type;
          if (meta.asset_id) assetIdStr = meta.asset_id;
          if (meta.install_date) installDate = meta.install_date;
@@ -169,62 +169,43 @@ function App() {
 
       // 3. Identify the Peer unit
       const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
-      const currentNumber = modelAsset.id.split('-').slice(1).join('-'); // e.g. 101-1
+      const currentNumber = modelAsset.id.split('-').slice(1).join('-');
       const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
       const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
 
-      // 4. Collect Logs (Self only for precise history)
+      // 4. Collect Logs (Self only)
       const normalizedModelId = modelIdLow.replace(/[^a-z0-9]/g, '');
-      const selfLogs = acDbLogs.filter(l => {
-        const normalizedDbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
-        return normalizedDbId === normalizedModelId;
-      });
+      const selfLogs = acDbLogs.filter(l => l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedModelId);
       
-      // 5. Collect Logs (System-wide for status/color propagation)
+      // 5. Collect Logs (System-wide)
       const systemWideLogs = acDbLogs.filter(l => {
-        const normalizedDbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const normalizedPeerId = peerId ? peerId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
-        const normalizedMatchedAcId = matchedAcId ? matchedAcId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
-
-        return normalizedDbId === normalizedModelId || 
-               (normalizedPeerId && normalizedDbId === normalizedPeerId) || 
-               (normalizedMatchedAcId && normalizedDbId === normalizedMatchedAcId);
+        const dbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const pId = peerId ? peerId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
+        const sId = matchedAcId ? matchedAcId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
+        return dbId === normalizedModelId || (pId && dbId === pId) || (sId && dbId === sId);
       });
       
-      // 6. Sort logs
       const sortedSelfLogs = [...selfLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       const sortedSystemLogs = [...systemWideLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
-      // Status calculation logic
       let status = 'Normal';
-      
-      // 1. Check if this specific node has a recent status log (MOST PRECISE)
       if (sortedSelfLogs.length > 0) {
         const latestLog = sortedSelfLogs[0];
         const issueText = (latestLog.issue || '').toLowerCase();
-        
         if (latestLog.status === 'Completed') status = 'Normal';
-        else if (latestLog.status === 'In Progress' || latestLog.status === 'Pending') status = 'Maintenance';
-        
-        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') {
-          status = 'Faulty';
-        }
+        else if (['In Progress', 'Pending'].includes(latestLog.status)) status = 'Maintenance';
+        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') status = 'Faulty';
       } 
-      // 2. System-wide status (For Warning Icons)
+
       let systemStatus = 'Normal';
       if (sortedSystemLogs.length > 0) {
         const latestSysLog = sortedSystemLogs[0];
         const sysIssueText = (latestSysLog.issue || '').toLowerCase();
-        
         if (latestSysLog.status === 'Completed') systemStatus = 'Normal';
-        else if (latestSysLog.status === 'In Progress' || latestSysLog.status === 'Pending') systemStatus = 'Maintenance';
-        
-        if (sysIssueText.includes('เสีย') || sysIssueText.includes('พัง') || sysIssueText.includes('faulty') || latestSysLog.status === 'Faulty') {
-          systemStatus = 'Faulty';
-        }
+        else if (['In Progress', 'Pending'].includes(latestSysLog.status)) systemStatus = 'Maintenance';
+        if (sysIssueText.includes('เสีย') || sysIssueText.includes('พัง') || sysIssueText.includes('faulty') || latestSysLog.status === 'Faulty') systemStatus = 'Faulty';
       }
 
-      // Specs lookup logic: MD Priority -> TGF Lookup -> Fallback
       let brand = mdTypeInfo?.brand || 'Carrier';
       let model = mdTypeInfo?.model || acType || '---';
       let capacity = mdTypeInfo?.capacity || '---';
@@ -242,20 +223,9 @@ function App() {
         ...modelAsset,
         assetId: assetIdStr,
         acType: acType || 'Unknown',
-        brand,
-        model,
-        capacity,
+        brand, model, capacity,
         install: installDate || '---',
-        logs: sortedSelfLogs.map(l => ({
-          id: l.id,
-          date: l.date,
-          created_at: l.created_at,
-          issue: l.issue,
-          reporter: l.reporter,
-          contractor: l.contractor,
-          status: l.status,
-          note: l.note
-        })),
+        logs: sortedSelfLogs.map(l => ({ id: l.id, date: l.date, created_at: l.created_at, issue: l.issue, reporter: l.reporter, contractor: l.contractor, status: l.status, note: l.note })),
         status: status as any,
         systemStatus: systemStatus as any,
         lastService: sortedSelfLogs.length > 0 ? sortedSelfLogs[0].date : ''
@@ -524,7 +494,8 @@ function App() {
 
       <main className="flex-1 pointer-events-none" />
 
-      {!showRight && (
+      {/* Right sidebar button - hidden in Graph mode */}
+      {!showRight && activeMode !== 'KG' && (
         <button 
           onClick={() => setShowRight(true)} 
           className="absolute right-[20px] top-[24px] p-2 bg-white/90 backdrop-blur-md rounded-[8px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
@@ -599,7 +570,7 @@ function App() {
       )}
       {/* Version Tag */}
       <div className="absolute bottom-3 right-4 z-[100] text-[10px] font-mono font-bold text-slate-400/80 pointer-events-none select-none mix-blend-difference">
-        rw-0.3.24
+        rw-0.3.29
       </div>
     </div>
   )

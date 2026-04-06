@@ -398,7 +398,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded border border-slate-200"><span className="text-indigo-600">SYS: {systemData.length}</span></div>
           <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded border border-slate-200"><span className="text-slate-500">ASSETS: {assets.length}</span></div>
         </div>
-        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 font-black tracking-widest"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">AR15-BIM-v0.3.24</span></div>
+        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 font-black tracking-widest"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">AR15-BIM-v0.3.29</span></div>
       </footer>
 
       {historySystem && (
@@ -467,3 +467,5 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     </div>
   )
 }
+
+export default ProjectDashboard;
