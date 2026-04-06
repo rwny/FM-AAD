@@ -421,4 +421,4 @@ export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRo
   )
 }
 
-useGLTF.preload('/models/ar15-302.glb')
+useGLTF.preload('/models/ar15-302.glb?v=2')

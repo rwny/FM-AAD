@@ -46,7 +46,7 @@ function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, leftVisib
       <Suspense fallback={null}>
         <SceneLighting />
         <BuildingModel 
-          url="/models/ar15-302.glb" 
+          url="/models/ar15-302.glb?v=2" 
           selectedRoomId={selectedRoomId} 
           onRoomsFound={onRoomsFound} 
           onACFound={onACFound}
