@@ -134,55 +134,50 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
 
   // Case 1: Asset Selected
   if (selectedAsset) {
+    const statusDot = selectedAsset.status === 'Faulty' ? 'bg-rose-400' : selectedAsset.status === 'Maintenance' ? 'bg-amber-400' : 'bg-emerald-400';
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-        <div className="space-y-4">
-          <div className="p-4 bg-slate-800 rounded-[12px] text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Equipment Detail</span>
-            </div>
-            <h3 className="text-xl font-black tracking-tighter leading-tight">{selectedAsset.id.toUpperCase()}</h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{selectedAsset.type}</p>
+      <div className="flex flex-col font-mono text-[11px] text-white">
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-0.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+            <span className="text-white/40 text-[9px] uppercase tracking-widest">Equipment</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-3 bg-white border border-slate-200 rounded-[10px] shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Status</div>
-              <div className="text-slate-800 text-[12px] font-black">{selectedAsset.status || 'Active'}</div>
-            </div>
-            <div className="p-3 bg-white border border-slate-200 rounded-[10px] shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Brand</div>
-              <div className="text-slate-800 text-[12px] font-black">{selectedAsset.brand}</div>
-            </div>
-          </div>
+          <div className="text-white font-black tracking-tight text-[13px]">{selectedAsset.id.toUpperCase()}</div>
+          <div className="text-white/40 text-[9px] uppercase tracking-widest mt-0.5">{selectedAsset.type}</div>
         </div>
+        {[
+          { label: 'Status', value: selectedAsset.status || 'Active' },
+          { label: 'Brand', value: selectedAsset.brand },
+        ].map((row, i) => (
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
+            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-white/80 font-black text-[11px]">{row.value || '---'}</span>
+          </div>
+        ))}
       </div>
-    )
+    );
   }
 
   // Case 2: Room Selected
   if (selectedRoom) {
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-        <div className="space-y-4">
-          <div className="p-4 bg-indigo-600 rounded-[12px] text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <Building2 className="w-4 h-4 text-indigo-200" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Architectural Data</span>
-            </div>
-            <h3 className="text-2xl font-black tracking-tighter leading-tight">{selectedRoom.name}</h3>
+      <div className="flex flex-col font-mono text-[11px] text-white">
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Building2 className="w-3 h-3 text-indigo-400" />
+            <span className="text-white/40 text-[9px] uppercase tracking-widest">Room</span>
           </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-3 bg-white border border-slate-200 rounded-[10px] shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">BIM ID</div>
-              <div className="text-slate-800 text-[14px] font-black">{selectedRoom.number}</div>
-            </div>
-            <div className="p-3 bg-white border border-slate-200 rounded-[10px] shadow-sm">
-              <div className="text-[8px] text-slate-400 font-black uppercase mb-1">Level</div>
-              <div className="text-slate-800 text-[14px] font-black">Level 0{selectedRoom.floor}</div>
-            </div>
-          </div>
+          <div className="text-white font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
         </div>
+        {[
+          { label: 'BIM ID', value: selectedRoom.number },
+          { label: 'Level', value: `Level 0${selectedRoom.floor}` },
+        ].map((row, i) => (
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
+            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-white/80 font-black text-[11px]">{row.value}</span>
+          </div>
+        ))}
       </div>
     );
   }
@@ -190,33 +185,28 @@ export const ArchRightPanel: React.FC<ArchModeProps> = ({
   // Case 3: Floor Selected
   if (selectedFloor) {
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-        <div className="space-y-4">
-          <div className="p-4 bg-slate-100 rounded-[12px] border border-slate-200 shadow-sm">
-            <h3 className="text-2xl font-black tracking-tighter text-slate-800">FLOOR 0{selectedFloor}</h3>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Level Summary</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-             <div className="p-4 bg-white rounded-[10px] border border-slate-200 shadow-sm">
-                <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Total Rooms</div>
-                <div className="text-2xl font-black text-slate-800">{rooms.filter(r => r.floor === selectedFloor).length}</div>
-             </div>
-             <div className="p-4 bg-white rounded-[10px] border border-slate-200 shadow-sm">
-                <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Total Assets</div>
-                <div className="text-2xl font-black text-indigo-600">
-                  {finalACAssets.filter(a => a.id.split('-')[1]?.startsWith(selectedFloor.toString())).length}
-                </div>
-             </div>
-          </div>
+      <div className="flex flex-col font-mono text-[11px] text-white">
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
+          <div className="text-white font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
         </div>
+        {[
+          { label: 'Rooms', value: rooms.filter(r => r.floor === selectedFloor).length },
+          { label: 'Assets', value: finalACAssets.filter(a => a.id.split('-')[1]?.startsWith(selectedFloor.toString())).length },
+        ].map((row, i) => (
+          <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 hover:bg-white/5 transition-colors">
+            <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
+            <span className="text-indigo-400 font-black text-[16px]">{row.value}</span>
+          </div>
+        ))}
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-40 grayscale">
-      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4"><Building2 className="w-8 h-8 text-slate-400" /></div>
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Select Floor, Room or Asset<br/>to view details</p>
+    <div className="flex flex-col items-center justify-center h-32 gap-2 font-mono">
+      <Building2 className="w-5 h-5 text-white/10" />
+      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Select in 3D</p>
     </div>
   );
 }

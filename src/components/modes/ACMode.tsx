@@ -199,146 +199,117 @@ export const ACRightPanel: React.FC<any> = ({
 
   // Asset Selected Logic
   if (selectedAC && systemGroup) {
-    const sortedLogs = selectedAC.logs || []; 
+    const sortedLogs = selectedAC.logs || [];
     const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
     const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
 
+    const statusColor = selectedAC.status === 'Faulty' ? 'text-rose-400' : selectedAC.status === 'Maintenance' ? 'text-amber-400' : 'text-emerald-400';
+    const statusDot = selectedAC.status === 'Faulty' ? 'bg-rose-400' : selectedAC.status === 'Maintenance' ? 'bg-amber-400' : 'bg-emerald-400';
+
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar bg-white/40">
-        <div className="space-y-4">
-          <div className="space-y-0.5">
-             <h3 className="text-lg font-black tracking-tighter text-slate-900 leading-tight">{selectedAC.name}</h3>
-             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{(selectedAC as any).acType || selectedAC.type}</p>
+      <div className="flex flex-col text-white font-mono text-[11px]">
+        {/* Asset header */}
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-0.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
+            <span className={`text-[9px] font-black uppercase tracking-widest ${statusColor}`}>{selectedAC.status}</span>
           </div>
+          <div className="text-white font-black tracking-tight text-[13px]">{selectedAC.name}</div>
+          <div className="text-white/40 text-[9px] uppercase tracking-widest mt-0.5">{(selectedAC as any).acType || selectedAC.type}</div>
+        </div>
 
-          {/* Life Cycle Timeline in Sidebar */}
-          <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px]">
-                <Clock className="w-3.5 h-3.5" /> <span>3-Year Life Cycle</span>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowDashboard(true);
-                }}
-                className="p-1.5 bg-slate-50 hover:bg-indigo-50 rounded text-slate-400 hover:text-indigo-600 transition-all shadow-sm"
-                title="View Detailed History"
-              >
-                <ClipboardList className="w-3.5 h-3.5" />
-              </button>
+        {/* Life Cycle Timeline */}
+        <div className="px-3 py-2 border-b border-white/10 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-white/40 text-[9px] uppercase tracking-widest">
+              <Clock className="w-3 h-3" /><span>Life Cycle</span>
             </div>
-            <SystemTimeline 
-              installDate={systemGroup.installDate} 
-              components={systemGroup.components} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="p-3 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Object ID (GLB)</span>
-                <span className="text-sm text-slate-800 font-black">{selectedAC.id.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">Asset ID (Tag)</span>
-                <span className="text-sm text-indigo-600 font-black">{(selectedAC as any).assetId || 'N/A'}</span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-indigo-600 border border-indigo-500 rounded-[12px] space-y-3 text-white shadow-lg">
-              {[
-                { label: 'Brand', value: selectedAC.brand, icon: Box },
-                { label: 'Model', value: (selectedAC as any).model, icon: Info },
-                { label: 'Capacity', value: (selectedAC as any).capacity, icon: Wind },
-                { label: 'Age', value: `${calculateAge(selectedAC.install)} mo`, icon: Clock },
-                { label: 'Install Date', value: selectedAC.install, icon: ShoppingCart }
-              ].map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center border-b border-white/20 pb-2 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-2">
-                    <item.icon className="w-3.5 h-3.5 text-indigo-200" />
-                    <span className="text-[10px] font-black uppercase text-indigo-200">{item.label}</span>
-                  </div>
-                  <span className="text-sm font-black">{item.value || '---'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Service Logs Section */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[10px]">
-                <Activity className="w-4 h-4" /> <span>Service Logs</span>
-              </div>
-              <button
-                onClick={() => setShowAddLog(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[8px] transition-all shadow-md"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase">Add Log</span>
-              </button>
-            </div>
-            
-            <div className="bg-white/80 rounded-[10px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
-              {currentPageLogs.length > 0 ? (
-                currentPageLogs.map((log: any, i: number) => {
-                  const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
-                  
-                  // Calculate age at the time of log
-                  const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
-                  const logMs = new Date(log.date).getTime();
-                  const ageAtLog = Math.round(Math.max(0, (logMs - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
-
-                  return (
-                    <div key={log.id || i} className="p-2.5 leading-tight space-y-0.5 group">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 overflow-hidden flex-1">
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
-                          <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
-                            <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
-                            <span className="text-[9px] font-bold text-indigo-500 shrink-0 bg-indigo-50 px-1 rounded-sm border border-indigo-100/50">Age: {ageAtLog}m</span>
-                            <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => setSelectedLog(log)}
-                          className="text-[9px] font-black text-indigo-500 uppercase px-1.5 py-0.5 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors shrink-0"
-                        >
-                          Detail
-                        </button>
-                      </div>
-                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate flex items-center gap-2">
-                        <span>{log.issue}</span>
-                        {log.contractor && (
-                          <span className="px-1 text-[8px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded shrink-0">
-                            {log.contractor}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-300 text-[10px] font-black uppercase italic">No logs recorded</div>
-              )}
-            </div>
-
-            {sortedLogs.length > LOGS_PER_PAGE && (
-              <div className="flex items-center justify-between px-2">
-                <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronLeft className="w-4 h-4 text-slate-500" /></button>
-                <span className="text-[10px] font-black text-slate-400 uppercase">Page {logPage + 1} of {totalPages}</span>
-                <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronRight className="w-4 h-4 text-slate-500" /></button>
-              </div>
-            )}
-
-            <button
-              onClick={() => setReportAsset(selectedAC)}
-              className="w-full flex items-center justify-center gap-2 py-2 mt-2 border border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all bg-white shadow-sm"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black uppercase">Generate Maintenance Report</span>
+            <button onClick={() => setShowDashboard(true)} className="text-white/30 hover:text-indigo-400 transition-colors" title="View History">
+              <ClipboardList className="w-3.5 h-3.5" />
             </button>
           </div>
+          <SystemTimeline installDate={systemGroup.installDate} components={systemGroup.components} />
+        </div>
+
+        {/* IDs */}
+        <div className="border-b border-white/10">
+          {[
+            { label: 'GLB ID', value: selectedAC.id.toUpperCase(), color: 'text-white/80' },
+            { label: 'Asset Tag', value: (selectedAC as any).assetId || 'N/A', color: 'text-indigo-400' },
+          ].map((row, i) => (
+            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 last:border-0">
+              <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
+              <span className={`font-black text-[11px] ${row.color}`}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Specs */}
+        <div className="border-b border-white/10">
+          {[
+            { label: 'Brand', value: selectedAC.brand },
+            { label: 'Model', value: (selectedAC as any).model },
+            { label: 'Capacity', value: (selectedAC as any).capacity },
+            { label: 'Age', value: `${calculateAge(selectedAC.install)} mo` },
+            { label: 'Install', value: selectedAC.install },
+          ].map((row, i) => (
+            <div key={i} className="flex justify-between items-center px-3 py-1.5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+              <span className="text-white/30 uppercase tracking-widest text-[9px]">{row.label}</span>
+              <span className="text-white/80 font-black text-[11px]">{row.value || '---'}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Service Logs header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+          <div className="flex items-center gap-1.5 text-white/40 text-[9px] uppercase tracking-widest">
+            <Activity className="w-3 h-3" /><span>Logs</span>
+            {sortedLogs.length > 0 && <span className="text-indigo-400 font-black">{sortedLogs.length}</span>}
+          </div>
+          <button onClick={() => setShowAddLog(true)} className="flex items-center gap-1 px-2 py-0.5 border border-white/20 text-white/50 hover:text-white hover:border-white/40 transition-all text-[9px] font-black uppercase tracking-widest">
+            <PlusCircle className="w-3 h-3" /><span>Add</span>
+          </button>
+        </div>
+
+        {/* Log entries */}
+        <div className="divide-y divide-white/5">
+          {currentPageLogs.length > 0 ? currentPageLogs.map((log: any, i: number) => {
+            const dot = log.status === 'Completed' ? 'bg-emerald-400' : log.status === 'Faulty' ? 'bg-rose-400' : 'bg-amber-400';
+            const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
+            const ageAtLog = Math.round(Math.max(0, (new Date(log.date).getTime() - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
+            return (
+              <div key={log.id || i} className="px-3 py-2 hover:bg-white/5 transition-colors">
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                    <span className="text-white/60 text-[10px] font-black">{log.date}</span>
+                    <span className="text-indigo-400/70 text-[9px]">{ageAtLog}m</span>
+                  </div>
+                  <button onClick={() => setSelectedLog(log)} className="text-[8px] font-black text-white/20 hover:text-indigo-400 uppercase tracking-widest transition-colors">detail</button>
+                </div>
+                <div className="pl-3 text-white/50 text-[10px] leading-snug truncate">{log.issue}</div>
+                {log.contractor && <div className="pl-3 text-amber-400/60 text-[9px] truncate">{log.contractor}</div>}
+              </div>
+            );
+          }) : (
+            <div className="px-3 py-4 text-center text-white/20 text-[9px] uppercase tracking-widest">// no logs</div>
+          )}
+        </div>
+
+        {/* Log pagination */}
+        {sortedLogs.length > LOGS_PER_PAGE && (
+          <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/10">
+            <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
+            <span className="text-[9px] font-black text-white/20 uppercase">{logPage + 1} / {totalPages}</span>
+            <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="text-white/30 hover:text-white disabled:opacity-20 transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
+
+        {/* Print report */}
+        <div className="px-3 py-2 border-t border-white/10">
+          <button onClick={() => setReportAsset(selectedAC)} className="w-full flex items-center justify-center gap-2 py-1.5 border border-white/10 text-white/30 hover:text-white/70 hover:border-white/30 transition-all text-[9px] font-black uppercase tracking-widest">
+            <Printer className="w-3 h-3" /><span>Generate Report</span>
+          </button>
         </div>
 
         {showAddLog && (
@@ -358,13 +329,14 @@ export const ACRightPanel: React.FC<any> = ({
   const selectedRoom = rooms.find((r: any) => r.id === selectedRoomId);
   if (selectedRoom) {
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-        <div className="p-4 bg-indigo-600 rounded-[12px] text-white shadow-lg">
-          <h3 className="text-lg font-black tracking-tighter leading-tight">{selectedRoom.name}</h3>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mt-1">Air Conditioning Summary</p>
+      <div className="flex flex-col font-mono text-[11px] text-white">
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Room</div>
+          <div className="text-white font-black tracking-tight text-[13px]">{selectedRoom.name}</div>
+          <div className="text-indigo-400/60 text-[9px] uppercase tracking-widest mt-0.5">Air Conditioning</div>
         </div>
-        <div className="py-10 text-center border-2 border-dashed border-slate-100 rounded-[12px] opacity-40">
-          <p className="text-[10px] font-black text-slate-400 uppercase">Select AC unit for details</p>
+        <div className="px-3 py-4 text-center text-white/20 text-[9px] uppercase tracking-widest border-b border-white/5">
+          // select AC unit for details
         </div>
       </div>
     );
@@ -373,25 +345,23 @@ export const ACRightPanel: React.FC<any> = ({
   if (selectedFloor) {
     const floorACs = finalACAssets.filter((a: ACAsset) => a.id.split('-')[1]?.startsWith(selectedFloor.toString()));
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
-        <div className="p-4 bg-slate-100 rounded-[12px] border border-slate-200">
-           <h3 className="text-lg font-black text-slate-800 uppercase">FLOOR 0{selectedFloor}</h3>
-           <p className="text-[10px] font-black text-slate-400 uppercase mt-1">Air Conditioning Overview</p>
+      <div className="flex flex-col font-mono text-[11px] text-white">
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <div className="text-white/40 text-[9px] uppercase tracking-widest mb-0.5">Level</div>
+          <div className="text-white font-black tracking-tight text-[13px]">FLOOR 0{selectedFloor}</div>
         </div>
-        <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm text-center">
-           <div className="text-[10px] font-black text-indigo-400 uppercase mb-2">Total Sets at Level 0{selectedFloor}</div>
-           <div className="text-3xl font-black text-indigo-600">
-             {Math.ceil(floorACs.length / 2)} <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Sets</span>
-           </div>
+        <div className="flex justify-between items-center px-3 py-2 border-b border-white/10">
+          <span className="text-white/30 text-[9px] uppercase tracking-widest">Total Sets</span>
+          <span className="text-indigo-400 font-black text-[16px]">{Math.ceil(floorACs.length / 2)}</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-40 grayscale">
-      <Wind className="w-16 h-16 text-slate-100 mb-4" />
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Select Floor, Room or Unit</p>
+    <div className="flex flex-col items-center justify-center h-32 gap-2 font-mono">
+      <Wind className="w-5 h-5 text-white/10" />
+      <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Select unit in 3D</p>
     </div>
   );
 }
