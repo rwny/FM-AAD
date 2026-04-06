@@ -22,14 +22,13 @@ export function ScreenshotHandler() {
   return null
 }
 
-export function CameraOffset({ leftVisible, rightVisible, sidebarWidth = 300 }: { leftVisible: boolean, rightVisible: boolean, sidebarWidth?: number }) {
+export function CameraOffset({ rightVisible, sidebarWidth = 320 }: { rightVisible: boolean, sidebarWidth?: number }) {
   const { camera, size } = useThree()
   const currentOffset = useRef(0)
   useFrame(() => {
     if (camera instanceof THREE.PerspectiveCamera) {
-      const l = leftVisible ? sidebarWidth : 0
       const r = rightVisible ? sidebarWidth : 0
-      const targetOffset = (r - l) / 2
+      const targetOffset = r / 2
       currentOffset.current = THREE.MathUtils.lerp(currentOffset.current, targetOffset, 0.1)
       camera.setViewOffset(size.width, size.height, currentOffset.current, 0, size.width, size.height)
       camera.updateProjectionMatrix()
@@ -38,11 +37,11 @@ export function CameraOffset({ leftVisible, rightVisible, sidebarWidth = 300 }: 
   return null
 }
 
-export function SceneControls({ leftVisible, rightVisible }: { leftVisible: boolean, rightVisible: boolean }) {
+export function SceneControls({ rightVisible }: { leftVisible?: boolean, rightVisible: boolean }) {
   return (
     <>
       <ScreenshotHandler />
-      <CameraOffset leftVisible={leftVisible} rightVisible={rightVisible} sidebarWidth={300} />
+      <CameraOffset rightVisible={rightVisible} sidebarWidth={320} />
       <PerspectiveCamera makeDefault position={[-30, 20, 30]} fov={35} />
       <OrbitControls 
         target={[0, 2, 0]} 
