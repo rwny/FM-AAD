@@ -352,7 +352,7 @@ function App() {
   }
 
   return (
-    <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px] gap-[10px]">
+    <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex flex-row-reverse text-slate-900 p-[10px] gap-[10px]">
       {/* Dashboard Overlay */}
       {showDashboard && (
         <ProjectDashboard 
@@ -395,14 +395,14 @@ function App() {
       {!showLeft && (
         <button
           onClick={() => setShowLeft(true)}
-          className="absolute left-[20px] top-[20px] px-2.5 py-1.5 bg-[#0f1117] border border-white/10 rounded-[5px] shadow-xl z-20 text-white/40 hover:text-white/80 transition-all font-mono flex items-center gap-1.5"
+          className="absolute right-[20px] top-[20px] px-2.5 py-1.5 bg-[#0f1117] border border-white/10 rounded-[5px] shadow-xl z-20 text-white/40 hover:text-white/80 transition-all font-mono flex items-center gap-1.5"
         >
           <PanelLeft className="w-3.5 h-3.5" />
           <span className="text-[8px] font-black uppercase tracking-widest">Menu</span>
         </button>
       )}
 
-      <aside className={`relative w-[280px] flex flex-col bg-[#0f1117] z-10 rounded-[8px] border border-white/10 shadow-2xl overflow-hidden pointer-events-auto shrink-0 font-mono transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : '-translate-x-[300px] opacity-0'}`}>
+      <aside className={`relative w-[280px] flex flex-col bg-[#0f1117] z-10 rounded-[8px] border border-white/10 shadow-2xl overflow-hidden pointer-events-auto shrink-0 font-mono transition-all duration-500 ease-in-out ${showLeft ? 'translate-x-0 opacity-100' : 'translate-x-[300px] opacity-0'}`}>
 
         {/* ── Header ── */}
         <header className="px-3 py-2 border-b border-white/10 flex items-center justify-between shrink-0">
