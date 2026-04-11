@@ -1,6 +1,0 @@
-Date	Component	Status	Activity	Notes
-2024-02-01	System Master	Activated	Initial system deployment	Project deployment to Room 101
-2025-03-05	fcu-101-1	In Progress	เปลี่ยนท่อ	ฟหกด ฟหกด ฟกด 
-2025-05-03	fcu-101-1	Completed	working	ฟหกด
-2026-03-26	cdu-101-1	Completed	ซ่อมแล้ว	ฟหดกฟ ฟหกดฟหกด ฟหกด
-2026-03-26	cdu-101-1	In Progress	น้ำหยด	

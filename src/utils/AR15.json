@@ -1,4 +1,399 @@
 {
   "building": "AR15",
-  "floors": []
+  "floors": {
+    "1": {
+      "101": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-101-1": {
+            "id": "AC-101-1"
+          },
+          "FCU-101-1": {
+            "id": "FCU-101-1"
+          },
+          "PIPE-DRN-101-1": {
+            "id": "PIPE-DRN-101-1"
+          },
+          "CDU-101-1": {
+            "id": "CDU-101-1"
+          },
+          "PIPE-ELE-101-1": {
+            "id": "PIPE-ELE-101-1",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-101-1": {
+            "id": "PIPE-REF-101-1",
+            "connectsto": "FCU-101-1"
+          },
+          "AC-101-2": {
+            "id": "AC-101-2"
+          },
+          "FCU-101-2": {
+            "id": "FCU-101-2"
+          },
+          "PIPE-DRN-101-2": {
+            "id": "PIPE-DRN-101-2"
+          },
+          "CDU-101-2": {
+            "id": "CDU-101-2"
+          },
+          "PIPE-ELE-101-2": {
+            "id": "PIPE-ELE-101-2",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-101-2": {
+            "id": "PIPE-REF-101-2",
+            "connectsto": "FCU-101-2"
+          },
+          "AC-101-3": {
+            "id": "AC-101-3"
+          },
+          "FCU-101-3": {
+            "id": "FCU-101-3"
+          },
+          "PIPE-DRN-101-3": {
+            "id": "PIPE-DRN-101-3"
+          },
+          "CDU-101-3": {
+            "id": "CDU-101-3"
+          },
+          "PIPE-ELE-101-3": {
+            "id": "PIPE-ELE-101-3",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-101-3": {
+            "id": "PIPE-REF-101-3",
+            "connectsto": "FCU-101-3"
+          },
+          "AC-101-4": {
+            "id": "AC-101-4"
+          },
+          "FCU-101-4": {
+            "id": "FCU-101-4"
+          },
+          "PIPE-DRN-101-4": {
+            "id": "PIPE-DRN-101-4"
+          },
+          "CDU-101-4": {
+            "id": "CDU-101-4"
+          },
+          "PIPE-ELE-101-4": {
+            "id": "PIPE-ELE-101-4"
+          },
+          "PIPE-REF-101-4": {
+            "id": "PIPE-REF-101-4",
+            "connectsto": "FCU-101-4"
+          }
+        },
+        "EE": {
+          "PG-101.1": {
+            "id": "PG-101.1"
+          },
+          "SW-101.B": {
+            "id": "SW-101.B"
+          },
+          "LI-101.B1": {
+            "id": "LI-101.B1"
+          },
+          "LI-101.B2": {
+            "id": "LI-101.B2"
+          },
+          "LI-101.B3": {
+            "id": "LI-101.B3"
+          },
+          "LI-101.B4": {
+            "id": "LI-101.B4"
+          },
+          "LI-101.B5": {
+            "id": "LI-101.B5"
+          },
+          "LI-101.B6": {
+            "id": "LI-101.B6"
+          }
+        }
+      },
+      "102": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-102-1": {
+            "id": "AC-102-1"
+          },
+          "FCU-102-1": {
+            "id": "FCU-102-1"
+          },
+          "PIPE-DRN-102-1": {
+            "id": "PIPE-DRN-102-1"
+          },
+          "CDU-102-1": {
+            "id": "CDU-102-1"
+          },
+          "PIPE-ELE-102-1": {
+            "id": "PIPE-ELE-102-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-102-1": {
+            "id": "PIPE-REF-102-1",
+            "connectsto": "FCU-102-1"
+          }
+        },
+        "EE": {}
+      }
+    },
+    "2": {
+      "201": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-201-1": {
+            "id": "AC-201-1"
+          },
+          "FCU-201-1": {
+            "id": "FCU-201-1"
+          },
+          "PIPE-DRN-201-1": {
+            "id": "PIPE-DRN-201-1"
+          },
+          "CDU-201-1": {
+            "id": "CDU-201-1"
+          },
+          "PIPE-ELE-201-1": {
+            "id": "PIPE-ELE-201-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-201-1": {
+            "id": "PIPE-REF-201-1",
+            "connectsto": "FCU-201-1"
+          },
+          "AC-201-2": {
+            "id": "AC-201-2"
+          },
+          "FCU-201-2": {
+            "id": "FCU-201-2"
+          },
+          "PIPE-DRN-201-2": {
+            "id": "PIPE-DRN-201-2"
+          },
+          "CDU-201-2": {
+            "id": "CDU-201-2"
+          },
+          "PIPE-ELE-201-2": {
+            "id": "PIPE-ELE-201-2",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-201-2": {
+            "id": "PIPE-REF-201-2",
+            "connectsto": "FCU-201-2"
+          },
+          "AC-201-3": {
+            "id": "AC-201-3"
+          },
+          "FCU-201-3": {
+            "id": "FCU-201-3"
+          },
+          "PIPE-DRN-201-3": {
+            "id": "PIPE-DRN-201-3"
+          },
+          "CDU-201-3": {
+            "id": "CDU-201-3"
+          },
+          "PIPE-ELE-201-3": {
+            "id": "PIPE-ELE-201-3",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-201-3": {
+            "id": "PIPE-REF-201-3",
+            "connectsto": "FCU-201-3"
+          }
+        },
+        "EE": {}
+      },
+      "202": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-202-1": {
+            "id": "AC-202-1"
+          },
+          "FCU-202-1": {
+            "id": "FCU-202-1"
+          },
+          "PIPE-DRN-202-1": {
+            "id": "PIPE-DRN-202-1"
+          },
+          "CDU-202-1": {
+            "id": "CDU-202-1"
+          },
+          "PIPE-ELE-202-1": {
+            "id": "PIPE-ELE-202-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-202-1": {
+            "id": "PIPE-REF-202-1",
+            "connectsto": "FCU-202-1"
+          }
+        },
+        "EE": {}
+      },
+      "203": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-203-1": {
+            "id": "AC-203-1"
+          },
+          "FCU-203-1": {
+            "id": "FCU-203-1"
+          },
+          "PIPE-DRN-203-1": {
+            "id": "PIPE-DRN-203-1"
+          },
+          "CDU-203-1": {
+            "id": "CDU-203-1"
+          },
+          "PIPE-ELE-203-1": {
+            "id": "PIPE-ELE-203-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-203-1": {
+            "id": "PIPE-REF-203-1",
+            "connectsto": "FCU-203-1"
+          }
+        }
+      },
+      "204": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-204-1": {
+            "id": "AC-204-1"
+          },
+          "FCU-204-1": {
+            "id": "FCU-204-1"
+          },
+          "PIPE-DRN-204-1": {
+            "id": "PIPE-DRN-204-1"
+          },
+          "CDU-204-1": {
+            "id": "CDU-204-1"
+          },
+          "PIPE-ELE-204-1": {
+            "id": "PIPE-ELE-204-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-204-1": {
+            "id": "PIPE-REF-204-1",
+            "connectsto": "FCU-204-1"
+          }
+        },
+        "EE": {}
+      },
+      "205": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-205-1": {
+            "id": "AC-205-1"
+          },
+          "FCU-205-1": {
+            "id": "FCU-205-1"
+          },
+          "PIPE-DRN-205-1": {
+            "id": "PIPE-DRN-205-1"
+          },
+          "CDU-205-1": {
+            "id": "CDU-205-1"
+          },
+          "PIPE-ELE-205-1": {
+            "id": "PIPE-ELE-205-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-205-1": {
+            "id": "PIPE-REF-205-1",
+            "connectsto": "FCU-205-1"
+          }
+        },
+        "EE": {}
+      },
+      "206": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-206-1": {
+            "id": "AC-206-1"
+          },
+          "FCU-206-1": {
+            "id": "FCU-206-1"
+          },
+          "PIPE-DRN-206-1": {
+            "id": "PIPE-DRN-206-1"
+          },
+          "CDU-206-1": {
+            "id": "CDU-206-1"
+          },
+          "PIPE-ELE-206-1": {
+            "id": "PIPE-ELE-206-1",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-206-1": {
+            "id": "PIPE-REF-206-1",
+            "connectsto": "FCU-206-1"
+          },
+          "AC-206-2": {
+            "id": "AC-206-2"
+          },
+          "FCU-206-2": {
+            "id": "FCU-206-2"
+          },
+          "PIPE-DRN-206-2": {
+            "id": "PIPE-DRN-206-2"
+          },
+          "CDU-206-2": {
+            "id": "CDU-206-2"
+          },
+          "PIPE-ELE-206-2": {
+            "id": "PIPE-ELE-206-2",
+            "connectsfrom": "LP-123"
+          },
+          "PIPE-REF-206-2": {
+            "id": "PIPE-REF-206-2",
+            "connectsto": "FCU-206-2"
+          }
+        },
+        "EE": {
+          "CCTV-1": {
+            "id": "CCTV-1"
+          },
+          "CCTV-2": {
+            "id": "CCTV-2"
+          },
+          "CCTV-3": {
+            "id": "CCTV-3"
+          },
+          "CCTV-4": {
+            "id": "CCTV-4"
+          },
+          "CCTV-5": {
+            "id": "CCTV-5"
+          },
+          "CCTV-6": {
+            "id": "CCTV-6"
+          },
+          "CCTV-7": {
+            "id": "CCTV-7"
+          },
+          "CCTV-8": {
+            "id": "CCTV-8"
+          },
+          "CCTV-9": {
+            "id": "CCTV-9"
+          },
+          "CCTV-10": {
+            "id": "CCTV-10"
+          }
+        }
+      }
+    }
+  }
 }
