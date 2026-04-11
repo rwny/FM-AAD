@@ -8,9 +8,12 @@
     "build": "npm run generate:ar15 && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "data:combine": "node src/utils/combine-data.cjs",
+    "data:check": "node src/utils/check-data.cjs",
+    "data:combine": "npm run data:check && node src/utils/combine-data.cjs",
+    "data:generate": "npm run data:combine && node scripts/build-ar15-md-to-json.js",
+    "data:sync": "npm run data:generate && node scripts/sync-ac-to-supabase.cjs",
     "generate:data": "node scripts/build-md-to-json.js",
-    "generate:ar15": "npm run data:combine && node scripts/build-ar15-md-to-json.js"
+    "generate:ar15": "npm run data:generate"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
