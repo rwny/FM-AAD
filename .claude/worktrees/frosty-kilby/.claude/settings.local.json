@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(curl -s \"http://localhost:5174/src/components/ui/ProjectDashboard.tsx\")",
+      "Bash(curl -s \"http://localhost:5174/\")",
+      "Bash(netstat -ano)",
+      "Bash(wmic process:*)",
+      "Bash(powershell -Command \"\\(Get-Process -Id 16704\\).MainModule.FileName; \\(gwmi Win32_Process -filter ''ProcessId=16704''\\).CommandLine\")",
+      "Bash(powershell -Command \"Get-Item ''HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Image File Execution Options'' -ErrorAction SilentlyContinue; $p = Get-Process -Id 16704; [System.IO.Directory]::GetCurrentDirectory\\(\\)\")",
+      "Bash(powershell -Command \"\\(Get-WmiObject Win32_Process -Filter ''ProcessId=32356''\\).CommandLine\")",
+      "Bash(curl -s \"http://localhost:5175/src/components/ui/ProjectDashboard.tsx\")",
+      "Bash(curl -s \"http://localhost:5176/src/components/ui/ProjectDashboard.tsx\")",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" status --short)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" diff --name-only)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" branch --contains 1805eb2)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" log --oneline right-bar-only..HEAD)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" log --oneline d227168..1805eb2 --ancestry-path)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" log --oneline only-left-sidebar)",
+      "Bash(git -C \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" diff right-bar-only only-left-sidebar --name-only)",
+      "Bash(npx --prefix \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\" tsc --project \"D:\\\\Works\\\\AR3D\\\\3-App\\\\web50_FM2-AR15-3\\\\.claude\\\\worktrees\\\\wizardly-kepler\\\\tsconfig.json\" --noEmit)"
+    ]
+  }
+}

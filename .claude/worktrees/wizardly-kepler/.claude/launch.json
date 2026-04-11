@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FM-AR15 Wizardly Dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5176"],
+      "port": 5176
+    },
+    {
+      "name": "FM-AR15 Preview (production build)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 4173
+    }
+  ]
+}
