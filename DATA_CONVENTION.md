@@ -95,8 +95,7 @@
         - rm-101 : ห้องประชุม
             - FUR
                 - LF
-                    - [CCTV-1] { Type: CCTV-xiaomi-pro, Brand: Xiaomi }
-                    - CCTV-1.1 { AssetID: สถ.2568-cctv-001, Monitors: room-101 }
+                    - Table-1-1 { Type:IKEA5485, AssetID: สถ.2568-table-001, InstallDate:YYYY-MM-DD }
 ```
 
 ### 2.4 คุณสมบัติพิเศษ (Special Properties)
