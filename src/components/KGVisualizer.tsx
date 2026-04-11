@@ -53,13 +53,13 @@ export function KGVisualizer() {
   };
 
   return (
-    <div className="absolute inset-0 bg-slate-950 overflow-hidden cursor-crosshair">
+    <div className="absolute inset-0 bg-slate-50 overflow-hidden cursor-crosshair">
       {/* Overlay UI */}
-      <div className="absolute top-6 left-24 z-10 text-white pointer-events-none select-none">
-        <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+      <div className="absolute top-6 left-24 z-10 text-slate-900 pointer-events-none select-none">
+        <h2 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
           Knowledge Graph Explorer
         </h2>
-        <p className="text-slate-400 text-sm font-medium mt-1">
+        <p className="text-slate-500 text-sm font-medium mt-1">
           Visualizing {graphData.nodes.length} nodes and {graphData.links.length} relationships
         </p>
       </div>
@@ -67,7 +67,7 @@ export function KGVisualizer() {
 
 
       {/* LEGEND */}
-      <div className="absolute bottom-8 left-8 z-10 flex flex-col gap-3 text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-md bg-white/5 p-5 rounded-3xl border border-white/10 select-none">
+      <div className="absolute bottom-8 left-8 z-10 flex flex-col gap-3 text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-md bg-white/80 p-5 rounded-3xl border border-slate-200 shadow-xl select-none">
         {[
           { color: '#f43f5e', label: 'Building' },
           { color: '#8b5cf6', label: 'Floor' },
@@ -75,8 +75,8 @@ export function KGVisualizer() {
           { color: '#10b981', label: 'AC/Assets' }
         ].map((item, i) => (
           <div key={i} className="flex items-center gap-3">
-            <span className="w-3 h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ backgroundColor: item.color }} />
-            <span className="text-slate-300">{item.label}</span>
+            <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
+            <span className="text-slate-600">{item.label}</span>
           </div>
         ))}
       </div>
@@ -88,7 +88,7 @@ export function KGVisualizer() {
           height={dimensions.height}
           graphData={graphData}
           nodeLabel="name"
-          linkColor={() => 'rgba(255,255,255,0.08)'}
+          linkColor={() => 'rgba(0,0,0,0.08)'}
           nodeRelSize={6}
           linkDirectionalParticles={1}
           linkDirectionalParticleSpeed={0.003}
@@ -132,7 +132,7 @@ export function KGVisualizer() {
             ctx.font = `${fontSize}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = focusedNode?.id === node.id ? '#fff' : 'rgba(255,255,255,0.6)';
+            ctx.fillStyle = focusedNode?.id === node.id ? '#000' : 'rgba(0,0,0,0.6)';
             ctx.fillText(label, node.x, node.y + size + (fontSize * 1.5));
           }}
           onNodeClick={(node) => handleNodeClick(node)}

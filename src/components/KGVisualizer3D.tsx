@@ -16,7 +16,7 @@ export function KGVisualizer3D() {
   const [isRotating, setIsRotating] = useState(true); 
   const [layoutMode, setLayoutMode] = useState<'hierarchy' | 'radial'>('radial');
   const [visualMode] = useState<'color' | 'monochrome'>('monochrome');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
