@@ -38,7 +38,18 @@ function processBuilding(buildingId) {
 
     console.log(`\n📦 Generating JSON for ${buildingId}...`);
     const mdContent = fs.readFileSync(mdPath, 'utf-8');
-    const lines = mdContent.split('\n');
+    const rawLines = mdContent.split('\n');
+    const lines = [];
+    
+    // Normalize multi-line properties
+    for (let i = 0; i < rawLines.length; i++) {
+        const line = rawLines[i];
+        if (line.match(/^\s*-/)) {
+            lines.push(line.replace(/\r/g, ''));
+        } else if (lines.length > 0 && line.trim() && !line.trim().startsWith('#')) {
+            lines[lines.length - 1] += " " + line.trim().replace(/\r/g, '');
+        }
+    }
 
     const building = { building: buildingId, floors: {} };
     let currentFloor = null;
@@ -57,6 +68,8 @@ function processBuilding(buildingId) {
             const floorNum = name.replace('floor-', '');
             building.floors[floorNum] = {};
             currentFloor = building.floors[floorNum];
+            currentRoom = null;
+            currentSystem = null;
             continue;
         }
 
@@ -64,10 +77,11 @@ function processBuilding(buildingId) {
             const roomId = name.replace('room-', '');
             currentFloor[roomId] = {};
             currentRoom = currentFloor[roomId];
+            currentSystem = null;
             continue;
         }
 
-        const systems = ['AC', 'EE', 'ARCH', 'FUR'];
+        const systems = ['AC', 'EE', 'ARCH', 'FUR', 'SAN', 'CCTV'];
         if (systems.includes(name) && currentRoom) {
             currentRoom[name] = {};
             currentSystem = currentRoom[name];
@@ -76,9 +90,7 @@ function processBuilding(buildingId) {
 
         // If it's an asset (like AC-101-1 or FCU-xxx)
         if (currentSystem && indent >= 3) {
-            // Simplified logic for asset grouping
-            // In a real scenario, this would be more complex to match the specific UI needs
-            // Here we just store it to ensure the file is generated
+            // Store assets in the current system (flat map for now)
             currentSystem[name] = { 
                 id: name,
                 ...props

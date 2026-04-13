@@ -84,3 +84,17 @@
 - [ ] **Spatial Edge Visualization (Digital Pipe):** นำเส้นความสัมพันธ์ (Edges) ใน Knowledge Graph มาวาดเป็นเส้นเรืองแสง (Shader Path) ใน 3D Model:
   - แสดงทิศทางการเชื่อมต่อของท่อน้ำยา/ท่อลม (Refrigerant/Air Flow) ที่วิ่งทะลุผนังจริงๆ ตามความสัมพันธ์ `connectsTo` หรือ `monitors`
 - [ ] **X-Ray Maintenance Mode:** สร้างปุ่มสลับโหมดที่ทำให้ผนังอาคารโปร่งใส (Transparent) เพื่อให้เห็นระบบงานระบบ (MEP) ที่ซ่อนอยู่หลังฝ้า/ผนัง โดยอ้างอิงตำแหน่งจากกราฟความสัมพันธ์
+
+## 🛠️ 9. Blender MCP Integration & Spatial Knowledge Graph (การผสานโมเดลกับฐานข้อมูลขั้นสูง)
+- [ ] **3-Way Cross-check Audit Tool:** พัฒนาระบบตรวจสอบความถูกต้อง 3 ทางระหว่าง:
+  - **Markdown (Data):** จำนวนและชื่อ Asset ที่ระบุไว้
+  - **Blender (3D Model):** Object ที่มีอยู่จริงใน Scene ผ่านโปรโตคอล MCP
+  - **Supabase (Live Database):** ข้อมูลที่ถูก Sync ขึ้นระบบคลาวด์
+- [ ] **Bi-directional Property Sync via MCP:**
+  - **Auto-Naming:** สั่ง Rename Object ใน Blender ให้ตรงตามกฎ `[BuildingID]-[NodeName]` อัตโนมัติจากไฟล์ Markdown
+  - **Coordinate Extraction:** ดึงค่าพิกัด `XYZ` และ `Rotation` จาก Blender มาเขียนลงใน Metadata ของไฟล์ Markdown เพื่อสร้าง **Spatial Knowledge Graph**
+  - **BIM Metadata Embedding:** นำข้อมูลจาก Graph (เช่น BTU, Brand, InstallDate) ไปฝังใน Custom Properties ของ Blender Object เพื่อให้ไฟล์ `.glb` มีข้อมูลครบถ้วน (BIM-ready)
+- [ ] **Spatial Analysis & Proximity Logic:**
+  - **Clash Detection Lite:** ใช้พิกัดในกราฟคำนวณระยะห่างระหว่างอุปกรณ์ (เช่น เช็คว่าท่อน้ำทิ้งเดินผ่านคานหรือไม่)
+  - **Impact Zone Analysis:** วิเคราะห์ผลกระทบเชิงพื้นที่ เช่น "หากท่อน้ำแตกที่จุดนี้ มีอุปกรณ์ไฟฟ้าตัวไหนในรัศมี 2 เมตรที่เสี่ยงได้รับความเสียหายบ้าง?"
+  - **Fixed-Position 3D Graph:** ล็อกตำแหน่งโหนดใน 3D Force Graph ให้ตรงกับพิกัดจริงในอาคาร เพื่อให้เห็นโครงสร้างความสัมพันธ์ซ้อนทับอยู่บนตำแหน่งกายภาพจริง

@@ -28,21 +28,9 @@ function combineBuilding(buildingId) {
         return content.trimEnd() + '\n';
     }).join('');
 
-    let insertIndex = -1;
-    for (let i = 0; i < commonLines.length; i++) {
-        // Look for common insertion points like LP or CCTV
-        if (commonLines[i].includes('- LP-') || commonLines[i].includes('- CCTV')) {
-            insertIndex = i;
-            break;
-        }
-    }
-
-    const resultLines = [...commonLines];
-    if (insertIndex !== -1) {
-        resultLines.splice(insertIndex, 0, floorContents.trimEnd());
-    } else {
-        resultLines.push(floorContents.trimEnd());
-    }
+    const resultLines = [commonLines[0]];
+    resultLines.push(floorContents.trimEnd());
+    resultLines.push(...commonLines.slice(1));
 
     fs.writeFileSync(outputFile, resultLines.join('\n'), 'utf8');
     console.log(`   ✅ Successfully combined into ${outputFile}`);

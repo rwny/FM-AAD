@@ -33,15 +33,15 @@ function parseMDHierarchy(filePath, buildingId) {
   const nodes = {};
   const triplets = [];
   const stack = [];
-  const genericNames = ['AC', 'EE', 'ARCH', 'FUR', 'CCTV'];
+  const genericNames = ['AC', 'EE', 'ARCH', 'FUR', 'CCTV', 'SAN'];
 
   for (let line of lines) {
-    const match = line.match(/^(\s*)-\s*([^{]+)(?:\{([^}]+)\})?/);
+    const match = line.match(/^(\s*)-\s*([^{]+)(?:\{([^}]*)\})?/);
     if (!match) continue;
 
     const indent = match[1].length;
     let name = match[2].trim();
-    const propsRaw = match[3] || '';
+    const propsRaw = match[3];
     const metadata = { building_id: buildingId }; // Tag building context
 
     if (propsRaw) {
@@ -68,7 +68,7 @@ function parseMDHierarchy(filePath, buildingId) {
     else if (name.includes('FCU')) type = 'fcu';
     else if (name.includes('CDU')) type = 'cdu';
     else if (name.startsWith('AC-')) type = 'ac_set';
-    else if (name.startsWith('PIPE-')) type = 'pipe';
+    else if (name.startsWith('PIPE-') || name.startsWith('P-')) type = 'pipe';
     else if (name.startsWith('LP-') || name.startsWith('CU-')) type = 'load_panel';
     else if (name.startsWith('PG-')) type = 'power_outlet';
     else if (name.startsWith('SW-')) type = 'switch';
@@ -77,6 +77,8 @@ function parseMDHierarchy(filePath, buildingId) {
     else if (name.startsWith('floor-')) type = 'floor';
     else if (name.startsWith('NVR-')) type = 'nvr';
     else if (name.startsWith('CCTV-')) type = 'cctv_camera';
+    else if (name.startsWith('LAV-') || name.startsWith('WC-') || name.startsWith('UR-') || name.startsWith('FD-') || name.startsWith('FCO-')) type = 'sanitary';
+    else if (name.startsWith('Manhole-') || name.startsWith('SEPT-')) type = 'terminal';
     else if (name.toLowerCase() === buildingId.toLowerCase()) type = 'building';
 
     // Hierarchy Logic: Find parent
@@ -85,6 +87,9 @@ function parseMDHierarchy(filePath, buildingId) {
     }
     const parent = stack.length > 0 ? stack[stack.length - 1] : null;
 
+    const inSanTree = stack.some(s => s.rawName === 'SAN');
+    const isSanTerminalRef = inSanTree && (propsRaw !== undefined && propsRaw.trim() === '');
+
     // --- GLOBAL UNIQUE PREFIX LOGIC ---
     // Rule: Prefix everything with BuildingId unless it's the building node itself
     let uniqueName = name;
@@ -92,7 +97,8 @@ function parseMDHierarchy(filePath, buildingId) {
         uniqueName = buildingId;
     } else {
         // For generic headers, include parent in name before building prefix
-        if (genericNames.includes(name) && parent) {
+        // BUT if parent is the building root, don't include parent name to avoid Double Prefix
+        if (genericNames.includes(name) && parent && parent.type !== 'building') {
             uniqueName = `${buildingId}-${parent.rawName}-${name}`;
         } else {
             uniqueName = `${buildingId}-${name}`;
@@ -101,10 +107,25 @@ function parseMDHierarchy(filePath, buildingId) {
     
     metadata.display_name = name; // UI will still show the short name
 
-    nodes[uniqueName] = { type, metadata, rawName: name };
+    // --- ASSET ID FALLBACK FOR LARGE SYSTEMS ---
+    if (!metadata.asset_id) {
+        const largeSystemPrefixes = ['FCU-', 'CDU-', 'CCTV-', 'AC-', 'NVR-'];
+        const isLargeSystem = largeSystemPrefixes.some(prefix => name.startsWith(prefix));
+        if (isLargeSystem) {
+            metadata.asset_id = uniqueName;
+        }
+    }
+
+    if (!isSanTerminalRef) {
+        nodes[uniqueName] = { type, metadata, rawName: name };
+    }
 
     if (parent) {
-      triplets.push({ sub: parent.uniqueName, pred: 'contains', obj: uniqueName });
+      let predicate = 'contains';
+      if (inSanTree && parent.rawName !== 'SAN') {
+        predicate = 'connectsTo';
+      }
+      triplets.push({ sub: parent.uniqueName, pred: predicate, obj: uniqueName });
     }
     stack.push({ indent, name, uniqueName, rawName: name });
   }
@@ -144,7 +165,7 @@ async function syncBuilding(buildingId) {
     const edgeData = [];
     triplets.forEach(t => {
         if (nameToId[t.sub] && nameToId[t.obj]) {
-            edgeData.push({ subject_id: nameToId[t.sub], predicate: 'contains', object_id: nameToId[t.obj] });
+            edgeData.push({ subject_id: nameToId[t.sub], predicate: t.pred, object_id: nameToId[t.obj] });
         }
     });
 

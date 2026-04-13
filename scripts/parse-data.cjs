@@ -50,6 +50,16 @@ function parseACData() {
       });
     }
 
+    // --- ASSET ID FALLBACK FOR LARGE SYSTEMS ---
+    const hasAssetId = Object.keys(properties).some(k => k.toLowerCase() === 'assetid');
+    if (!hasAssetId) {
+      const largeSystemPrefixes = ['FCU-', 'CDU-', 'CCTV-', 'AC-', 'NVR-'];
+      const isLargeSystem = largeSystemPrefixes.some(prefix => name.startsWith(prefix));
+      if (isLargeSystem) {
+        properties.AssetID = `AR15-${name}`;
+      }
+    }
+
     const node = {
       name,
       indent,

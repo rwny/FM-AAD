@@ -1,6 +1,14 @@
-- ar15
-    - CU-1-01 { Type: ConsumerUnitx }
-    - LP-123 { Type: LoadPanel }
+- AR15
+    - COMMON
+        - CU-1-01 { Type: ConsumerUnitx }
+        - LP-123 { Type: LoadPanel }
+    - SANITARY
+        - P-SEPT-IN
+        - P-SEPT-OUT
+        - P-VENT-ST
+        - SEPT-101
+        - Manhole-1
+        - VTR-1
     - CCTV
         - NVR-1 { Type: NVR, 
                     AssetID: สถ.2568-cctv-123-001, 

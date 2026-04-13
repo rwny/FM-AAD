@@ -87,10 +87,10 @@ export function KGVisualizer3D() {
 
       if (layoutMode === 'hierarchy') {
         const planeColors: { [key: string]: string } = theme === 'light'
-        ? { '1': '#000000', '2': '#333333', '3': '#666666', '4': '#999999', '5': '#cccccc', '6': '#eeeeee' }
+        ? { '1': '#000000', '2': '#333333', '3': '#666666', '4': '#999999', '5': '#cccccc', '6': '#eeeeee', '7': '#f0f0f0', '8': '#f8f8f8' }
         : visualMode === 'monochrome' 
-          ? { '1': '#ffffff', '2': '#dddddd', '3': '#bbbbbb', '4': '#999999', '5': '#777777', '6': '#555555' }
-          : { '1': '#4A007B', '2': '#0000ff', '3': '#00ccff', '4': '#00ffaa', '5': '#00ff00', '6': '#aaff00' };
+          ? { '1': '#ffffff', '2': '#dddddd', '3': '#bbbbbb', '4': '#999999', '5': '#777777', '6': '#555555', '7': '#444444', '8': '#222222' }
+          : { '1': '#4A007B', '2': '#0000ff', '3': '#00ccff', '4': '#00ffaa', '5': '#00ff00', '6': '#aaff00', '7': '#0088ff', '8': '#0055ff' };
 
         Object.entries(levelHeights).forEach(([lvl, height]) => {
           if (planeColors[lvl]) {
@@ -237,11 +237,14 @@ export function KGVisualizer3D() {
             if (t === 'building') { color = '#4A007B'; val = 25; level = '1'; }
             else if (t === 'floor') { color = '#0000ff'; val = 20; level = '2'; }
             else if (t === 'room') { color = '#00ccff'; val = 15; level = '3'; }
-            else if (t === 'system_group') { color = '#00ffaa'; val = 12; level = '4'; }
+            else if (t === 'system_group' || t === 'system') { color = '#00ffaa'; val = 12; level = '4'; }
             else if (t === 'ac_set' || t === 'nvr' || t === 'load_panel') { color = '#00ff00'; val = 10; level = '5'; }
             else if (t === 'fcu' || t === 'cdu') { color = '#aaff00'; val = 9; level = '6'; }
+            else if (t === 'sanitary' || t === 'lav' || t === 'wc' || t === 'ur') { color = '#3b82f6'; val = 9; level = '6'; }
             else if (t === 'cctv_camera') { color = '#ffcc00'; val = 8; level = '7'; }
+            else if (t === 'pipe') { color = '#60a5fa'; val = 8; level = '7'; }
             else if (t.includes('power') || t.includes('switch') || t.includes('light')) { color = '#ff7700'; val = 7; level = '8'; }
+            else if (t === 'manhole' || t === 'sept_tank' || nodeNameUC.includes('MANHOLE') || nodeNameUC.includes('SEPT')) { color = '#1d4ed8'; val = 7; level = '8'; }
             else { color = '#64748b'; val = 4; level = '9'; }
             
             const statusLower = (currentStatus || 'normal').toLowerCase();
@@ -340,11 +343,33 @@ export function KGVisualizer3D() {
   const relatedNodeIds = useMemo(() => {
     if (!selectedNode) return new Set();
     const set = new Set();
+    
+    // 1. Basic Neighbors
     graphData.links.forEach(l => {
       const s = typeof l.source === 'object' ? l.source.id : l.source;
       const t = typeof l.target === 'object' ? l.target.id : l.target;
-      if (s === selectedNode.id) set.add(t); if (t === selectedNode.id) set.add(s);
+      if (s === selectedNode.id) set.add(t);
+      if (t === selectedNode.id) set.add(s);
     });
+
+    // 2. Transitive Flow for Sanitary/Pipes (follow 'connectsTo' chain)
+    const isFlowType = ['sanitary', 'pipe', 'lav', 'wc', 'ur', 'manhole', 'sept_tank'].includes(selectedNode.type?.toLowerCase());
+    if (isFlowType) {
+      const queue = [selectedNode.id];
+      const visited = new Set([selectedNode.id]);
+      while (queue.length > 0) {
+        const currId = queue.shift();
+        graphData.links.forEach(l => {
+          if (l.name === 'connectsTo') {
+            const s = typeof l.source === 'object' ? l.source.id : l.source;
+            const t = typeof l.target === 'object' ? l.target.id : l.target;
+            if (s === currId && !visited.has(t)) { visited.add(t); set.add(t); queue.push(t); }
+            if (t === currId && !visited.has(s)) { visited.add(s); set.add(s); queue.push(s); }
+          }
+        });
+      }
+    }
+
     return set;
   }, [selectedNode, graphData.links]);
 
@@ -601,12 +626,18 @@ export function KGVisualizer3D() {
           if (selectedNode?.id === node.id) return node.val * 4;
           return node.val;
         }}
-        linkDirectionalParticles={8} linkDirectionalParticleSpeed={0.006}
-        linkDirectionalParticleColor={() => theme === 'light' ? '#000000' : '#ffffff'}
+        linkDirectionalParticles={(link: any) => link.name === 'connectsTo' ? 15 : 8}
+        linkDirectionalParticleSpeed={(link: any) => link.name === 'connectsTo' ? 0.015 : 0.006}
+        linkDirectionalParticleColor={(link: any) => {
+          if (link.name === 'connectsTo') return '#3b82f6';
+          return theme === 'light' ? '#000000' : '#ffffff';
+        }}
         linkWidth={(link: any) => {
           const s = typeof link.source === 'object' ? link.source.id : link.source;
           const t = typeof link.target === 'object' ? link.target.id : link.target;
-          return (focusedNodeId === s || focusedNodeId === t) ? 4 : 2;
+          const isHighlighted = (focusedNodeId === s || focusedNodeId === t) || (selectedNode && (s === selectedNode.id || t === selectedNode.id));
+          if (link.name === 'connectsTo') return isHighlighted ? 6 : 3;
+          return isHighlighted ? 4 : 2;
         }}
         linkOpacity={0.4} 
         linkColor={(link: any) => {
