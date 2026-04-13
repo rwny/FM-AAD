@@ -29,6 +29,14 @@ export interface ACAsset {
   systemStatus?: 'Normal' | 'Warning' | 'Maintenance' | 'Faulty';
   lastService: string;
   nextService: string;
+  metadata?: {
+    ifcType?: string;
+    guid?: string;
+    specs?: Record<string, any>;
+    manufacturer?: string;
+    model?: string;
+    systemId?: string;
+  };
   logs?: MaintenanceLog[];
   install?: string;
   acType?: string;

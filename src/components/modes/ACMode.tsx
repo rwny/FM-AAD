@@ -262,6 +262,29 @@ export const ACRightPanel: React.FC<any> = ({
                 </div>
               ))}
             </div>
+
+            {/* Technical Metadata (BIM/IFC) */}
+            {selectedAC.metadata && (
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-[12px] space-y-3 text-slate-300 shadow-lg">
+                <div className="flex items-center gap-2 text-emerald-500 font-black uppercase tracking-widest text-[9px] mb-1">
+                  <Activity className="w-3.5 h-3.5" /> <span>IFC Technical Data</span>
+                </div>
+                
+                {[
+                  { label: 'GUID', value: selectedAC.metadata.guid },
+                  { label: 'Voltage', value: selectedAC.metadata.specs?.voltage ? `${selectedAC.metadata.specs.voltage}V` : null },
+                  { label: 'Frequency', value: selectedAC.metadata.specs?.frequency ? `${selectedAC.metadata.specs.frequency}Hz` : null },
+                  { label: 'Phases', value: selectedAC.metadata.specs?.phases },
+                  { label: 'Power', value: selectedAC.metadata.specs?.power ? `${selectedAC.metadata.specs.power}kW` : null },
+                  { label: 'IFC Type', value: selectedAC.metadata.ifcType }
+                ].filter(item => item.value !== null && item.value !== undefined).map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                    <span className="text-[9px] font-black uppercase text-slate-500 shrink-0 mt-0.5">{item.label}</span>
+                    <span className="text-[11px] font-mono font-bold text-slate-200 break-all text-right">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Service Logs Section */}

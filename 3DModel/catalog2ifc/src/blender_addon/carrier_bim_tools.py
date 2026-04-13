@@ -170,18 +170,34 @@ class MESH_OT_carrier_create(bpy.types.Operator):
         obj.name = name
         obj.dimensions = (w/1000.0, d/1000.0, h/1000.0)
         bpy.ops.object.transform_apply(scale=True)
-        
+
         # Set IFC Metadata
+        import uuid
         obj["IfcEntityType"] = ifc_type
+        obj["GlobalId"] = str(uuid.uuid4())
         obj["IfcTag"] = model_data.get("Outdoor_Model") if unit_type == "Outdoor" else name.replace("FCU_", "")
         obj["ObjectType"] = f"{model_data.get('Type')} ({unit_type})"
 
-        # Inject all other catalog data
+        # Standardized Psets (IFC Conventions)
+        # 1. Air Conditioning Unit Specs
+        obj["Pset_AirConditioningUnit.NominalCoolingCapacity"] = model_data.get("NominalCoolingCapacity", 0)
+        obj["Pset_AirConditioningUnit.RefrigerantType"] = model_data.get("RefrigerantType", "R32")
+
+        # 2. Electrical Device Common
+        obj["Pset_ElectricalDeviceCommon.NominalVoltage"] = model_data.get("NominalVoltage", 220)
+        obj["Pset_ElectricalDeviceCommon.NominalFrequency"] = model_data.get("NominalFrequency", 50)
+        obj["Pset_ElectricalDeviceCommon.NumberofPhases"] = model_data.get("NumberofPhases", 1)
+        obj["Pset_ElectricalDeviceCommon.PowerConsumption"] = model_data.get("PowerConsumption", 0)
+
+        # 3. Manufacturer Type Information
+        obj["Pset_ManufacturerTypeInformation.Manufacturer"] = "Carrier"
+        obj["Pset_ManufacturerTypeInformation.ModelReference"] = model_data.get("id")
+
+        # Inject all other catalog data into Carrier Pset
         for k, v in model_data.items():
             if not isinstance(v, (dict, list)):
                 obj[f"Pset_Carrier.{k}"] = v
         return obj
-
 class MESH_OT_carrier_refresh(bpy.types.Operator):
     """Reload JS Catalogs"""
     bl_idname = "mesh.carrier_refresh"

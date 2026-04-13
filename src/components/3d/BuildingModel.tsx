@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Room, ACAsset } from '../../types/bim'
+import { extractBimMetadata } from '../../utils/bim-metadata'
 
 // Material Colors
 const COLORS = {
@@ -219,17 +220,21 @@ useEffect(() => {
       }
     })
 
-    const foundACFinal: ACAsset[] = foundACRaw.map(item => ({
-      id: item.nameLower,
-      name: `${item.type} ${item.suffix || ''}`,
-      type: item.type as 'FCU' | 'CDU',
-      brand: 'System Default',
-      model: 'BIM-Model-V1',
-      capacity: 'Auto-detected',
-      status: item.mesh.userData.status as any,
-      lastService: '2026-03-10',
-      nextService: 'Pending'
-    }));
+    const foundACFinal: ACAsset[] = foundACRaw.map(item => {
+      const bimMetadata = extractBimMetadata(item.mesh);
+      return {
+        id: item.nameLower,
+        name: `${item.type} ${item.suffix || ''}`,
+        type: item.type as 'FCU' | 'CDU',
+        brand: bimMetadata.manufacturer || 'System Default',
+        model: bimMetadata.model || 'BIM-Model-V1',
+        capacity: bimMetadata.specs?.capacity ? `${bimMetadata.specs.capacity} BTU/hr` : 'Auto-detected',
+        status: item.mesh.userData.status as any,
+        lastService: '2026-03-10',
+        nextService: 'Pending',
+        metadata: bimMetadata
+      };
+    });
 
     setRoomLabels(labels)
     if (onRoomsFound) onRoomsFound(foundRooms.sort((a, b) => a.number.localeCompare(b.number)))
