@@ -1,4 +1,4 @@
-# Project Context: FM AAD (Facility Management - AR3D)
+# Project Context: FM AAD (Facility Management - AR3D).
 
 ## 📌 Project Overview
 This project is a Facility Management (FM) application that bridges 3D Digital Twins with a Supabase-backed Knowledge Graph. 
