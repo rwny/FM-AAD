@@ -107,8 +107,11 @@ export function useMergedAssets(
           issue: l.issue,
           reporter: l.reporter,
           contractor: l.contractor,
+          contractor_contact: l.contractor_contact,
           status: l.status,
-          note: l.note
+          note: l.note,
+          wo_number: l.wo_number,
+          cost: l.cost
         })),
         status,
         systemStatus,

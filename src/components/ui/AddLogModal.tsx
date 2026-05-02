@@ -7,7 +7,7 @@ interface AddLogModalProps {
   assetDbId?: string
   roomCode?: string
   category?: string
-  logToEdit?: { id: string; date: string; issue: string; reporter?: string; contractor?: string; status: string; note?: string } | null
+  logToEdit?: { id: string; date: string; issue: string; reporter?: string; contractor?: string; contractor_contact?: string; status: string; note?: string; wo_number?: string; cost?: number } | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -27,6 +27,9 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   const [reporter, setReporter] = useState(logToEdit?.reporter || '')
   const [contractor, setContractor] = useState(logToEdit?.contractor || '')
   const [note, setNote] = useState(logToEdit?.note || '')
+  const [cost, setCost] = useState(logToEdit?.cost?.toString() || '')
+  const [contractorContact, setContractorContact] = useState(logToEdit?.contractor_contact || '')
+  const [woNumber] = useState(logToEdit?.wo_number || `WO-${new Date().getFullYear()}-${String(Date.now() % 10000).padStart(3, '0').slice(0, 3)}`)
   const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>((logToEdit?.status as any) || 'Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +49,9 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
               issue,
               reporter: reporter || null,
               contractor: contractor || null,
+              contractor_contact: contractorContact || null,
               note: note || null,
+              cost: cost ? parseFloat(cost) : null,
               status
             })
             .eq('id', logToEdit.id)
@@ -60,7 +65,10 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             issue,
             reporter: reporter || null,
             contractor: contractor || null,
+            contractor_contact: contractorContact || null,
             note: note || null,
+            cost: cost ? parseFloat(cost) : null,
+            wo_number: woNumber,
             status
           })
           if (error) throw error
@@ -103,8 +111,8 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[16px] w-full max-w-md shadow-2xl overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+      <div className="bg-white rounded-[16px] w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
           <div className="flex items-center gap-2">
             <PlusCircle className="w-5 h-5 text-indigo-600" />
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">{isEdit ? 'Edit Log Entry' : 'Add Daily Log'}</h2>
@@ -114,7 +122,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
           <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-[8px]">
             <div className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">Asset</div>
             <div className="text-sm font-black text-indigo-700">{assetId}</div>
@@ -173,6 +181,41 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
               maxLength={100}
               className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Contractor Contact (Optional)</label>
+            <input
+              type="text"
+              value={contractorContact}
+              onChange={(e) => setContractorContact(e.target.value)}
+              placeholder="Tel / Email"
+              maxLength={100}
+              className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Cost (THB)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">WO Number</label>
+              <input
+                type="text"
+                value={woNumber}
+                readOnly
+                className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-sm font-bold text-indigo-600 bg-indigo-50 cursor-default"
+              />
+            </div>
           </div>
 
           <div className="space-y-1">

@@ -3,8 +3,15 @@ import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { RotateCw, Pause, Search, Layers, Sun, Moon, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '../utils/supabase';
+import type { KGNodeRow, KGEdgeRow, ACLogRow } from '../types/database';
 
-export function KGVisualizer3D() {
+interface KGVisualizer3DProps {
+  kgNodes: KGNodeRow[]
+  kgEdges: KGEdgeRow[]
+  acDbLogs: ACLogRow[]
+}
+
+export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DProps) {
   const fgRef = useRef<any>(null);
   const [graphData, setGraphData] = useState<{nodes: any[], links: any[]}>({ nodes: [], links: [] });
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -15,7 +22,6 @@ export function KGVisualizer3D() {
   const logIdRef = useRef(0);
   const [isRotating, setIsRotating] = useState(true); 
   const [layoutMode, setLayoutMode] = useState<'hierarchy' | 'radial'>('radial');
-  const [visualMode] = useState<'color' | 'monochrome'>('monochrome');
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,9 +94,7 @@ export function KGVisualizer3D() {
       if (layoutMode === 'hierarchy') {
         const planeColors: { [key: string]: string } = theme === 'light'
         ? { '1': '#000000', '2': '#333333', '3': '#666666', '4': '#999999', '5': '#cccccc', '6': '#eeeeee', '7': '#f0f0f0', '8': '#f8f8f8' }
-        : visualMode === 'monochrome' 
-          ? { '1': '#ffffff', '2': '#dddddd', '3': '#bbbbbb', '4': '#999999', '5': '#777777', '6': '#555555', '7': '#444444', '8': '#222222' }
-          : { '1': '#4A007B', '2': '#0000ff', '3': '#00ccff', '4': '#00ffaa', '5': '#00ff00', '6': '#aaff00', '7': '#0088ff', '8': '#0055ff' };
+        : { '1': '#ffffff', '2': '#dddddd', '3': '#bbbbbb', '4': '#999999', '5': '#777777', '6': '#555555', '7': '#444444', '8': '#222222' };
 
         Object.entries(levelHeights).forEach(([lvl, height]) => {
           if (planeColors[lvl]) {
@@ -128,7 +132,7 @@ export function KGVisualizer3D() {
         }
       }
     }
-  }, [graphData.nodes.length, layoutMode, theme, visualMode]);
+  }, [graphData.nodes.length, layoutMode, theme]);
 
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return [];
@@ -184,17 +188,18 @@ export function KGVisualizer3D() {
     window.addEventListener('resize', handleResize);
     async function fetchData() {
       try {
-        const { data: nodesData } = await supabase.from('kg_nodes').select('id, name, type, metadata');
-        const { data: edgesData } = await supabase.from('kg_edges').select('subject_id, object_id, predicate');
-        const { data: assetsData } = await supabase.from('assets').select('asset_id, status, metadata');
-        const { data: acLogs } = await supabase.from('ac_maintenance_logs').select('asset_id, status, issue').order('date', { ascending: false });
-        const { data: genLogs } = await supabase.from('maintenance_logs').select('status, issue, assets!inner(asset_id)').order('date', { ascending: false });
+        const [assetsRes, genLogsRes] = await Promise.all([
+          supabase.from('assets').select('asset_id, status, metadata'),
+          supabase.from('maintenance_logs').select('status, issue, assets!inner(asset_id)').order('date', { ascending: false })
+        ]);
+        const assetsData = assetsRes.data;
+        const genLogs = genLogsRes.data;
 
         const statusMap: { [key: string]: string } = {};
         const logMap: { [key: string]: string } = {}; 
         
-        if (acLogs) {
-          acLogs.forEach(log => {
+        if (acDbLogs) {
+          acDbLogs.forEach(log => {
             const aid = log.asset_id?.toUpperCase();
             if (aid && !statusMap[aid]) {
               statusMap[aid] = log.status;
@@ -222,8 +227,8 @@ export function KGVisualizer3D() {
           });
         }
 
-        if (nodesData && edgesData) {
-          const mappedNodes = nodesData.map((n: any) => {
+        if (kgNodes && kgEdges) {
+          const mappedNodes = kgNodes.map((n: any) => {
             let color = '#64748b'; let level = '9'; let val = 4;
             const t = (n.type || 'unknown').toLowerCase();
             const nodeNameUC = (n.name || '').toUpperCase();
@@ -255,7 +260,7 @@ export function KGVisualizer3D() {
             return { id: n.id, name: displayName, fullName: n.name, type: n.type, level, val, color, metadata: mergedMetadata };
           });
           
-          setGraphData({ nodes: mappedNodes, links: edgesData.map((e: any) => ({ source: e.subject_id, target: e.object_id, name: e.predicate })) });
+          setGraphData({ nodes: mappedNodes, links: kgEdges.map((e: any) => ({ source: e.subject_id, target: e.object_id, name: e.predicate })) });
           addLog('[DATABASE] INDEPENDENT SYNC COMPLETE.');
         }
       } catch (err) { console.error('Failed to load KG 3D:', err); }
@@ -264,7 +269,7 @@ export function KGVisualizer3D() {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [kgNodes, kgEdges, acDbLogs]);
 
   const fetchLatestLogForNode = async (node: any) => {
     try {
@@ -610,7 +615,7 @@ export function KGVisualizer3D() {
             if (status === 'faulty') base = '#cc0000';
             else if (['maintenance', 'warning', 'pending', 'in progress'].includes(status)) base = '#cc6600';
             else { const g = Math.round(30 + (parseInt(node.level) * 25)); base = `rgb(${g},${g},${g})`; }
-          } else if (visualMode === 'monochrome') { 
+          } else {
             if (status === 'faulty') base = '#ff0000';
             else if (['maintenance', 'warning', 'pending', 'in progress'].includes(status)) base = '#ff8800';
             else { const g = Math.round(255 - (parseInt(node.level) * 20)); base = `rgb(${g},${g},${g})`; }
@@ -686,7 +691,7 @@ export function KGVisualizer3D() {
             ctx.font = 'bold 24px ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             let tC = node.color; 
             if (theme === 'light') { const g = Math.round(30 + (parseInt(node.level) * 25)); tC = `rgb(${g},${g},${g})`; }
-            else if (visualMode === 'monochrome') { const g = Math.round(255 - (parseInt(node.level) * 20)); tC = `rgb(${g},${g},${g})`; }
+            else { const g = Math.round(255 - (parseInt(node.level) * 20)); tC = `rgb(${g},${g},${g})`; }
             ctx.fillStyle = isT ? (theme === 'light' ? '#000000' : '#ffffff') : tC; 
             ctx.shadowBlur = theme === 'light' ? 0 : 6; ctx.shadowColor = theme === 'light' ? 'transparent' : 'black';
             ctx.fillText(label, canvas.width / 2, canvas.height / 2);

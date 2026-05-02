@@ -51,6 +51,7 @@ export function useGlobalSearch(
       const modelLower = (asset.model || '').toLowerCase()
       const acTypeLower = (asset.acType || '').toLowerCase()
       const assetIdLower = (asset.assetId || '').toLowerCase()
+      const hasWOMatch = (asset.logs || []).some((l: any) => (l.wo_number || '').toLowerCase().includes(q))
       
       // Normalize query - "AC-101-1" -> "101-1" to match "fcu-101-1"
       // Also "101-1" alone should match
@@ -63,6 +64,7 @@ export function useGlobalSearch(
         modelLower.includes(q) ||
         acTypeLower.includes(q) ||
         assetIdLower.includes(q) ||
+        hasWOMatch ||
         // Also check with normalized query (handles "AC-101-1" -> "101-1")
         idLower.includes(normalizedQ) ||
         idLower.replace(/fcu-/g, '').includes(normalizedQ) ||

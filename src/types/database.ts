@@ -8,8 +8,11 @@ export interface ACLogRow {
   issue: string
   reporter?: string
   contractor?: string
+  contractor_contact?: string
   status: string
   note?: string
+  wo_number?: string
+  cost?: number
 }
 
 // --- Knowledge Graph ---
@@ -37,8 +40,11 @@ export interface ACLogSummary {
   issue: string
   reporter?: string
   contractor?: string
+  contractor_contact?: string
   status: 'Completed' | 'Pending' | 'In Progress' | 'Normal' | 'Faulty'
   note?: string
+  wo_number?: string
+  cost?: number
 }
 
 export interface MergedACAsset {

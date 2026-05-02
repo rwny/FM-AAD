@@ -124,7 +124,7 @@ function App() {
 
       {/* 3D Scene */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        {activeMode === 'KG' && <KGVisualizer3D />}
+        {activeMode === 'KG' && <KGVisualizer3D kgNodes={kgNodes} kgEdges={kgEdges} acDbLogs={acDbLogs} />}
 
         <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
           <ErrorBoundary>

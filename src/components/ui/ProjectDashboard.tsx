@@ -3,9 +3,10 @@ import {
   X, Search, 
   ArrowUpRight, AlertCircle, 
   Download, Box, Layers,
-  ClipboardList, Copy, Check
+  ClipboardList, Copy, Check, Calendar
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
+import { PlannedMaintenance } from './PlannedMaintenance'
 
 interface ProjectDashboardProps {
   assets: ACAsset[];
@@ -23,6 +24,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const [historySystem, setHistorySystem] = useState<any | null>(null)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [historyCopyFeedback, setHistoryCopyFeedback] = useState(false)
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table')
 
   const allSystems = useMemo(() => {
     const groups: { [key: string]: any } = {};
@@ -63,7 +65,12 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const systemData = useMemo(() => {
     return allSystems
       .filter(sys => {
-        const matchesSearch = sys.id.toLowerCase().includes(searchQuery.toLowerCase()) || sys.roomName.toLowerCase().includes(searchQuery.toLowerCase());
+        const woNumbers = sys.components.flatMap((c: any) => (c.logs || []).map((l: any) => l.wo_number)).filter(Boolean)
+        const matchesSearch = sys.id.toLowerCase().includes(searchQuery.toLowerCase()) 
+          || sys.roomName.toLowerCase().includes(searchQuery.toLowerCase())
+          || sys.brand?.toLowerCase().includes(searchQuery.toLowerCase())
+          || sys.model?.toLowerCase().includes(searchQuery.toLowerCase())
+          || woNumbers.some((wo: string) => wo.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = statusFilter === 'All' || sys.aggregatedStatus === statusFilter;
         const matchesFloor = floorFilter === 'All' || sys.floor === floorFilter;
         return matchesSearch && matchesStatus && matchesFloor;
@@ -246,6 +253,13 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           )}
           <button onClick={copyToClipboard} className="p-1.5 hover:bg-slate-200 rounded text-slate-400 transition-all active:scale-95" title="Copy to Clipboard"><Copy className="w-4 h-4" /></button>
           <button onClick={exportToCSV} className="p-1.5 hover:bg-slate-200 rounded text-slate-400 transition-all active:scale-95" title="Download CSV"><Download className="w-4 h-4" /></button>
+          <button
+            onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
+            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'calendar' ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200 text-slate-400'}`}
+            title={viewMode === 'table' ? 'Calendar View' : 'Table View'}
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
           <button onClick={onClose} className="p-1.5 hover:bg-rose-500 hover:text-white rounded text-slate-400 transition-all"><X className="w-5 h-5" /></button>
         </div>
       </header>
@@ -255,7 +269,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
           <input 
             type="text" 
-            placeholder="Search System, Room, Brand, Model..."
+            placeholder="Search System, Room, Brand, WO..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1 bg-slate-50 border border-slate-100 rounded text-[12px] font-bold outline-none transition-all focus:bg-white focus:ring-1 focus:ring-indigo-500/20 shadow-inner"
@@ -264,12 +278,18 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
+        {viewMode === 'calendar' ? (
+          <div className="p-4">
+            <PlannedMaintenance assets={assets} onSelect={onSelect} />
+          </div>
+        ) : (
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200 shadow-sm">
             <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <th className="px-4 py-1.5 border-r border-slate-100">Location</th>
               <th className="px-4 py-1.5 border-r border-slate-100 w-40">System Group</th>
               <th className="px-4 py-1.5 border-r border-slate-100 w-32 text-center">System Health</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 w-28 text-center">Last WO</th>
               <th className="px-4 py-1.5 border-r border-slate-100 w-[550px]">
                 <div className="flex flex-col items-center">
                   <span className="text-slate-600 mb-1 font-black">Life Cycle Timeline (3 Years)</span>
@@ -302,6 +322,15 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   </td>
                   <td className="px-4 py-3 text-center border-r border-slate-100">
                     <div className={`px-2 py-0.5 rounded-md border text-[11px] font-black uppercase tracking-tighter flex items-center justify-center gap-2 ${getStatusBg(sys.aggregatedStatus)}`}><div className={`w-2 h-2 rounded-full fill-current ${sys.aggregatedStatus === 'Faulty' ? 'animate-pulse' : ''} bg-current`} />{sys.aggregatedStatus}</div>
+                  </td>
+                  <td className="px-2 py-3 text-center border-r border-slate-100">
+                    {(() => {
+                      const allLogs = sys.components.flatMap((c: any) => c.logs || [])
+                      const latestWO = allLogs.find((l: any) => l.wo_number)?.wo_number
+                      return latestWO ? (
+                        <span className="text-[9px] font-mono font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">{latestWO}</span>
+                      ) : <span className="text-[9px] text-slate-300">-</span>
+                    })()}
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100">
                     <div className="relative w-full h-4 flex items-center">
@@ -391,6 +420,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       <footer className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">

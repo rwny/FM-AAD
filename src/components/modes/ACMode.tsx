@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { 
   Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
   ChevronLeft, Printer, 
@@ -281,6 +282,11 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                 </div>
               )
             })()}
+            {selectedAC.warranty && (
+              <div className={`text-[10px] font-bold mt-1 ${new Date(selectedAC.warranty) < new Date() ? 'text-rose-400' : 'text-emerald-400'}`}>
+                Warranty until {new Date(selectedAC.warranty).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -340,11 +346,13 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                     </div>
                     <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate flex items-center gap-2">
                       <span>{log.issue}</span>
+                      {log.wo_number && <span className="text-[8px] font-mono text-slate-400 shrink-0">{log.wo_number}</span>}
                       {log.contractor && (
                         <span className="text-[8px] font-bold text-indigo-400 shrink-0">
-                          {log.contractor}
+                          {log.contractor}{log.contractor_contact ? ` · ${log.contractor_contact}` : ''}
                         </span>
                       )}
+                      {log.cost && <span className="text-[8px] font-bold text-emerald-500 shrink-0">฿{Number(log.cost).toLocaleString()}</span>}
                     </div>
                   </div>
                 );
@@ -404,7 +412,7 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
           </div>
         )}
 
-        {(showAddLog || logToEdit) && (
+        {(showAddLog || logToEdit) && createPortal(
           <AddLogModal
             assetId={selectedAC.id}
             assetDbId={selectedAC.dbId}
@@ -413,7 +421,8 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
             logToEdit={logToEdit}
             onClose={() => { setShowAddLog(false); setLogToEdit(null); }}
             onSuccess={() => window.dispatchEvent(new CustomEvent('refresh-bim-data'))}
-          />
+          />,
+          document.body
         )}
       </div>
     );
