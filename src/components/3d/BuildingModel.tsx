@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Room, ACAsset } from '../../types/bim'
 import { extractBimMetadata } from '../../utils/bim-metadata'
+import { useAppStore } from '../../store'
 
 // Material Colors
 const COLORS = {
@@ -32,9 +33,6 @@ url: string;
 activeMode: string;
 selectedRoomId?: string | null;
 clipFloor?: number | null;
-onRoomsFound?: (rooms: Room[]) => void;
-onACFound?: (assets: ACAsset[]) => void;
-onRoomClick?: (roomId: string | null) => void;
 buildingData: any;
 finalACAssets: ACAsset[];
 }
@@ -52,9 +50,12 @@ isVisible?: boolean;
 isSelfIssue?: boolean;
 }
 
-export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, onRoomsFound, onACFound, onRoomClick, buildingData, finalACAssets }: BuildingModelProps) {
+export function BuildingModel({ url, activeMode, selectedRoomId, clipFloor, buildingData, finalACAssets }: BuildingModelProps) {
 const { scene } = useGLTF(url)
 const { camera } = useThree()
+const setRooms = useAppStore(s => s.setRooms)
+const setAcAssets = useAppStore(s => s.setAcAssets)
+const setSelectedRoomId = useAppStore(s => s.setSelectedRoomId)
 const clonedScene = useMemo(() => scene.clone(), [scene])
 const [roomLabels, setRoomLabels] = useState<RoomLabelData[]>([])
 const [selectedLabel, setSelectedLabel] = useState<ACLabelData | null>(null)
@@ -237,10 +238,10 @@ useEffect(() => {
     });
 
     setRoomLabels(labels)
-    if (onRoomsFound) onRoomsFound(foundRooms.sort((a, b) => a.number.localeCompare(b.number)))
-    if (onACFound) onACFound(foundACFinal)
+    setRooms(foundRooms.sort((a, b) => a.number.localeCompare(b.number)))
+    setAcAssets(foundACFinal)
   }
-}, [clonedScene, onRoomsFound, onACFound, buildingData])
+}, [clonedScene, setRooms, setAcAssets, buildingData])
 
 // Update Materials and Visibility
 useEffect(() => {
@@ -719,7 +720,7 @@ return (
     const isFur = clickedName.startsWith('lf-') || clickedName.startsWith('bf-');
     
     if (isAC || isRoom || isFur) {
-      onRoomClick?.(clickedName);
+      setSelectedRoomId(clickedName);
     }
     // If clicking on non-asset, keep current selection (do nothing)
   }}>

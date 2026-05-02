@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import {
   Building2,
@@ -5,13 +7,14 @@ import {
   PanelRightClose, PanelRight, X,
   LayoutDashboard, ChevronRight
 } from 'lucide-react'
-import { Suspense, useState, useMemo, useEffect } from 'react'
-import { BuildingModel } from './components/3d/BuildingModel'
-import { SceneLighting } from './components/3d/SceneLighting'
-import { SceneControls } from './components/3d/SceneControls'
-import type { Room, ACAsset, BIMMode } from './types/bim'
-import acSpecsJson from './utils/ac-specs.json'
-import { tgfData } from './data/carrier-tgf'
+import type { BIMMode } from './types/bim'
+import { useAppStore } from './store'
+
+// --- Hooks ---
+import { useDatabase } from './hooks/useDatabase'
+import { useMergedAssets, useFurnitureData, useACStats } from './hooks/useAssetMerger'
+import { useAdminShortcut } from './hooks/useKeyboardShortcuts'
+import { useGlobalSearch } from './hooks/useGlobalSearch'
 
 // --- Mode Components ---
 import { ArchRightPanel } from './components/modes/ArchMode'
@@ -19,341 +22,119 @@ import { ACRightPanel } from './components/modes/ACMode'
 import { PrintReportModal } from './components/ui/PrintReportModal'
 import { KGVisualizer3D } from './components/KGVisualizer3D'
 import { GlobalSearch } from './components/search/GlobalSearch'
-import { useGlobalSearch } from './hooks/useGlobalSearch'
 import { ProjectDashboard } from './components/ui/ProjectDashboard'
+import { Scene } from './components/3d/Scene'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
-// --- Scene Component ---
-
-interface SceneProps {
-  selectedRoomId: string | null;
-  onRoomsFound: (rooms: Room[]) => void;
-  onACFound: (assets: ACAsset[]) => void;
-  onRoomClick: (id: string | null) => void;
-  rightVisible: boolean;
-  activeMode: BIMMode;
-  clipFloor: number | null;
-  buildingData: any;
-  finalACAssets: ACAsset[];
-}
-
-function Scene({ selectedRoomId, onRoomsFound, onACFound, onRoomClick, rightVisible, activeMode, clipFloor, buildingData, finalACAssets }: SceneProps) {
-  return (
-    <>
-      <SceneControls leftVisible={false} rightVisible={rightVisible} />
-      
-      <Suspense fallback={null}>
-        <SceneLighting />
-        <BuildingModel 
-          url="/models/ar15-302.glb" 
-          selectedRoomId={selectedRoomId} 
-          onRoomsFound={onRoomsFound} 
-          onACFound={onACFound}
-          onRoomClick={onRoomClick} 
-          activeMode={activeMode}
-          clipFloor={clipFloor}
-          buildingData={buildingData}
-          finalACAssets={finalACAssets}
-        />
-      </Suspense>
-    </>
-  )
-}
-
-// --- Main App ---
+const modes = [
+  { id: 'AR' as BIMMode, label: 'Arch', icon: Building2 },
+  { id: 'AC' as BIMMode, label: 'Air', icon: Wind },
+  { id: 'KG' as BIMMode, label: 'Graph', icon: Share2 },
+]
 
 function App() {
-  const [activeMode, setActiveMode] = useState<BIMMode>('AR')
-  const [rooms, setRooms] = useState<Room[]>([])
-  const [acAssets, setAcAssets] = useState<ACAsset[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
-  const [expandedFloors, setExpandedFloors] = useState<{[key: number]: boolean}>({})
-  const [showRight, setShowRight] = useState(true)
-  const [clipFloor, setClipFloor] = useState<number | null>(null)
-  const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
-  const [reportAsset, setReportAsset] = useState<any>(null)
-  const [selectedLog, setSelectedLog] = useState<any>(null)
-  const [showDashboard, setShowDashboard] = useState(false)
+  const activeMode = useAppStore(s => s.activeMode)
+  const setActiveMode = useAppStore(s => s.setActiveMode)
+  const switchMode = useAppStore(s => s.switchMode)
+  const showRight = useAppStore(s => s.showRight)
+  const setShowRight = useAppStore(s => s.setShowRight)
+  const showDashboard = useAppStore(s => s.showDashboard)
+  const setShowDashboard = useAppStore(s => s.setShowDashboard)
+  const searchQuery = useAppStore(s => s.searchQuery)
+  const setSearchQuery = useAppStore(s => s.setSearchQuery)
+  const selectedRoomId = useAppStore(s => s.selectedRoomId)
+  const setSelectedRoomId = useAppStore(s => s.setSelectedRoomId)
+  const clipFloor = useAppStore(s => s.clipFloor)
+  const rooms = useAppStore(s => s.rooms)
+  const acAssets = useAppStore(s => s.acAssets)
+  const reportAsset = useAppStore(s => s.reportAsset)
+  const setReportAsset = useAppStore(s => s.setReportAsset)
+  const selectedLog = useAppStore(s => s.selectedLog)
+  const setSelectedLog = useAppStore(s => s.setSelectedLog)
+  const buildingCode = useAppStore(s => s.buildingCode)
+  const setBuildingCode = useAppStore(s => s.setBuildingCode)
 
-  // Database State
-  const [buildingData, setBuildingData] = useState<any>(acSpecsJson)
-  const [acDbLogs, setAcDbLogs] = useState<any[]>([])
-  const [kgNodes, setKgNodes] = useState<any[]>([])
-  const [kgEdges, setKgEdges] = useState<any[]>([])
-  const [isLive, setIsLive] = useState(false)
+  const navigate = useNavigate()
+  const params = useParams()
+  const segments = (params['*'] || '').split('/').filter(Boolean)
 
+  // Init store from URL on mount
   useEffect(() => {
-    async function loadData() {
-      try {
-        import('./utils/supabase').then(async ({ fetchBuildingData, fetchAllACLogs, supabase }) => {
-            const data = await fetchBuildingData('AR15')
-            if (data) setBuildingData(data)
-    
-            // Fetch logs & KG from Supabase
-            const [logs, nodesRes, edgesRes] = await Promise.all([
-                fetchAllACLogs(),
-                supabase.from('kg_nodes').select('*'),
-                supabase.from('kg_edges').select('*')
-            ])
-            
-            setAcDbLogs(logs || [])
-            setKgNodes(nodesRes.data || [])
-            setKgEdges(edgesRes.data || [])
-    
-            setIsLive(true)
-            console.log('📡 Connected to Supabase DBs')
-        });
-      } catch (err: any) {
-        console.warn('⚠️ Supabase connection failed:', err.message)
-      }
-    }
-    loadData()
+    const knownModes = ['AR', 'AC', 'KG', 'Admin']
+    let bld = 'AR15'
+    let mode: BIMMode = 'AR'
+    let itemId: string | null = null
 
-    const handleRefresh = () => loadData()
-    window.addEventListener('refresh-bim-data', handleRefresh)
-    return () => window.removeEventListener('refresh-bim-data', handleRefresh)
-  }, [])
-
-  const finalACAssets = useMemo(() => {
-    // 0. Pre-calculate Specification Map for O(1) lookup
-    const specsMap: { [key: string]: { spec: any, typeInfo: any, systemId: string } } = {};
-    if (acSpecsJson.floors) {
-      Object.values(acSpecsJson.floors).forEach((floorRooms: any) => {
-        Object.values(floorRooms).forEach((roomACs: any) => {
-          Object.entries(roomACs).forEach(([acId, acData]: [string, any]) => {
-            if (acData.units) {
-              acData.units.forEach((u: string) => {
-                const normalizedU = u.toLowerCase().replace(/\./g, '-');
-                specsMap[normalizedU] = { 
-                  spec: acData, 
-                  typeInfo: (acSpecsJson.types as any)[acData.type],
-                  systemId: acId
-                };
-              });
-            }
-          });
-        });
-      });
-    }
-
-    return acAssets.map(modelAsset => {
-      const modelIdLow = modelAsset.id.toLowerCase();
-      const modelNormalized = modelIdLow.replace(/\./g, '-');
-      
-      // 1. Look up in Spec Map (Extremely Fast)
-      const mdMatchData = specsMap[modelNormalized];
-      const mdMatch = mdMatchData?.spec;
-      const mdTypeInfo = mdMatchData?.typeInfo;
-      let matchedAcId = mdMatchData?.systemId || '';
-
-      // 2. Look up in KG (Supabase) - PREFER LIVE DATA
-      const node = kgNodes.find(n => n.name.toLowerCase() === modelIdLow);
-      let acType = mdMatch?.type || '';
-      let assetIdStr = mdMatch?.assetId || modelAsset.id;
-      let installDate = mdMatch?.installedDate || '';
-
-      if (node) {
-         const edge = kgEdges.find(e => e.object_id === node.id && e.predicate === 'contains');
-         const parentNode = edge ? kgNodes.find(n => n.id === edge.subject_id) : null;
-         
-         const meta = node.metadata || parentNode?.metadata || {};
-         if (meta.ac_type) acType = meta.ac_type;
-         if (meta.asset_id) assetIdStr = meta.asset_id;
-         if (meta.install_date) installDate = meta.install_date;
-         if (parentNode) matchedAcId = parentNode.name;
-      }
-
-      // 3. Identify the Peer unit
-      const currentPrefix = modelAsset.id.split('-')[0]?.toLowerCase();
-      const currentNumber = modelAsset.id.split('-').slice(1).join('-');
-      const peerPrefix = currentPrefix === 'fcu' ? 'cdu' : currentPrefix === 'cdu' ? 'fcu' : null;
-      const peerId = peerPrefix ? `${peerPrefix}-${currentNumber}` : null;
-
-      // 4. Collect Logs (Self only)
-      const normalizedModelId = modelIdLow.replace(/[^a-z0-9]/g, '');
-      const selfLogs = acDbLogs.filter(l => l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedModelId);
-      
-      // 5. Collect Logs (System-wide)
-      const systemWideLogs = acDbLogs.filter(l => {
-        const dbId = l.asset_id.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const pId = peerId ? peerId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
-        const sId = matchedAcId ? matchedAcId.toLowerCase().replace(/[^a-z0-9]/g, '') : null;
-        return dbId === normalizedModelId || (pId && dbId === pId) || (sId && dbId === sId);
-      });
-      
-      const sortedSelfLogs = [...selfLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-      const sortedSystemLogs = [...systemWideLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-
-      let status = 'Normal';
-      if (sortedSelfLogs.length > 0) {
-        const latestLog = sortedSelfLogs[0];
-        const issueText = (latestLog.issue || '').toLowerCase();
-        if (latestLog.status === 'Completed') status = 'Normal';
-        else if (['In Progress', 'Pending'].includes(latestLog.status)) status = 'Maintenance';
-        if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latestLog.status === 'Faulty') status = 'Faulty';
-      } 
-
-      let systemStatus = 'Normal';
-      if (sortedSystemLogs.length > 0) {
-        const latestSysLog = sortedSystemLogs[0];
-        const sysIssueText = (latestSysLog.issue || '').toLowerCase();
-        if (latestSysLog.status === 'Completed') systemStatus = 'Normal';
-        else if (['In Progress', 'Pending'].includes(latestSysLog.status)) systemStatus = 'Maintenance';
-        if (sysIssueText.includes('เสีย') || sysIssueText.includes('พัง') || sysIssueText.includes('faulty') || latestSysLog.status === 'Faulty') systemStatus = 'Faulty';
-      }
-
-      let brand = mdTypeInfo?.brand || 'Carrier';
-      let model = mdTypeInfo?.model || acType || '---';
-      let capacity = mdTypeInfo?.capacity || '---';
-
-      if (!mdTypeInfo && acType) {
-        const typeInfo = (tgfData.models as any)[acType];
-        if (typeInfo) {
-          brand = typeInfo.Brand || brand;
-          model = acType;
-          capacity = typeInfo.NominalCoolingCapacity ? `${typeInfo.NominalCoolingCapacity} BTU/hr` : capacity;
+    if (segments.length > 0) {
+      const first = segments[0].toUpperCase()
+      if (knownModes.includes(first)) {
+        // Old format: /ac/fcu-101-1
+        mode = first as BIMMode
+        itemId = segments[1] || null
+      } else {
+        // New format: /ar15/ac/fcu-101-1
+        bld = segments[0]
+        mode = (segments[1]?.toUpperCase() || 'AR') as BIMMode
+        if (knownModes.includes(mode)) {
+          itemId = segments[2] || null
         }
       }
+    }
 
-      return {
-        ...modelAsset,
-        assetId: assetIdStr,
-        acType: acType || 'Unknown',
-        brand, model, capacity,
-        install: installDate || '---',
-        logs: sortedSelfLogs.map(l => ({ id: l.id, date: l.date, created_at: l.created_at, issue: l.issue, reporter: l.reporter, contractor: l.contractor, status: l.status, note: l.note })),
-        status: status as any,
-        systemStatus: systemStatus as any,
-        lastService: sortedSelfLogs.length > 0 ? sortedSelfLogs[0].date : ''
-      }
-    })
-  }, [acAssets, acDbLogs, kgNodes, kgEdges])
+    if (bld !== buildingCode) setBuildingCode(bld)
+    if (mode !== activeMode) setActiveMode(mode)
+    if (itemId) setSelectedRoomId(itemId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const allFurniture = useMemo(() => {
-    const assets: any[] = [];
-    if (!buildingData || !buildingData.floors) return assets;
+  // Sync URL when store changes
+  useEffect(() => {
+    const idSlug = selectedRoomId ? `/${selectedRoomId}` : ''
+    navigate(`/${buildingCode}/${activeMode}${idSlug}`, { replace: true })
+  }, [buildingCode, activeMode, selectedRoomId, navigate])
 
-    const floorsArray = Array.isArray(buildingData.floors) 
-      ? buildingData.floors 
-      : Object.entries(buildingData.floors).map(([num, data]: [string, any]) => ({ 
-          floor: parseInt(num), 
-          rooms: Object.entries(data).map(([rId]: [string, any]) => ({
-            id: `rm-${rId}`,
-            name: `Room ${rId}`,
-            assets: [] // Furniture assets not in ac.md yet
-          }))
-        }));
+  const handleModeSwitch = (mode: BIMMode) => {
+    switchMode(mode)
+  }
 
-    floorsArray.forEach((f: any, fIdx: number) => {
-      const floorNum = f.floor || (fIdx + 1);
-      if (f.rooms && Array.isArray(f.rooms)) {
-        f.rooms.forEach((r: any) => {
-          if (r.assets && Array.isArray(r.assets)) {
-            r.assets.forEach((a: any) => {
-              assets.push({
-                ...a,
-                floor: floorNum,
-                room: r.id,
-                status: a.status || a.currentStatus || 'Normal'
-              });
-            });
-          }
-        });
-      }
-    });
-    return assets;
-  }, [buildingData]);
+  const { buildingData, acDbLogs, kgNodes, kgEdges, isLive } = useDatabase(buildingCode)
+  const finalACAssets = useMergedAssets(acAssets, acDbLogs, kgNodes, kgEdges)
+  const allFurniture = useFurnitureData(buildingData)
+  const acStats = useACStats(finalACAssets)
 
-  // Global Search
+  useAdminShortcut()
+
   const globalSearchResults = useGlobalSearch(
-    searchQuery,
-    rooms,
-    finalACAssets,
-    allFurniture,
-    kgNodes,
-    kgEdges
+    searchQuery, rooms, finalACAssets, allFurniture, kgNodes, kgEdges
   )
 
-  const handleGlobalSearchSelect = (result: any) => {
-    // Switch to the mode of the result
-    if (result.mode !== activeMode) {
-      setActiveMode(result.mode)
-    }
-    
-    // Select the item - resolve correct ID for highlighting + right panel
-    if (result.type === 'room') {
-      setSelectedRoomId(result.data.id)
-    } else if (result.type === 'ac') {
-      // Set selectedRoomId to the AC asset ID (e.g., "fcu-101-1") for 3D highlight
-      setSelectedRoomId(result.data.id)
-    } else if (result.type === 'furniture') {
-      setSelectedRoomId(result.data.id)
-    } else if (result.type === 'connection') {
+  const handleGlobalSearchSelect = (result: { mode: BIMMode; type: string; data: { id: string } }) => {
+    if (result.type === 'connection') {
       setActiveMode('KG')
-    }
-  }
-
-  const handleSearchChange = (val: string) => {
-    setSearchQuery(val)
-  }
-
-  const acStats = useMemo(() => {
-    const stats = { green: 0, orange: 0, red: 0, total: finalACAssets.length };
-    finalACAssets.forEach(a => {
-      if (a.status === 'Maintenance' || a.status === 'Warning') stats.orange++;
-      else if (a.status === 'Faulty') stats.red++;
-      else stats.green++;
-    });
-    return stats;
-  }, [finalACAssets]);
-
-
-  const modes = [
-    { id: 'AR', label: 'Arch', icon: Building2 },
-    { id: 'AC', label: 'Air', icon: Wind },
-    { id: 'KG', label: 'Graph', icon: Share2 },
-  ]
-
-  // --- Render Right Panel ---
-  const renderRightPanel = () => {
-    const commonProps = { 
-      selectedRoomId, setSelectedRoomId, rooms, searchQuery, 
-      expandedFloors, setExpandedFloors, clipFloor, setClipFloor,
-      selectedFloor, setSelectedFloor, setReportAsset, setSelectedLog,
-      setShowDashboard
-    };
-    switch (activeMode) {
-      case 'AR': return <ArchRightPanel {...commonProps} finalACAssets={finalACAssets} />;
-      case 'AC': return <ACRightPanel {...commonProps} finalACAssets={finalACAssets} />;
-      default: return null;
+    } else {
+      if (result.mode !== activeMode) setActiveMode(result.mode)
+      setSelectedRoomId(result.data.id)
     }
   }
 
   return (
     <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none flex text-slate-900 p-[10px]">
-      {/* Dashboard Overlay */}
       {showDashboard && (
-        <ProjectDashboard 
+        <ProjectDashboard
           assets={finalACAssets}
           rooms={rooms}
           onSelect={(id) => {
-            setSelectedRoomId(id);
-            setShowDashboard(false);
-            // Also ensure we are in AC mode if it's an AC asset
-            if (id.startsWith('fcu') || id.startsWith('cdu')) {
-              setActiveMode('AC');
-            }
+            setSelectedRoomId(id)
+            setShowDashboard(false)
+            if (id.startsWith('fcu') || id.startsWith('cdu')) setActiveMode('AC')
           }}
           onClose={() => setShowDashboard(false)}
         />
       )}
 
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
-        {activeMode === 'KG' && (
-          <KGVisualizer3D />
-        )}
-        
-        {/* Sidebar Toggle Button for Graph Mode */}
+        {activeMode === 'KG' && <KGVisualizer3D />}
+
         {activeMode === 'KG' && !showRight && (
           <button
             onClick={() => setShowRight(true)}
@@ -362,38 +143,34 @@ function App() {
             <PanelRight className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors" />
           </button>
         )}
-        
+
         <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
-          <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
-          <color attach="background" args={['#bae6fd']} />
-          <Scene 
-            selectedRoomId={selectedRoomId} 
-            onRoomsFound={setRooms} 
-            onACFound={setAcAssets}
-            onRoomClick={setSelectedRoomId}
-            rightVisible={showRight}
-            activeMode={activeMode}
-            clipFloor={clipFloor}
-            buildingData={buildingData}
-            finalACAssets={finalACAssets}
-          />
-        </Canvas>
+          <ErrorBoundary>
+            <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
+              <color attach="background" args={['#bae6fd']} />
+              <Scene
+                selectedRoomId={selectedRoomId}
+                rightVisible={showRight}
+                activeMode={activeMode}
+                clipFloor={clipFloor}
+                buildingData={buildingData}
+                finalACAssets={finalACAssets}
+              />
+            </Canvas>
+          </ErrorBoundary>
         </div>
       </div>
 
-      {/* Right sidebar button - hidden in Graph mode */}
       {!showRight && activeMode !== 'KG' && (
-        <button 
-          onClick={() => setShowRight(true)} 
+        <button
+          onClick={() => setShowRight(true)}
           className="absolute right-[20px] top-[24px] p-2 bg-white/90 backdrop-blur-md rounded-[5px] border border-slate-200 shadow-lg z-20 text-indigo-600 hover:bg-white transition-all hover:scale-110 active:scale-95"
         >
           <PanelRight className="w-5 h-5" />
         </button>
       )}
 
-      {/* Combined Right Sidebar */}
       <aside className={`absolute right-[10px] top-[10px] bottom-[10px] w-[320px] flex flex-col bg-white/80 backdrop-blur-xl z-10 rounded-[5px] border border-slate-200 shadow-xl overflow-hidden pointer-events-auto shrink-0 transition-all duration-500 ease-in-out ${showRight ? 'translate-x-0 opacity-100' : 'translate-x-[340px] opacity-0'}`}>
-        {/* Header with Project Title */}
         <header className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
@@ -410,25 +187,14 @@ function App() {
           <button onClick={() => setShowRight(false)} className="p-1 hover:bg-slate-200 rounded-[4px] text-slate-400 transition-colors"><PanelRightClose className="w-3.5 h-3.5" /></button>
         </header>
 
-        {/* Mode Buttons */}
         <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100/30 border-b border-slate-100">
           {modes.map((m) => (
-            <button 
-              key={m.id} 
-              onClick={() => { 
-                setActiveMode(m.id as BIMMode); 
-                setSelectedRoomId(null); 
-                setClipFloor(null); 
-                setExpandedFloors({}); 
-                setSelectedFloor(null);
-                setSearchQuery('');
-                if (m.id === 'KG') {
-                  setShowRight(false);
-                }
-              }} 
+            <button
+              key={m.id}
+              onClick={() => handleModeSwitch(m.id)}
               className={`flex flex-col items-center justify-center gap-1 py-3 rounded-[10px] transition-all ${
-                activeMode === m.id 
-                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200' 
+                activeMode === m.id
+                  ? 'bg-white shadow-md text-indigo-600 ring-1 ring-slate-200'
                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
               }`}
             >
@@ -438,10 +204,9 @@ function App() {
           ))}
         </div>
 
-        {/* Dashboard Button */}
         <div className="p-2 border-b border-slate-100">
           {activeMode === 'AC' && (
-            <button 
+            <button
               onClick={() => setShowDashboard(true)}
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 group"
             >
@@ -456,9 +221,8 @@ function App() {
               </div>
             </button>
           )}
-
           {activeMode === 'AR' && (
-            <button 
+            <button
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-[10px] transition-all border bg-slate-800 border-slate-700 text-white hover:bg-slate-900 shadow-lg shadow-slate-100 group"
               onClick={() => {/* ARCH Dashboard Placeholder */}}
             >
@@ -471,32 +235,26 @@ function App() {
           )}
         </div>
 
-        {/* Navigation & Data Display Area */}
         <nav className="flex-1 flex flex-col overflow-hidden">
-          {/* Floor/Room Navigation - Simplified */}
           {activeMode !== 'KG' && (
             <div className="p-2 border-b border-slate-100">
               <GlobalSearch
                 query={searchQuery}
-                onQueryChange={handleSearchChange}
+                onQueryChange={setSearchQuery}
                 results={globalSearchResults}
                 onSelect={handleGlobalSearchSelect}
               />
             </div>
           )}
-          
-          {/* Data Display Panel */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {renderRightPanel()}
+            {activeMode === 'AR' && <ArchRightPanel finalACAssets={finalACAssets} />}
+            {activeMode === 'AC' && <ACRightPanel finalACAssets={finalACAssets} />}
           </div>
         </nav>
       </aside>
 
       {reportAsset && (
-        <PrintReportModal 
-          asset={reportAsset} 
-          onClose={() => setReportAsset(null)} 
-        />
+        <PrintReportModal asset={reportAsset} onClose={() => setReportAsset(null)} />
       )}
 
       {selectedLog && (
@@ -505,7 +263,7 @@ function App() {
             <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${
-                  selectedLog.status === 'Completed' ? 'bg-emerald-500' : 
+                  selectedLog.status === 'Completed' ? 'bg-emerald-500' :
                   selectedLog.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'
                 }`} />
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Maintenance Activity Detail</h2>
@@ -544,7 +302,7 @@ function App() {
           </div>
         </div>
       )}
-      {/* Version Tag */}
+
       <div className="absolute bottom-3 left-4 z-[100] text-[10px] font-mono font-bold text-slate-400/80 pointer-events-none select-none mix-blend-difference">
         rw-03.40
       </div>

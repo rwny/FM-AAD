@@ -3,6 +3,7 @@ import {
   Building2, Box, ChevronDown, ChevronRight, Wind
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
+import { useAppStore } from '../../store'
 
 interface ArchModeProps {
   selectedRoomId: string | null;
@@ -123,9 +124,12 @@ export const ArchLeftPanel: React.FC<ArchModeProps> = ({
   )
 }
 
-export const ArchRightPanel: React.FC<ArchModeProps> = ({
-  selectedRoomId, rooms, selectedFloor, finalACAssets
+export const ArchRightPanel: React.FC<{ finalACAssets: any[] }> = ({
+  finalACAssets
 }) => {
+  const selectedRoomId = useAppStore(s => s.selectedRoomId)
+  const rooms = useAppStore(s => s.rooms)
+  const selectedFloor = useAppStore(s => s.selectedFloor)
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
   const selectedAsset = useMemo(() => {
     if (!selectedRoomId) return null;

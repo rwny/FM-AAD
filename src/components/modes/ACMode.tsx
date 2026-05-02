@@ -5,6 +5,7 @@ import {
   ClipboardList, Clock
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
+import { useAppStore } from '../../store'
 import { AddLogModal } from '../ui/AddLogModal'
 import { SystemTimeline } from '../ui/SystemTimeline'
 
@@ -150,10 +151,15 @@ export const ACLeftPanel: React.FC<ACModeProps> = ({
   )
 }
 
-export const ACRightPanel: React.FC<any> = ({ 
-  selectedRoomId, finalACAssets, rooms, selectedFloor, 
-  setReportAsset, setSelectedLog, setShowDashboard 
+export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({ 
+  finalACAssets
 }) => {
+  const selectedRoomId = useAppStore(s => s.selectedRoomId)
+  const rooms = useAppStore(s => s.rooms)
+  const selectedFloor = useAppStore(s => s.selectedFloor)
+  const setReportAsset = useAppStore(s => s.setReportAsset)
+  const setSelectedLog = useAppStore(s => s.setSelectedLog)
+  const setShowDashboard = useAppStore(s => s.setShowDashboard)
   const [showAddLog, setShowAddLog] = useState(false)
   const [logPage, setLogPage] = useState(0)
   const LOGS_PER_PAGE = 5
