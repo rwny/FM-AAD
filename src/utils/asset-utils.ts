@@ -1,15 +1,44 @@
-export function determineStatus(logs: { status: string; issue?: string }[]): string {
-  if (logs.length === 0) return 'Normal'
+export function determineStatus(logs: { status: string; issue?: string; date?: string }[], installDate?: string): string {
+  if (logs.length === 0) {
+    if (installDate) {
+      const nextSvc = getNextServiceDate(installDate, logs)
+      const daysLeft = Math.round((nextSvc.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      if (daysLeft < 0) return 'Faulty'
+      if (daysLeft <= 90) return 'Maintenance'
+    }
+    return 'Normal'
+  }
 
   const latest = logs[0]
   const issueText = (latest.issue || '').toLowerCase()
 
   if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latest.status === 'Faulty')
     return 'Faulty'
-  if (latest.status === 'Completed') return 'Normal'
+  if (latest.status === 'Completed') {
+    if (installDate) {
+      const nextSvc = getNextServiceDate(installDate, logs)
+      const daysLeft = Math.round((nextSvc.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      if (daysLeft < 0) return 'Faulty'
+      if (daysLeft <= 90) return 'Maintenance'
+    }
+    return 'Normal'
+  }
   if (['In Progress', 'Pending'].includes(latest.status)) return 'Maintenance'
 
   return 'Normal'
+}
+
+function getNextServiceDate(installDate: string, logs: { date?: string; status?: string }[]): Date {
+  const install = new Date(installDate || '2024-01-01')
+  let lastService = install
+  logs.forEach(log => {
+    if (log.status === 'Completed' && log.date) {
+      const d = new Date(log.date)
+      if (d > lastService) lastService = d
+    }
+  })
+  lastService.setFullYear(lastService.getFullYear() + 1)
+  return lastService
 }
 
 export function getPeerId(assetId: string): string | null {

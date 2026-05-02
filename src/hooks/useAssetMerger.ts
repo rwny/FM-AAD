@@ -75,7 +75,7 @@ export function useMergedAssets(
       const sortedSelfLogs = [...selfLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
       const sortedSystemLogs = [...systemWideLogs].sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
 
-      const status = determineStatus(sortedSelfLogs)
+      const status = determineStatus(sortedSelfLogs, installDate)
       const systemStatus = determineStatus(sortedSystemLogs)
 
       let brand = mdTypeInfo?.brand || 'Carrier'

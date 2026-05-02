@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import { 
   Wind, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
-  ChevronLeft, ShoppingCart, Info, Printer, 
-  ClipboardList, Clock
+  ChevronLeft, Printer, 
+  Clock
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { useAppStore } from '../../store'
+import { supabase } from '../../utils/supabase'
 import { AddLogModal } from '../ui/AddLogModal'
 import { SystemTimeline } from '../ui/SystemTimeline'
 
@@ -21,9 +22,6 @@ interface ACModeProps {
   setClipFloor: (floor: number | null) => void;
   selectedFloor: number | null;
   setSelectedFloor: (floor: number | null) => void;
-  setShowDashboard: (show: boolean) => void;
-  setReportAsset?: (asset: any) => void;
-  setSelectedLog?: (log: any) => void;
 }
 
 export const ACLeftPanel: React.FC<ACModeProps> = ({
@@ -159,9 +157,10 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
   const selectedFloor = useAppStore(s => s.selectedFloor)
   const setReportAsset = useAppStore(s => s.setReportAsset)
   const setSelectedLog = useAppStore(s => s.setSelectedLog)
-  const setShowDashboard = useAppStore(s => s.setShowDashboard)
   const [showAddLog, setShowAddLog] = useState(false)
+  const [logToEdit, setLogToEdit] = useState<any>(null)
   const [logPage, setLogPage] = useState(0)
+  const [showIFC, setShowIFC] = useState(false)
   const LOGS_PER_PAGE = 5
 
   const selectedAC = finalACAssets.find((a: any) => a.id.toLowerCase() === selectedRoomId?.toLowerCase());
@@ -171,7 +170,6 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
     const parts = selectedAC.id.split('-');
     const systemId = parts.length >= 3 ? `AC-${parts[1]}-${parts[2]}` : `AC-${parts[1]}`;
     
-    // Find all components in this system
     const components = finalACAssets.filter((a: any) => {
       const p = a.id.split('-');
       const sId = p.length >= 3 ? `AC-${p[1]}-${p[2]}` : `AC-${p[1]}`;
@@ -203,79 +201,191 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
     return Math.round(Math.max(0, totalMonths));
   };
 
-  // Asset Selected Logic
+  const getNextService = (installDate: string, logs: any[]) => {
+    const install = new Date(installDate || '2024-01-01');
+    let lastService = install;
+    logs.forEach(log => {
+      if (log.status === 'Completed') {
+        const d = new Date(log.date);
+        if (d > lastService) lastService = d;
+      }
+    });
+    const next = new Date(lastService);
+    next.setFullYear(next.getFullYear() + 1);
+    return next;
+  };
+
+  const quickService = async () => {
+    const today = new Date().toISOString().split('T')[0]
+    const { error } = await supabase.from('ac_maintenance_logs').insert({
+      asset_id: selectedAC.id,
+      date: today,
+      issue: 'ซ่อมบำรุงประจำปี',
+      status: 'Completed'
+    })
+    if (!error) window.dispatchEvent(new CustomEvent('refresh-bim-data'))
+  }
+
   if (selectedAC && systemGroup) {
     const sortedLogs = selectedAC.logs || []; 
     const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
     const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
 
     return (
-      <div className="flex-1 p-4 flex flex-col gap-5 overflow-y-auto custom-scrollbar bg-white/40">
-        <div className="space-y-4">
-          <div className="space-y-0.5">
-             <h3 className="text-lg font-black tracking-tighter text-slate-900 leading-tight">{selectedAC.name}</h3>
-             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{(selectedAC as any).acType || selectedAC.type}</p>
+      <div className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar bg-white/40">
+        {/* ID Card */}
+        <div className="p-3 bg-indigo-600 border border-indigo-500 rounded-[12px] shadow-sm space-y-1.5 text-white">
+          <div className="flex justify-between items-center">
+            <span className="text-xl text-white font-black tracking-tight">{selectedAC.id.toUpperCase()}</span>
+            <span className="text-[9px] text-indigo-200 font-bold uppercase tracking-wider">Object ID (GLB)</span>
           </div>
-
-          {/* Life Cycle Timeline in Sidebar */}
-          <div className="p-4 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[9px]">
-                <Clock className="w-3.5 h-3.5" /> <span>3-Year Life Cycle</span>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowDashboard(true);
-                }}
-                className="p-1.5 bg-slate-50 hover:bg-indigo-50 rounded text-slate-400 hover:text-indigo-600 transition-all shadow-sm"
-                title="View Detailed History"
-              >
-                <ClipboardList className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <SystemTimeline 
-              installDate={systemGroup.installDate} 
-              components={systemGroup.components} 
-            />
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-indigo-200 font-black">{(selectedAC as any).assetId || 'N/A'}</span>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <div className="p-3 bg-white border border-slate-200 rounded-[12px] shadow-sm space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Object ID (GLB)</span>
-                <span className="text-sm text-slate-800 font-black">{selectedAC.id.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                <span className="text-[10px] text-indigo-400 font-black uppercase tracking-wider">Asset ID (Tag)</span>
-                <span className="text-sm text-indigo-600 font-black">{(selectedAC as any).assetId || 'N/A'}</span>
-              </div>
+        {/* Spec Card */}
+        <div className="p-4 bg-indigo-600 border border-indigo-500 rounded-[12px] space-y-2 text-white shadow-lg">
+          <div className="text-xl font-black tracking-tight">
+            {selectedAC.brand || '---'} : {selectedAC.model || '---'}
+          </div>
+          <div className="text-xl font-black tracking-tight border-b border-white/20 pb-2">
+            {selectedAC.capacity || (selectedAC as any).capacity || '---'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Clock className="w-3.5 h-3.5 text-indigo-200" />
+              <span className="text-[10px] font-black text-indigo-200">Install {selectedAC.install}</span>
+              <span className="text-[9px] font-black text-indigo-300 ml-auto">{calculateAge(selectedAC.install)}mo</span>
             </div>
+            <SystemTimeline installDate={systemGroup.installDate} components={systemGroup.components} showLabels={false} />
+            {(() => {
+              const nextSvc = getNextService(selectedAC.install, sortedLogs)
+              const daysLeft = Math.round((nextSvc.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+              const overdue = daysLeft < 0
+              const soon = daysLeft <= 30 && daysLeft >= 0
+              const color = overdue ? 'text-rose-300' : soon ? 'text-amber-300' : 'text-emerald-300'
+              const label = overdue ? `${Math.abs(daysLeft)}d overdue` : soon ? `${daysLeft}d left` : `${daysLeft}d`
+              return (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className={`text-[11px] font-black ${color}`}>Next service {nextSvc.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <span className={`text-[10px] font-bold ${color} opacity-70`}>({label})</span>
+                  {(overdue || soon) && (
+                    <button
+                      onClick={quickService}
+                      className="ml-auto text-[9px] font-black uppercase text-white bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded transition-colors"
+                    >
+                      Mark Serviced
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        </div>
 
-            <div className="p-4 bg-indigo-600 border border-indigo-500 rounded-[12px] space-y-3 text-white shadow-lg">
-              {[
-                { label: 'Brand', value: selectedAC.brand, icon: Box },
-                { label: 'Model', value: (selectedAC as any).model, icon: Info },
-                { label: 'Capacity', value: (selectedAC as any).capacity, icon: Wind },
-                { label: 'Age', value: `${calculateAge(selectedAC.install)} mo`, icon: Clock },
-                { label: 'Install Date', value: selectedAC.install, icon: ShoppingCart }
-              ].map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center border-b border-white/20 pb-2 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-2">
-                    <item.icon className="w-3.5 h-3.5 text-indigo-200" />
-                    <span className="text-[10px] font-black uppercase text-indigo-200">{item.label}</span>
+        {/* Service Logs */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[10px]">
+              <Activity className="w-4 h-4" /> <span>Service Logs</span>
+            </div>
+            <button
+              onClick={() => { setLogToEdit(null); setShowAddLog(true); }}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[8px] transition-all shadow-md"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-black uppercase">Add Log</span>
+            </button>
+          </div>
+          
+          <div className="bg-white/80 rounded-[10px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
+            {currentPageLogs.length > 0 ? (
+              currentPageLogs.map((log: any, i: number) => {
+                const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
+                const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
+                const logMs = new Date(log.date).getTime();
+                const ageAtLog = Math.round(Math.max(0, (logMs - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
+
+                const isLatest = i === 0
+                const latestBg = statusKey === 'normal' ? 'bg-emerald-100 border-l-[3px] border-emerald-500'
+                  : statusKey === 'faulty' ? 'bg-rose-100 border-l-[3px] border-rose-500'
+                  : 'bg-amber-100 border-l-[3px] border-amber-500'
+
+                return (
+                  <div key={log.id || i} className={`p-2.5 leading-tight space-y-0.5 ${isLatest ? latestBg : ''}`}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2 overflow-hidden flex-1">
+                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
+                        <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
+                          <span className={`${isLatest ? 'text-sm' : 'text-[11px]'} font-black text-slate-900 shrink-0`}>{log.date}</span>
+                          <span className="text-[9px] font-bold text-indigo-500 shrink-0">Age: {ageAtLog}m</span>
+                          <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button 
+                          onClick={() => { setLogToEdit(log); setShowAddLog(true); }}
+                          className="text-[9px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => setSelectedLog(log)}
+                          className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 transition-colors"
+                        >
+                          Detail
+                        </button>
+                      </div>
+                    </div>
+                    <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate flex items-center gap-2">
+                      <span>{log.issue}</span>
+                      {log.contractor && (
+                        <span className="text-[8px] font-bold text-indigo-400 shrink-0">
+                          {log.contractor}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm font-black">{item.value || '---'}</span>
-                </div>
-              ))}
-            </div>
+                );
+              })
+            ) : (
+              <div className="p-8 text-center text-slate-300 text-[10px] font-black uppercase italic">No logs recorded</div>
+            )}
+          </div>
 
-            {/* Technical Metadata (BIM/IFC) */}
-            {selectedAC.metadata && (
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-[12px] space-y-3 text-slate-300 shadow-lg">
-                <div className="flex items-center gap-2 text-emerald-500 font-black uppercase tracking-widest text-[9px] mb-1">
-                  <Activity className="w-3.5 h-3.5" /> <span>IFC Technical Data</span>
-                </div>
-                
+          {sortedLogs.length > LOGS_PER_PAGE && (
+            <div className="flex items-center justify-between px-2">
+              <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronLeft className="w-4 h-4 text-slate-500" /></button>
+              <span className="text-[10px] font-black text-slate-400 uppercase">Page {logPage + 1} of {totalPages}</span>
+              <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronRight className="w-4 h-4 text-slate-500" /></button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setReportAsset(selectedAC)}
+            className="w-full flex items-center justify-center gap-2 py-2 mt-1 border border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all bg-white shadow-sm"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase">Generate Maintenance Report</span>
+          </button>
+        </div>
+
+        {/* IFC Data - fixed bottom, collapsible */}
+        {selectedAC.metadata && (
+          <div className="shrink-0">
+            <button
+              onClick={() => setShowIFC(!showIFC)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-[8px] transition-all border border-slate-700"
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-[10px] font-black uppercase tracking-wider">IFC Technical Data</span>
+              </div>
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showIFC ? 'rotate-90' : ''}`} />
+            </button>
+            {showIFC && (
+              <div className="mt-1 p-3 bg-slate-900 border border-slate-800 rounded-[8px] space-y-2 text-slate-300">
                 {[
                   { label: 'GUID', value: selectedAC.metadata.guid },
                   { label: 'Voltage', value: selectedAC.metadata.specs?.voltage ? `${selectedAC.metadata.specs.voltage}V` : null },
@@ -292,91 +402,16 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
               </div>
             )}
           </div>
+        )}
 
-          {/* Service Logs Section */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2 text-indigo-600 font-black uppercase tracking-widest text-[10px]">
-                <Activity className="w-4 h-4" /> <span>Service Logs</span>
-              </div>
-              <button
-                onClick={() => setShowAddLog(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[8px] transition-all shadow-md"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase">Add Log</span>
-              </button>
-            </div>
-            
-            <div className="bg-white/80 rounded-[10px] border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
-              {currentPageLogs.length > 0 ? (
-                currentPageLogs.map((log: any, i: number) => {
-                  const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
-                  
-                  // Calculate age at the time of log
-                  const installMs = new Date(selectedAC.install || '2024-01-01').getTime();
-                  const logMs = new Date(log.date).getTime();
-                  const ageAtLog = Math.round(Math.max(0, (logMs - installMs) / (1000 * 60 * 60 * 24 * 30.4375)));
-
-                  return (
-                    <div key={log.id || i} className="p-2.5 leading-tight space-y-0.5 group">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2 overflow-hidden flex-1">
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
-                          <div className="flex items-baseline gap-1.5 flex-nowrap overflow-hidden">
-                            <span className="text-[11px] font-black text-slate-900 shrink-0">{log.date}</span>
-                            <span className="text-[9px] font-bold text-indigo-500 shrink-0 bg-indigo-50 px-1 rounded-sm border border-indigo-100/50">Age: {ageAtLog}m</span>
-                            <span className="text-[9px] font-bold text-slate-400 shrink-0">{formatTime(log.created_at)}</span>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => setSelectedLog(log)}
-                          className="text-[9px] font-black text-indigo-500 uppercase px-1.5 py-0.5 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors shrink-0"
-                        >
-                          Detail
-                        </button>
-                      </div>
-                      <div className="ml-3.5 text-[11px] font-black text-slate-700 leading-snug truncate flex items-center gap-2">
-                        <span>{log.issue}</span>
-                        {log.contractor && (
-                          <span className="px-1 text-[8px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded shrink-0">
-                            {log.contractor}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-300 text-[10px] font-black uppercase italic">No logs recorded</div>
-              )}
-            </div>
-
-            {sortedLogs.length > LOGS_PER_PAGE && (
-              <div className="flex items-center justify-between px-2">
-                <button onClick={() => setLogPage(p => Math.max(0, p - 1))} disabled={logPage === 0} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronLeft className="w-4 h-4 text-slate-500" /></button>
-                <span className="text-[10px] font-black text-slate-400 uppercase">Page {logPage + 1} of {totalPages}</span>
-                <button onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))} disabled={logPage >= totalPages - 1} className="p-1 hover:bg-slate-100 rounded disabled:opacity-20"><ChevronRight className="w-4 h-4 text-slate-500" /></button>
-              </div>
-            )}
-
-            <button
-              onClick={() => setReportAsset(selectedAC)}
-              className="w-full flex items-center justify-center gap-2 py-2 mt-2 border border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-[8px] transition-all bg-white shadow-sm"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black uppercase">Generate Maintenance Report</span>
-            </button>
-          </div>
-        </div>
-
-        {showAddLog && (
+        {(showAddLog || logToEdit) && (
           <AddLogModal
             assetId={selectedAC.id}
             assetDbId={selectedAC.dbId}
             roomCode={selectedAC.id.split('-')[1] ? `rm-${selectedAC.id.split('-')[1]}` : 'rm-101'}
             category="AC"
-            onClose={() => setShowAddLog(false)}
+            logToEdit={logToEdit}
+            onClose={() => { setShowAddLog(false); setLogToEdit(null); }}
             onSuccess={() => window.dispatchEvent(new CustomEvent('refresh-bim-data'))}
           />
         )}

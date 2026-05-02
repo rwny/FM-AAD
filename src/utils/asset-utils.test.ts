@@ -40,6 +40,32 @@ describe('determineStatus', () => {
       { status: 'Completed', issue: 'ซ่อมแล้ว' },
     ])).toBe('Faulty')
   })
+
+  it('returns Maintenance when next service within 90 days and no logs', () => {
+    const ninetyDaysFromNow = new Date(Date.now() + 89 * 24 * 60 * 60 * 1000)
+    const installDate = new Date(ninetyDaysFromNow)
+    installDate.setFullYear(installDate.getFullYear() - 1)
+    expect(determineStatus([], installDate.toISOString().split('T')[0])).toBe('Maintenance')
+  })
+
+  it('returns Faulty when next service overdue and no logs', () => {
+    const pastDate = new Date(Date.now() - 370 * 24 * 60 * 60 * 1000)
+    expect(determineStatus([], pastDate.toISOString().split('T')[0])).toBe('Faulty')
+  })
+
+  it('returns Normal when next service is far away and no logs', () => {
+    const futureDate = new Date(Date.now() + 200 * 24 * 60 * 60 * 1000)
+    const installDate = new Date(futureDate)
+    installDate.setFullYear(installDate.getFullYear() - 1)
+    expect(determineStatus([], installDate.toISOString().split('T')[0])).toBe('Normal')
+  })
+
+  it('returns Maintenance when Completed log but next service within 90 days', () => {
+    const ninetyDaysFromNow = new Date(Date.now() + 89 * 24 * 60 * 60 * 1000)
+    const installDate = new Date(ninetyDaysFromNow)
+    installDate.setFullYear(installDate.getFullYear() - 1)
+    expect(determineStatus([{ status: 'Completed' }], installDate.toISOString().split('T')[0])).toBe('Maintenance')
+  })
 })
 
 describe('getPeerId', () => {

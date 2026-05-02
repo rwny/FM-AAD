@@ -7,6 +7,7 @@ interface AddLogModalProps {
   assetDbId?: string
   roomCode?: string
   category?: string
+  logToEdit?: { id: string; date: string; issue: string; reporter?: string; contractor?: string; status: string; note?: string } | null
   onClose: () => void
   onSuccess: () => void
 }
@@ -16,15 +17,17 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   assetDbId,
   roomCode,
   category = 'OTHER',
+  logToEdit,
   onClose,
   onSuccess
 }) => {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [issue, setIssue] = useState('')
-  const [reporter, setReporter] = useState('')
-  const [contractor, setContractor] = useState('')
-  const [note, setNote] = useState('')
-  const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>('Completed')
+  const isEdit = !!logToEdit
+  const [date, setDate] = useState(logToEdit?.date || new Date().toISOString().split('T')[0])
+  const [issue, setIssue] = useState(logToEdit?.issue || '')
+  const [reporter, setReporter] = useState(logToEdit?.reporter || '')
+  const [contractor, setContractor] = useState(logToEdit?.contractor || '')
+  const [note, setNote] = useState(logToEdit?.note || '')
+  const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>((logToEdit?.status as any) || 'Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,10 +38,23 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
 
     try {
       if (category === 'AC') {
-        // For AC, we link directly using the TEXT assetId (matched with JSON)
-        const { error } = await supabase
-          .from('ac_maintenance_logs')
-          .insert({
+        if (isEdit && logToEdit) {
+          const { error } = await supabase
+            .from('ac_maintenance_logs')
+            .update({
+              date,
+              issue,
+              reporter: reporter || null,
+              contractor: contractor || null,
+              note: note || null,
+              status
+            })
+            .eq('id', logToEdit.id)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('ac_maintenance_logs')
+            .insert({
             asset_id: assetId,
             date,
             issue,
@@ -47,7 +63,8 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             note: note || null,
             status
           })
-        if (error) throw error
+          if (error) throw error
+        }
       } else {
         // Existing logic for other assets (Furniture, etc.)
         let finalDbId = assetDbId;
@@ -90,7 +107,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
             <PlusCircle className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Add Daily Log</h2>
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">{isEdit ? 'Edit Log Entry' : 'Add Daily Log'}</h2>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-[4px] transition-colors">
             <X className="w-5 h-5 text-slate-400" />
@@ -208,7 +225,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
               disabled={isSubmitting}
               className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 rounded-[8px] text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Saving...' : 'Save Log'}
+              {isSubmitting ? 'Saving...' : isEdit ? 'Update Log' : 'Save Log'}
             </button>
           </div>
         </form>
