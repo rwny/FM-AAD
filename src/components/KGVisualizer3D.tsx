@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState, useRef, useMemo } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import { RotateCw, Pause, Search, Layers, Sun, Moon, ArrowUp, ArrowDown } from 'lucide-react';
+import { RotateCw, Pause, Search, Layers, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '../utils/supabase';
+import { useAppStore } from '../store';
 import type { KGNodeRow, KGEdgeRow, ACLogRow } from '../types/database';
 
 interface KGVisualizer3DProps {
@@ -22,7 +23,8 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
   const logIdRef = useRef(0);
   const [isRotating, setIsRotating] = useState(true); 
   const [layoutMode, setLayoutMode] = useState<'hierarchy' | 'radial'>('radial');
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const isDarkMode = useAppStore(s => s.isDarkMode);
+  const theme = isDarkMode ? 'dark' : 'light';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -579,14 +581,6 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
       )}
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4">
-        <button 
-          onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')} 
-          className={`px-4 py-2.5 rounded-[5px] border transition-all duration-[2000ms] ease-in-out flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-white border-black/30 text-black hover:bg-gray-100 shadow-md' : 'bg-black/40 border-white/30 text-white hover:bg-white/10 shadow-2xl'}`}
-        >
-          {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          <span className="text-[10px] font-black uppercase tracking-widest">{theme === 'light' ? 'Light' : 'Dark'}</span>
-        </button>
-
         <button 
           onClick={() => setLayoutMode(prev => prev === 'hierarchy' ? 'radial' : 'hierarchy')} 
           className={`px-4 py-2.5 rounded-[5px] border transition-all duration-[2000ms] ease-in-out flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200 shadow-md' : 'bg-orange-600/10 border-orange-600/30 text-orange-500 hover:bg-orange-600/20 shadow-2xl'}`}
