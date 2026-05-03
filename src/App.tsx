@@ -57,8 +57,6 @@ function App() {
   const setBuildingCode = useAppStore(s => s.setBuildingCode)
   const isDarkMode = useAppStore(s => s.isDarkMode)
   const setDarkMode = useAppStore(s => s.setDarkMode)
-  const useThaiLooped = useAppStore(s => s.useThaiLooped)
-  const setThaiLooped = useAppStore(s => s.setThaiLooped)
 
   const prevModeRef = useRef<BIMMode>('AR')
 
@@ -79,26 +77,7 @@ function App() {
   }, [isDarkMode])
 
   useEffect(() => {
-    const root = document.documentElement
-    if (useThaiLooped) {
-      root.classList.add('font-looped')
-      root.classList.remove('font-sans')
-    } else {
-      root.classList.add('font-sans')
-      root.classList.remove('font-looped')
-    }
-  }, [useThaiLooped])
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.shiftKey && e.key.toLowerCase() === 'f') {
-        console.log('[font] Shift+F pressed, current:', useThaiLooped ? 'looped' : 'sans')
-        if (!(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement)) {
-          e.preventDefault()
-          setThaiLooped(!useThaiLooped)
-        }
-        return
-      }
       if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         if (!(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement)) {
           setDarkMode(!isDarkMode)
@@ -107,7 +86,7 @@ function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isDarkMode, setDarkMode, useThaiLooped, setThaiLooped])
+  }, [isDarkMode, setDarkMode])
 
   useEffect(() => {
     const knownModes = ['AR', 'AC', 'KG', 'Fur', 'EE', 'Admin']
