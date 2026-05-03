@@ -78,8 +78,10 @@ function App() {
   }, [isDarkMode])
 
   useEffect(() => {
+    console.log('[font] applying option:', fontOption)
     for (let i = 1; i <= 5; i++) document.documentElement.classList.remove(`font-${i}`)
     document.documentElement.classList.add(`font-${fontOption}`)
+    console.log('[font] html class:', document.documentElement.className)
   }, [fontOption])
 
   useEffect(() => {
