@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 :root {
-  font-family: "Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -64,3 +63,10 @@ body, html, #root {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
+
+/* Font switching — applied via class on <html> */
+.font-1, .font-1 * { font-family: "Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important; }
+.font-2, .font-2 * { font-family: "Noto Sans Thai", "Noto Sans Thai Looped", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important; }
+.font-3, .font-3 * { font-family: "IBM Plex Sans Thai", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important; }
+.font-4, .font-4 * { font-family: "Kanit", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important; }
+.font-5, .font-5 * { font-family: "Sarabun", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important; }

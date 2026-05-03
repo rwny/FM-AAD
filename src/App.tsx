@@ -78,14 +78,8 @@ function App() {
   }, [isDarkMode])
 
   useEffect(() => {
-    const fonts: Record<number, string> = {
-      1: '"Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, sans-serif',
-      2: '"Noto Sans Thai", "Noto Sans Thai Looped", Inter, system-ui, sans-serif',
-      3: '"IBM Plex Sans Thai", "Noto Sans Thai", Inter, system-ui, sans-serif',
-      4: '"Kanit", "Noto Sans Thai", Inter, system-ui, sans-serif',
-      5: '"Sarabun", "Noto Sans Thai", Inter, system-ui, sans-serif',
-    }
-    document.documentElement.style.setProperty('font-family', fonts[fontOption] || fonts[1], 'important')
+    for (let i = 1; i <= 5; i++) document.documentElement.classList.remove(`font-${i}`)
+    document.documentElement.classList.add(`font-${fontOption}`)
   }, [fontOption])
 
   useEffect(() => {
