@@ -350,7 +350,7 @@ function App() {
     </div>
 
     {/* Data Sidebar */}
-      <aside className={`absolute right-3 top-3 bottom-3 w-[320px] flex flex-col bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-20 rounded-2xl border border-slate-200/60 dark:border-zinc-800/60 shadow-xl overflow-hidden transition-all duration-400 ease-in-out ${
+      <aside className={`absolute right-0 top-0 bottom-0 w-[320px] flex flex-col bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl z-20 border-l border-slate-200/60 dark:border-zinc-800/60 shadow-xl overflow-hidden transition-all duration-400 ease-in-out ${
         showRight ? 'translate-x-0 opacity-100' : 'translate-x-[340px] opacity-0 pointer-events-none'
       }`}>
         {/* Header */}
