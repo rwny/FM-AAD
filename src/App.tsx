@@ -5,7 +5,7 @@ import {
   House,
   AirVent, Share2,
   PanelRightClose, PanelRight,
-  LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer, X
+  LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer, X, ClipboardList
 } from 'lucide-react'
 import type { BIMMode } from './types/bim'
 import { useAppStore } from './store'
@@ -417,143 +417,109 @@ function App() {
 
       {selectedLog && (
         <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onClick={() => setSelectedLog(null)} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setSelectedLog(null) } }} tabIndex={-1} ref={el => el?.focus()}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
-            {/* Document Header */}
-            <div className="p-8 border-b-2 border-slate-900 bg-white flex flex-col gap-4">
-              <div className="text-center border-b border-slate-200 pb-2">
-                <h2 className="text-xs font-bold tracking-[0.3em] text-slate-400 uppercase">คณะสถาปัตยกรรม ศิลปะและการออกแบบ</h2>
-                <h2 className="text-[9px] font-bold tracking-[0.2em] text-slate-300 uppercase mt-0.5">School of Architecture, Art and Design</h2>
-              </div>
-              <div className="flex justify-between items-start">
-                <h1 className="text-2xl font-bold tracking-tight uppercase">Service Report</h1>
-                <div className="flex items-start gap-4">
-                  <div className="text-right">
-                    <div className="text-lg font-mono font-bold text-amber-800">{selectedLog.wo_number || '---'}</div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedLog(null)}
-                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors print:hidden"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-zinc-900 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 flex flex-col max-h-[95vh]">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-950 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <ClipboardList className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h1 className="text-sm font-black uppercase tracking-tight text-slate-800 dark:text-zinc-100">Service Report</h1>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase">{buildingCode} · AIR CONDITIONING</p>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">Building</div>
-                  <div className="text-sm font-bold font-mono">{buildingCode}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">Asset Category</div>
-                  <div className="text-sm font-bold">AIR CONDITIONING</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">Status</div>
-                  <div className={`text-xs font-black uppercase inline-flex items-center gap-1 ${
-                    selectedLog.status === 'Completed' ? 'text-emerald-700' :
-                    selectedLog.status === 'Faulty' ? 'text-rose-700' : 'text-amber-700'
+              <div className="flex items-center gap-3">
+                <span className="text-[13px] font-mono font-black text-slate-700 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md">{selectedLog.wo_number || '---'}</span>
+                <button onClick={() => setSelectedLog(null)} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors print:hidden">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white dark:bg-zinc-900">
+              {/* Status + Date Row */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Status</span>
+                  <div className={`mt-1 text-[11px] font-black uppercase inline-flex items-center gap-1.5 ${
+                    selectedLog.status === 'Completed' ? 'text-emerald-600 dark:text-emerald-400' :
+                    selectedLog.status === 'Faulty' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'
                   }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${
-                      selectedLog.status === 'Completed' ? 'bg-emerald-600' :
-                      selectedLog.status === 'Faulty' ? 'bg-rose-600' : 'bg-amber-600'
+                    <div className={`w-2 h-2 rounded-full ${
+                      selectedLog.status === 'Completed' ? 'bg-emerald-500' :
+                      selectedLog.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'
                     }`} />
                     {selectedLog.status}
                   </div>
                 </div>
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Service Date</span>
+                  <div className="mt-1 text-[12px] font-bold text-slate-700 dark:text-zinc-200">{selectedLog.date}</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Recorded</span>
+                  <div className="mt-1 text-[11px] font-bold text-slate-600 dark:text-zinc-300">{new Date(selectedLog.created_at).toLocaleString('th-TH')}</div>
+                </div>
               </div>
-            </div>
 
-            {/* Document Body */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white">
-              {/* Section 1: Schedule */}
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">1. Date and Time Information</h3>
-                <div className="grid grid-cols-2 gap-8 text-sm">
-                  <div>
-                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Service Date</span>
-                    <span className="font-bold underline decoration-slate-200 underline-offset-4">{selectedLog.date}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Recorded Timestamp</span>
-                    <span className="font-bold">{new Date(selectedLog.created_at).toLocaleString('th-TH')}</span>
+              {/* Issue */}
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4">
+                <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">Subject / Activity</span>
+                <p className="mt-1.5 text-[15px] font-bold text-slate-800 dark:text-zinc-100 leading-snug">{selectedLog.issue}</p>
+              </div>
+
+              {/* Personnel + Cost Row */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Reporter</span>
+                  <div className="mt-1 text-[11px] font-bold text-slate-700 dark:text-zinc-200 italic">{selectedLog.reporter || '---'}</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Contractor</span>
+                  <div className="mt-1 text-[11px] font-bold text-slate-700 dark:text-zinc-200">{selectedLog.contractor || 'Internal Team'}</div>
+                  {selectedLog.contractor_contact && (
+                    <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold mt-0.5">{selectedLog.contractor_contact}</div>
+                  )}
+                </div>
+                <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-3 border border-slate-100 dark:border-zinc-800 text-right">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Fee (THB)</span>
+                  <div className="mt-1 text-[15px] font-black text-slate-800 dark:text-zinc-100">
+                    {selectedLog.cost ? Number(selectedLog.cost).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                   </div>
                 </div>
               </div>
 
-              {/* Section 2: Personnel */}
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">2. Personnel in Charge</h3>
-                <div className="grid grid-cols-2 gap-8 text-sm">
-                  <div>
-                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Reporter / Inspector</span>
-                    <span className="font-bold italic">{selectedLog.reporter || '---'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Contractor Entity</span>
-                    <span className="font-bold">{selectedLog.contractor || 'Internal Team'}</span>
-                    {selectedLog.contractor_contact && (
-                      <span className="block text-[11px] text-slate-500 font-bold mt-0.5">{selectedLog.contractor_contact}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Work Description */}
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">3. Subject / Activity Description</h3>
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-sm">
-                  <p className="text-lg font-bold leading-snug">{selectedLog.issue}</p>
-                </div>
-              </div>
-
-              {/* Section 4: Costs */}
-              <div className="space-y-4 text-right pt-4 border-t-2 border-dashed border-slate-200">
-                <div className="inline-block min-w-[200px]">
-                  <div className="flex justify-between items-baseline gap-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Service Fee (THB)</span>
-                    <span className="text-xl font-black underline decoration-double">
-                      {selectedLog.cost ? Number(selectedLog.cost).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 5: Field Remarks */}
-              <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">4. Field Remarks & Observations</h3>
-                <div className="text-sm leading-relaxed text-slate-600 italic whitespace-pre-wrap min-h-[100px]">
+              {/* Remarks */}
+              <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800">
+                <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Remarks & Observations</span>
+                <p className="mt-1.5 text-[11px] font-bold text-slate-600 dark:text-zinc-400 italic leading-relaxed whitespace-pre-wrap min-h-[60px]">
                   {selectedLog.note || 'No additional remarks recorded by the onsite engineer.'}
-                </div>
+                </p>
               </div>
 
-              {/* Signature Area */}
-              <div className="pt-12 grid grid-cols-2 gap-12">
-                <div className="border-t border-slate-300 pt-2 text-center">
-                  <span className="text-[9px] font-bold uppercase text-slate-400">Inspector Signature</span>
+              {/* Signature */}
+              <div className="grid grid-cols-2 gap-8 pt-6">
+                <div className="border-t border-slate-200 dark:border-zinc-800 pt-2 text-center">
+                  <span className="text-[9px] font-bold uppercase text-slate-400 dark:text-zinc-500">Inspector Signature</span>
                 </div>
-                <div className="border-t border-slate-300 pt-2 text-center">
-                  <span className="text-[9px] font-bold uppercase text-slate-400">Authorized Receiver</span>
+                <div className="border-t border-slate-200 dark:border-zinc-800 pt-2 text-center">
+                  <span className="text-[9px] font-bold uppercase text-slate-400 dark:text-zinc-500">Authorized Receiver</span>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-slate-100 border-t border-slate-300 flex justify-between items-center shrink-0 print:hidden">
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Printed on: {new Date().toLocaleDateString()} | System Generated</span>
+            <div className="px-6 py-3 bg-slate-50 dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-800 flex justify-between items-center shrink-0 print:hidden">
+              <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-bold uppercase">{new Date().toLocaleDateString()} · System Generated</span>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => window.print()} 
-                  className="px-6 py-1.5 bg-amber-800 text-white rounded-sm font-bold uppercase text-[10px] hover:bg-amber-900 transition-colors flex items-center gap-2"
-                >
-                  <Printer className="w-3.5 h-3.5" />
+                <button onClick={() => window.print()} className="px-4 py-1.5 bg-amber-700 dark:bg-amber-700 text-white rounded-lg font-bold uppercase text-[10px] hover:bg-amber-800 transition-colors flex items-center gap-1.5">
+                  <Printer className="w-3 h-3" />
                   Print PDF
                 </button>
-                <button 
-                  onClick={() => setSelectedLog(null)} 
-                  className="px-6 py-1.5 bg-slate-800 text-white rounded-sm font-bold uppercase text-[10px] hover:bg-black transition-colors"
-                >
-                  Close Document
+                <button onClick={() => setSelectedLog(null)} className="px-4 py-1.5 bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-lg font-bold uppercase text-[10px] hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors">
+                  Close
                 </button>
               </div>
             </div>
