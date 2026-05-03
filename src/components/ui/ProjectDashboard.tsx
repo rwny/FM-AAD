@@ -327,7 +327,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-[10px] bg-white dark:bg-zinc-950 z-[100] rounded-[12px] shadow-2xl border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden font-sans animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-white dark:bg-zinc-950 z-[100] shadow-2xl border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden font-sans animate-in fade-in zoom-in-95 duration-200">
       <header className="px-4 py-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900">
         {/* Top Row: Title + Buttons */}
         <div className="flex items-center justify-between">
