@@ -96,7 +96,7 @@ export function GlobalSearch({ query, onQueryChange, results, onSelect }: Global
             setIsOpen(true)
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Search everything..."
+          placeholder="Search..."
           className="w-full h-14 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 rounded-[12px] pl-14 pr-12 text-2xl font-black tracking-tighter focus:outline-none focus:ring-4 focus:ring-orange-600/10 transition-all text-slate-700 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-700 shadow-lg"
         />
         {query && (
