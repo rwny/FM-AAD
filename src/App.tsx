@@ -5,7 +5,7 @@ import {
   House,
   AirVent, Share2,
   PanelRightClose, PanelRight,
-  LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer
+  LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer, X
 } from 'lucide-react'
 import type { BIMMode } from './types/bim'
 import { useAppStore } from './store'
@@ -173,6 +173,10 @@ function App() {
             setSelectedRoomId(id)
             setShowDashboard(false)
             if (id.startsWith('fcu') || id.startsWith('cdu')) setActiveMode('AC')
+          }}
+          onSelectLog={(log) => {
+            setShowDashboard(false)
+            setSelectedLog(log)
           }}
           onClose={() => setShowDashboard(false)}
         />
@@ -389,18 +393,28 @@ function App() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onKeyDown={(e) => e.key === 'Escape' && setSelectedLog(null)} tabIndex={-1} ref={el => el?.focus()}>
           <div className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
             {/* Document Header */}
             <div className="p-8 border-b-2 border-slate-900 bg-white flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <h1 className="text-2xl font-bold tracking-tight uppercase">Maintenance Service Report</h1>
+                  <h1 className="text-2xl font-bold tracking-tight uppercase">
+                    {selectedLog.wo_number ? `Service Report • ${selectedLog.wo_number}` : 'Maintenance Service Report'}
+                  </h1>
                   <p className="text-xs font-mono text-slate-500">Document Reference: {selectedLog.id}</p>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold uppercase text-slate-400">Work Order No.</div>
-                  <div className="text-lg font-mono font-bold text-amber-800">{selectedLog.wo_number || '---'}</div>
+                <div className="flex items-start gap-4">
+                  <div className="text-right">
+                    <div className="text-xs font-bold uppercase text-slate-400">Work Order No.</div>
+                    <div className="text-lg font-mono font-bold text-amber-800">{selectedLog.wo_number || '---'}</div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedLog(null)}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
               

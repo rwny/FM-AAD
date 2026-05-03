@@ -3,7 +3,7 @@ import {
   X, Search, 
   ArrowUpRight, AlertCircle, 
   Download, Box, Layers,
-  ClipboardList, Copy, Check, Calendar, FileSpreadsheet
+  ClipboardList, Copy, Check, Calendar, FileSpreadsheet, ListTodo
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
 import { PlannedMaintenance } from './PlannedMaintenance'
@@ -13,11 +13,12 @@ interface ProjectDashboardProps {
   assets: ACAsset[];
   rooms: Room[];
   onSelect: (assetId: string) => void;
+  onSelectLog: (log: any) => void;
   onClose: () => void;
 }
 
 export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ 
-  assets, rooms, onSelect, onClose 
+  assets, rooms, onSelect, onSelectLog, onClose 
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | 'Normal' | 'Maintenance' | 'Faulty'>('All')
@@ -25,7 +26,18 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const [historySystem, setHistorySystem] = useState<any | null>(null)
   const [copyFeedback, setCopyFeedback] = useState(false)
   const [historyCopyFeedback, setHistoryCopyFeedback] = useState(false)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table')
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'wo'>('table')
+
+  React.useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (historySystem) setHistorySystem(null)
+        else onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose, historySystem])
 
   const allSystems = useMemo(() => {
     const groups: { [key: string]: any } = {};
@@ -81,6 +93,38 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
         return a.id.localeCompare(b.id);
       });
   }, [allSystems, searchQuery, statusFilter, floorFilter]);
+
+  const woList = useMemo(() => {
+    const wos: any[] = []
+    allSystems.forEach(sys => {
+      const allLogs = sys.components.flatMap((c: any) => (c.logs || []).filter((l: any) => l.wo_number))
+      allLogs.forEach((log: any) => {
+        wos.push({
+          wo_number: log.wo_number,
+          date: log.date,
+          issue: log.issue,
+          status: log.status,
+          system: sys.id,
+          room: sys.roomName,
+          floor: sys.floor,
+          log: log,
+        })
+      })
+    })
+    wos.sort((a, b) => b.wo_number.localeCompare(a.wo_number))
+    return wos
+  }, [allSystems])
+
+  const filteredWOList = useMemo(() => {
+    if (!searchQuery) return woList
+    const q = searchQuery.toLowerCase()
+    return woList.filter(w =>
+      w.wo_number.toLowerCase().includes(q) ||
+      w.system.toLowerCase().includes(q) ||
+      w.room.toLowerCase().includes(q) ||
+      w.issue.toLowerCase().includes(q)
+    )
+  }, [woList, searchQuery])
 
   const stats = useMemo(() => {
     const total = allSystems.length;
@@ -281,11 +325,18 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <button onClick={exportToCSV} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 transition-all active:scale-95" title="Download CSV"><Download className="w-4 h-4" /></button>
           <button onClick={exportToXLSX} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-emerald-500 transition-all active:scale-95" title="Download Excel (.xlsx)"><FileSpreadsheet className="w-4 h-4" /></button>
           <button
-            onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
+            onClick={() => setViewMode(viewMode === 'calendar' ? 'table' : 'calendar')}
             className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'calendar' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
-            title={viewMode === 'table' ? 'Calendar View' : 'Table View'}
+            title="Calendar View"
           >
             <Calendar className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode(viewMode === 'wo' ? 'table' : 'wo')}
+            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'wo' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
+            title="WO List"
+          >
+            <ListTodo className="w-4 h-4" />
           </button>
           <button onClick={onClose} className="p-1.5 hover:bg-rose-500 hover:text-white rounded text-slate-400 dark:text-zinc-500 transition-all"><X className="w-5 h-5" /></button>
         </div>
@@ -309,6 +360,40 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <div className="p-4">
             <PlannedMaintenance assets={assets} onSelect={onSelect} />
           </div>
+        ) : viewMode === 'wo' ? (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
+              <tr className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36">WO Number</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28">Date</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28 text-center">Status</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-40">System</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Location</th>
+                <th className="px-4 py-2">Issue / Activity</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
+              {filteredWOList.map((wo: any, idx: number) => (
+                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer" onClick={() => onSelectLog(wo.log)}>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
+                    <span className="text-[12px] font-mono font-black text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">{wo.wo_number}</span>
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-500 dark:text-zinc-400">{wo.date}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-center">
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-black uppercase ${wo.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : wo.status === 'Faulty' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                      <div className={`w-2 h-2 rounded-full ${wo.status === 'Completed' ? 'bg-emerald-500' : wo.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />{wo.status || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">{wo.system}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-600 dark:text-zinc-300">F{wo.floor} • {wo.room}</td>
+                  <td className="px-4 py-2.5 text-[11px] font-bold text-slate-700 dark:text-zinc-200 leading-tight">{wo.issue}</td>
+                </tr>
+              ))}
+              {filteredWOList.length === 0 && (
+                <tr><td colSpan={6} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[10px] font-black uppercase">No work orders found</td></tr>
+              )}
+            </tbody>
+          </table>
         ) : (
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
@@ -353,9 +438,14 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   <td className="px-2 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
                     {(() => {
                       const allLogs = sys.components.flatMap((c: any) => c.logs || [])
-                      const latestWO = allLogs.find((l: any) => l.wo_number)?.wo_number
-                      return latestWO ? (
-                        <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">{latestWO}</span>
+                      const latestWOLog = allLogs.find((l: any) => l.wo_number)
+                      return latestWOLog ? (
+                        <button
+                          onClick={() => onSelectLog(latestWOLog)}
+                          className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/70 transition-colors cursor-pointer"
+                        >
+                          {latestWOLog.wo_number}
+                        </button>
                       ) : <span className="text-[9px] text-slate-300 dark:text-zinc-700">-</span>
                     })()}
                   </td>
@@ -455,6 +545,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700"><span className="text-amber-800 dark:text-orange-500">SYS: {systemData.length}</span></div>
           <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700"><span className="text-slate-500 dark:text-zinc-400">ASSETS: {assets.length}</span></div>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700"><span className="text-orange-600 dark:text-orange-400">WO: {woList.length}</span></div>
         </div>
         <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-black tracking-widest"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">AR15-BIM-v0.3.29</span></div>
       </footer>

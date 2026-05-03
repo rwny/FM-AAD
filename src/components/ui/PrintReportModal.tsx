@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useEffect } from 'react';
 import { X, Printer, FileText } from 'lucide-react';
 
 interface PrintReportModalProps {
@@ -7,6 +7,14 @@ interface PrintReportModalProps {
 }
 
 export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClose }) => {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   if (!asset) return null;
 
   const handlePrint = () => {

@@ -50,6 +50,15 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
       fetchWONumber().then(n => setWoNumber(n))
     }
   }, [])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>((logToEdit?.status as any) || 'Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)

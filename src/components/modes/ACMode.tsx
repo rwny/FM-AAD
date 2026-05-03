@@ -287,7 +287,6 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                       roomCode={selectedAC.id.split('-')[1] ? `rm-${selectedAC.id.split('-')[1]}` : 'rm-101'}
                       category="AC"
                       initialIssue={`แก้ไขปัญหา: ${latestProblemLog.issue}`}
-                      initialWoNumber={latestProblemLog.wo_number}
                       onClose={() => setShowResolveLog(false)}
                       onSuccess={() => {
                         setShowResolveLog(false)
