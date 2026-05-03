@@ -79,9 +79,10 @@ function App() {
   }, [isDarkMode])
 
   useEffect(() => {
-    document.documentElement.style.fontFamily = useThaiLooped
+    const fontFamily = useThaiLooped
       ? '"Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif'
       : '"Noto Sans Thai", "Noto Sans Thai Looped", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif'
+    document.documentElement.style.setProperty('font-family', fontFamily, 'important')
   }, [useThaiLooped])
 
   useEffect(() => {
