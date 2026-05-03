@@ -388,21 +388,21 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
           </button>
         </div>
 
-        {/* IFC Data - fixed bottom, collapsible */}
+        {/* Technical Data - fixed bottom, collapsible */}
         {selectedAC.metadata && (
           <div className="shrink-0">
             <button
               onClick={() => setShowIFC(!showIFC)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-zinc-900 dark:bg-black hover:bg-zinc-800 dark:hover:bg-zinc-900 text-slate-400 dark:text-zinc-500 rounded-[8px] transition-all border border-slate-700 dark:border-zinc-800"
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-[8px] transition-all border border-slate-200 dark:border-zinc-800"
             >
               <div className="flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="text-[10px] font-black uppercase tracking-wider">IFC Technical Data</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">Technical Data</span>
               </div>
               <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showIFC ? 'rotate-90' : ''}`} />
             </button>
             {showIFC && (
-              <div className="mt-1 p-3 bg-zinc-900 dark:bg-black border border-slate-800 dark:border-zinc-900 rounded-[8px] space-y-2 text-slate-300 dark:text-zinc-400 max-h-[400px] overflow-y-auto custom-scrollbar">
+              <div className="mt-1 p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[8px] space-y-2 text-slate-700 dark:text-zinc-300 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {(() => {
                   const meta = selectedAC.metadata;
                   const items: { label: string; value: any; section?: string }[] = [];
@@ -435,11 +435,11 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                     return (
                       <React.Fragment key={idx}>
                         {showHeader && (
-                          <div className="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em] border-b border-amber-500/20 pb-1 pt-1">{item.section}</div>
+                          <div className="text-[8px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-[0.2em] border-b border-amber-300 dark:border-amber-700/50 pb-1 pt-1">{item.section}</div>
                         )}
-                        <div className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-zinc-600 shrink-0 mt-0.5">{item.label}</span>
-                          <span className="text-[11px] font-mono font-bold text-slate-200 dark:text-zinc-300 break-all text-right">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
+                        <div className="flex justify-between items-start gap-4 border-b border-slate-200 dark:border-zinc-800 pb-2 last:border-0 last:pb-0">
+                          <span className="text-[9px] font-black uppercase text-slate-400 dark:text-zinc-500 shrink-0 mt-0.5">{item.label}</span>
+                          <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-zinc-200 break-all text-right">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
                         </div>
                       </React.Fragment>
                     );
