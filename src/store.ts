@@ -44,7 +44,7 @@ export const useAppStore = create<AppState>((set) => ({
   buildingCode: 'AR15',
   setBuildingCode: (buildingCode) => set({ buildingCode }),
 
-  activeMode: 'AR',
+  activeMode: 'AC',
   setActiveMode: (activeMode) => set({ activeMode }),
   showRight: true,
   setShowRight: (showRight) => set({ showRight }),

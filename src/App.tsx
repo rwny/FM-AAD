@@ -27,10 +27,10 @@ import { Scene } from './components/3d/Scene'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const modes = [
+  { id: 'AC' as BIMMode, label: 'Air', icon: AirVent },
   { id: 'AR' as BIMMode, label: 'Arch', icon: House },
   { id: 'Fur' as BIMMode, label: 'FUR', icon: Armchair },
   { id: 'EE' as BIMMode, label: 'EN', icon: Lightbulb },
-  { id: 'AC' as BIMMode, label: 'Air', icon: AirVent },
   { id: 'KG' as BIMMode, label: 'Graph', icon: Share2 },
 ]
 
@@ -85,7 +85,7 @@ function App() {
   useEffect(() => {
     const knownModes = ['AR', 'AC', 'KG', 'Fur', 'EE', 'Admin']
     let bld = 'AR15'
-    let mode: BIMMode = 'AR'
+    let mode: BIMMode = 'AC'
     let itemId: string | null = null
 
     if (segments.length > 0) {
@@ -95,7 +95,7 @@ function App() {
         itemId = segments[1] || null
       } else {
         bld = segments[0]
-        const modeSegment = segments[1]?.toUpperCase() || 'AR'
+        const modeSegment = segments[1]?.toUpperCase() || 'AC'
         mode = modeSegment as BIMMode
         if (knownModes.some(m => m.toUpperCase() === modeSegment)) {
           itemId = segments[2] || null

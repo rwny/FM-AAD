@@ -3,10 +3,11 @@ import {
   X, Search, 
   ArrowUpRight, AlertCircle, 
   Download, Box, Layers,
-  ClipboardList, Copy, Check, Calendar
+  ClipboardList, Copy, Check, Calendar, FileSpreadsheet
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
 import { PlannedMaintenance } from './PlannedMaintenance'
+import * as XLSX from 'xlsx'
 
 interface ProjectDashboardProps {
   assets: ACAsset[];
@@ -109,17 +110,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   };
 
   const exportToCSV = () => {
-    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Age', 'Components'];
-    const rows = systemData.map(sys => [
-      sys.roomName, 
-      sys.id, 
-      `Floor ${sys.floor}`, 
-      sys.aggregatedStatus, 
-      sys.installDate, 
-      calculateAge(sys.installDate),
-      sys.components.map((c: any) => c.id).join(' | ')
-    ]);
-    const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.map(val => `"${val}"`).join(",")).join("\n");
+    const data = buildSheetData();
+    const csvContent = "\uFEFF" + data.map(e => e.map(val => `"${val}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.setAttribute("href", URL.createObjectURL(blob));
@@ -129,18 +121,52 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     document.body.removeChild(link);
   };
 
+  const buildSheetData = () => {
+    const headers = [
+      'Location', 'System Group', 'Floor',
+      'Brand', 'Model', 'Capacity',
+      'System Status', 'Install Date', 'Age (mo)',
+      'Last Service', 'Next Service',
+      'Total Logs', 'Latest WO',
+      'FCU (Status)', 'CDU (Status)'
+    ];
+    const rows = systemData.map(sys => {
+      const fcu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('fcu'));
+      const cdu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('cdu'));
+      const fcuIds = fcu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-';
+      const cduIds = cdu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-';
+      const allLogs = sys.components.flatMap((c: any) => c.logs || []);
+      const latestWO = allLogs.find((l: any) => l.wo_number)?.wo_number || '-';
+      return [
+        sys.roomName, sys.id, `Floor ${sys.floor}`,
+        sys.brand || '-', sys.model || '-', sys.components[0]?.capacity || '-',
+        sys.aggregatedStatus, sys.installDate, calculateAge(sys.installDate),
+        sys.lastService || '-', sys.nextService || '-',
+        allLogs.length, latestWO, fcuIds, cduIds,
+      ];
+    });
+    return [headers, ...rows];
+  };
+
+  const exportToXLSX = () => {
+    const data = buildSheetData();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 14 }, { wch: 8 },
+      { wch: 14 }, { wch: 14 }, { wch: 10 },
+      { wch: 12 }, { wch: 12 }, { wch: 8 },
+      { wch: 12 }, { wch: 12 },
+      { wch: 10 }, { wch: 14 },
+      { wch: 26 }, { wch: 26 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Asset Master');
+    XLSX.writeFile(wb, `AR15_Asset_Master_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const copyToClipboard = () => {
-    const headers = ['Location', 'System Group', 'Floor', 'Status', 'Install Date', 'Age', 'Components'];
-    const rows = systemData.map(sys => [
-      sys.roomName, 
-      sys.id, 
-      `Floor ${sys.floor}`, 
-      sys.aggregatedStatus, 
-      sys.installDate, 
-      calculateAge(sys.installDate),
-      sys.components.map((c: any) => c.id).join(' | ')
-    ]);
-    const textContent = [headers, ...rows].map(e => e.join("\t")).join("\n");
+    const data = buildSheetData();
+    const textContent = data.map(e => e.join("\t")).join("\n");
     navigator.clipboard.writeText(textContent).then(() => {
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 2000);
@@ -253,6 +279,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           )}
           <button onClick={copyToClipboard} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 transition-all active:scale-95" title="Copy to Clipboard"><Copy className="w-4 h-4" /></button>
           <button onClick={exportToCSV} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 transition-all active:scale-95" title="Download CSV"><Download className="w-4 h-4" /></button>
+          <button onClick={exportToXLSX} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-emerald-500 transition-all active:scale-95" title="Download Excel (.xlsx)"><FileSpreadsheet className="w-4 h-4" /></button>
           <button
             onClick={() => setViewMode(viewMode === 'table' ? 'calendar' : 'table')}
             className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'calendar' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
@@ -440,7 +467,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                 <div className="p-2 bg-amber-800 dark:bg-amber-800 rounded-lg text-white"><ClipboardList className="w-5 h-5" /></div>
                 <div>
                   <h2 className="text-[11px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] leading-tight">System Life Cycle History</h2>
-                  <p className="text-lg font-black text-slate-800 dark:text-zinc-100 uppercase tracking-tight">{historySystem.id} â€¢ {historySystem.roomName}</p>
+                  <p className="text-lg font-black text-slate-800 dark:text-zinc-100 uppercase tracking-tight">{historySystem.id} - {historySystem.roomName}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
