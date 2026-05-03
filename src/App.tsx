@@ -92,6 +92,7 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey && e.key.toLowerCase() === 'f') {
+        console.log('[font] Shift+F pressed, current:', useThaiLooped ? 'looped' : 'sans')
         if (!(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement)) {
           e.preventDefault()
           setThaiLooped(!useThaiLooped)
