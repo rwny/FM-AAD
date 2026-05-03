@@ -1,6 +1,16 @@
-﻿import React, { useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import { X, PlusCircle, AlertCircle } from 'lucide-react'
 import { supabase, ensureAssetExists } from '../../utils/supabase'
+
+async function fetchWONumber(): Promise<string> {
+  const year = new Date().getFullYear()
+  const { data, error } = await supabase.rpc('next_wo_number', { year_input: year })
+  if (error || !data) {
+    const fallback = `WO-${year}-${String(Date.now() % 10000).padStart(4, '0')}`
+    return fallback
+  }
+  return data as string
+}
 
 interface AddLogModalProps {
   assetId: string
@@ -33,7 +43,13 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   const [note, setNote] = useState(logToEdit?.note || '')
   const [cost, setCost] = useState(logToEdit?.cost?.toString() || '')
   const [contractorContact, setContractorContact] = useState(logToEdit?.contractor_contact || '')
-  const [woNumber] = useState(logToEdit?.wo_number || initialWoNumber || `WO-${new Date().getFullYear()}-${String(Date.now() % 10000).padStart(3, '0').slice(0, 3)}`)
+  const [woNumber, setWoNumber] = useState(logToEdit?.wo_number || initialWoNumber || '')
+
+  useEffect(() => {
+    if (!logToEdit?.wo_number && !initialWoNumber) {
+      fetchWONumber().then(n => setWoNumber(n))
+    }
+  }, [])
   const [status, setStatus] = useState<'Completed' | 'Pending' | 'In Progress' | 'Faulty'>((logToEdit?.status as any) || 'Completed')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)

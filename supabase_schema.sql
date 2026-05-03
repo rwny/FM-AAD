@@ -55,6 +55,30 @@ CREATE TABLE IF NOT EXISTS maintenance_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 6. WO Counter (atomic sequential per year, safe for concurrent users)
+CREATE TABLE IF NOT EXISTS wo_counter (
+    year INTEGER PRIMARY KEY,
+    counter INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE OR REPLACE FUNCTION next_wo_number(year_input INTEGER)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    next_val INTEGER;
+BEGIN
+    INSERT INTO wo_counter (year, counter) 
+    VALUES (year_input, 1)
+    ON CONFLICT (year) 
+    DO UPDATE SET counter = wo_counter.counter + 1
+    RETURNING counter INTO next_val;
+    
+    RETURN 'WO-' || year_input || '-' || LPAD(next_val::TEXT, 4, '0');
+END;
+$$;
+
 -- Enable RLS (Row Level Security) - Optional but recommended
 -- ALTER TABLE buildings ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE floors ENABLE ROW LEVEL SECURITY;
