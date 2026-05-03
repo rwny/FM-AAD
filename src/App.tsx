@@ -57,7 +57,6 @@ function App() {
   const setBuildingCode = useAppStore(s => s.setBuildingCode)
   const isDarkMode = useAppStore(s => s.isDarkMode)
   const setDarkMode = useAppStore(s => s.setDarkMode)
-  const fontOption = useAppStore(s => s.fontOption)
 
   const prevModeRef = useRef<BIMMode>('AR')
 
@@ -76,13 +75,6 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
-
-  useEffect(() => {
-    console.log('[font] applying option:', fontOption)
-    for (let i = 1; i <= 5; i++) document.documentElement.classList.remove(`font-${i}`)
-    document.documentElement.classList.add(`font-${fontOption}`)
-    console.log('[font] html class:', document.documentElement.className)
-  }, [fontOption])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

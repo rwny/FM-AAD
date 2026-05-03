@@ -32,9 +32,6 @@ interface AppState {
   isDarkMode: boolean
   setDarkMode: (dark: boolean) => void
 
-  fontOption: number
-  setFontOption: (v: number) => void
-
   rooms: Room[]
   setRooms: (rooms: Room[]) => void
   acAssets: ACAsset[]
@@ -77,12 +74,6 @@ export const useAppStore = create<AppState>((set) => ({
   setDarkMode: (isDarkMode) => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
     set({ isDarkMode })
-  },
-
-  fontOption: parseInt(localStorage.getItem('fontSel') || '3'),
-  setFontOption: (fontOption) => {
-    localStorage.setItem('fontSel', String(fontOption))
-    set({ fontOption })
   },
 
   rooms: [],
