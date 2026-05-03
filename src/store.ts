@@ -79,9 +79,9 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isDarkMode })
   },
 
-  fontOption: parseInt(localStorage.getItem('fontV') || '5'),
+  fontOption: parseInt(localStorage.getItem('fontSel') || '3'),
   setFontOption: (fontOption) => {
-    localStorage.setItem('fontV', String(fontOption))
+    localStorage.setItem('fontSel', String(fontOption))
     set({ fontOption })
   },
 
