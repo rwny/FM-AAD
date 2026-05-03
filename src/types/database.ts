@@ -13,6 +13,7 @@ export interface ACLogRow {
   note?: string
   wo_number?: string
   cost?: number
+  appointment_date?: string
 }
 
 // --- Knowledge Graph ---
@@ -45,6 +46,7 @@ export interface ACLogSummary {
   note?: string
   wo_number?: string
   cost?: number
+  appointment_date?: string
 }
 
 export interface MergedACAsset {

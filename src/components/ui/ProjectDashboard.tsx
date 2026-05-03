@@ -2,8 +2,8 @@
 import { 
   X, Search, 
   ArrowUpRight, AlertCircle, 
-  Download, Box, Layers,
-  ClipboardList, Copy, Check, Calendar, FileSpreadsheet, ListTodo
+  Box, Layers, Home,
+  ClipboardList, Copy, Check, Calendar, ListTodo, Download, CalendarCheck
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
 import { PlannedMaintenance } from './PlannedMaintenance'
@@ -24,9 +24,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const [statusFilter, setStatusFilter] = useState<'All' | 'Normal' | 'Maintenance' | 'Faulty'>('All')
   const [floorFilter] = useState<number | 'All'>('All')
   const [historySystem, setHistorySystem] = useState<any | null>(null)
-  const [copyFeedback, setCopyFeedback] = useState(false)
   const [historyCopyFeedback, setHistoryCopyFeedback] = useState(false)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'wo'>('table')
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'wo' | 'appt'>('table')
 
   React.useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -83,6 +82,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           || sys.roomName.toLowerCase().includes(searchQuery.toLowerCase())
           || sys.brand?.toLowerCase().includes(searchQuery.toLowerCase())
           || sys.model?.toLowerCase().includes(searchQuery.toLowerCase())
+          || (sys.components[0]?.capacity || '').toLowerCase().includes(searchQuery.toLowerCase())
           || woNumbers.some((wo: string) => wo.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = statusFilter === 'All' || sys.aggregatedStatus === statusFilter;
         const matchesFloor = floorFilter === 'All' || sys.floor === floorFilter;
@@ -126,6 +126,62 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     )
   }, [woList, searchQuery])
 
+  const apptList = useMemo(() => {
+    const appts: any[] = []
+    allSystems.forEach(sys => {
+      const allLogs = sys.components.flatMap((c: any) => (c.logs || []).filter((l: any) => l.appointment_date))
+      allLogs.forEach((log: any) => {
+        appts.push({
+          appointment_date: log.appointment_date,
+          date: log.date,
+          issue: log.issue,
+          status: log.status,
+          reporter: log.reporter,
+          contractor: log.contractor,
+          system: sys.id,
+          room: sys.roomName,
+          floor: sys.floor,
+          log: log,
+        })
+      })
+    })
+    appts.sort((a, b) => a.appointment_date.localeCompare(b.appointment_date))
+    return appts
+  }, [allSystems])
+
+  const filteredApptList = useMemo(() => {
+    if (!searchQuery) return apptList
+    const q = searchQuery.toLowerCase()
+    return apptList.filter(a =>
+      a.system.toLowerCase().includes(q) ||
+      a.room.toLowerCase().includes(q) ||
+      a.issue.toLowerCase().includes(q) ||
+      a.contractor?.toLowerCase().includes(q) ||
+      a.reporter?.toLowerCase().includes(q)
+    )
+  }, [apptList, searchQuery])
+
+  const hoverSummaries = useMemo(() => {
+    const brand: Record<string, number> = {}
+    const btu: Record<string, number> = {}
+    const age: Record<string, number> = {}
+    allSystems.forEach(sys => {
+      const b = sys.brand || '-'
+      brand[b] = (brand[b] || 0) + 1
+      const c = (sys.components[0]?.capacity || '-').replace(/[^0-9]/g, '') || '-'
+      btu[c] = (btu[c] || 0) + 1
+      const a = (() => {
+        const install = sys.installDate
+        if (!install || install === '---') return 0
+        return Math.round((Date.now() - new Date(install).getTime()) / (1000 * 60 * 60 * 24 * 30.4375))
+      })()
+      const aLabel = a >= 60 ? `${Math.floor(a/12)}y+` : a >= 36 ? `3-5y` : a >= 24 ? `2-3y` : a >= 12 ? `1-2y` : `<1y`
+      age[aLabel] = (age[aLabel] || 0) + 1
+    })
+    const top = (obj: Record<string, number>) => Object.entries(obj).sort((a,b) => b[1]-a[1]).slice(0,10).map(([k,v]) => `${k}: ${v}`).join('\n')
+    return { brand: top(brand), btu: top(btu), age: top(age) }
+  }, [allSystems])
+
   const stats = useMemo(() => {
     const total = allSystems.length;
     const faulty = allSystems.filter(s => s.aggregatedStatus === 'Faulty').length;
@@ -153,19 +209,17 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     return { headers, rows };
   };
 
-  const exportToCSV = () => {
-    const data = buildSheetData();
-    const csvContent = "\uFEFF" + data.map(e => e.map(val => `"${val}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `AR15_Asset_Master_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const buildSheetData = () => {
+  const buildViewData = () => {
+    if (viewMode === 'wo') {
+      const headers = ['WO Number', 'Date', 'Status', 'System', 'Floor', 'Location', 'Issue']
+      const rows = woList.map(w => [w.wo_number, w.date, w.status, w.system, `Floor ${w.floor}`, w.room, w.issue])
+      return [headers, ...rows]
+    }
+    if (viewMode === 'appt') {
+      const headers = ['Appointment Date', 'Status', 'System', 'Floor', 'Location', 'Issue', 'Contractor', 'Reporter']
+      const rows = apptList.map(a => [a.appointment_date, a.status, a.system, `Floor ${a.floor}`, a.room, a.issue, a.contractor || '', a.reporter || ''])
+      return [headers, ...rows]
+    }
     const headers = [
       'Location', 'System Group', 'Floor',
       'Brand', 'Model', 'Capacity',
@@ -173,49 +227,54 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       'Last Service', 'Next Service',
       'Total Logs', 'Latest WO',
       'FCU (Status)', 'CDU (Status)'
-    ];
+    ]
     const rows = systemData.map(sys => {
-      const fcu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('fcu'));
-      const cdu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('cdu'));
-      const fcuIds = fcu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-';
-      const cduIds = cdu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-';
-      const allLogs = sys.components.flatMap((c: any) => c.logs || []);
-      const latestWO = allLogs.find((l: any) => l.wo_number)?.wo_number || '-';
+      const fcu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('fcu'))
+      const cdu = sys.components.filter((c: any) => c.id.toLowerCase().startsWith('cdu'))
+      const fcuIds = fcu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-'
+      const cduIds = cdu.map((c: any) => `${c.id} [${c.status}]`).join(' | ') || '-'
+      const allLogs = sys.components.flatMap((c: any) => c.logs || [])
+      const latestWO = allLogs.find((l: any) => l.wo_number)?.wo_number || '-'
       return [
         sys.roomName, sys.id, `Floor ${sys.floor}`,
         sys.brand || '-', sys.model || '-', sys.components[0]?.capacity || '-',
         sys.aggregatedStatus, sys.installDate, calculateAge(sys.installDate),
         sys.lastService || '-', sys.nextService || '-',
         allLogs.length, latestWO, fcuIds, cduIds,
-      ];
-    });
-    return [headers, ...rows];
-  };
+      ]
+    })
+    return [headers, ...rows]
+  }
 
   const exportToXLSX = () => {
-    const data = buildSheetData();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [
-      { wch: 20 }, { wch: 14 }, { wch: 8 },
-      { wch: 14 }, { wch: 14 }, { wch: 10 },
-      { wch: 12 }, { wch: 12 }, { wch: 8 },
-      { wch: 12 }, { wch: 12 },
-      { wch: 10 }, { wch: 14 },
-      { wch: 26 }, { wch: 26 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Asset Master');
-    XLSX.writeFile(wb, `AR15_Asset_Master_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
-
-  const copyToClipboard = () => {
-    const data = buildSheetData();
-    const textContent = data.map(e => e.join("\t")).join("\n");
-    navigator.clipboard.writeText(textContent).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    });
-  };
+    const data = buildViewData()
+    const ws = XLSX.utils.aoa_to_sheet(data)
+    if (viewMode === 'wo') {
+      ws['!cols'] = [
+        { wch: 16 }, { wch: 12 }, { wch: 12 },
+        { wch: 14 }, { wch: 8 }, { wch: 24 }, { wch: 50 },
+      ]
+    } else if (viewMode === 'appt') {
+      ws['!cols'] = [
+        { wch: 14 }, { wch: 10 }, { wch: 14 },
+        { wch: 8 }, { wch: 24 }, { wch: 40 },
+        { wch: 20 }, { wch: 16 },
+      ]
+    } else {
+      ws['!cols'] = [
+        { wch: 20 }, { wch: 14 }, { wch: 8 },
+        { wch: 14 }, { wch: 14 }, { wch: 10 },
+        { wch: 12 }, { wch: 12 }, { wch: 8 },
+        { wch: 12 }, { wch: 12 },
+        { wch: 10 }, { wch: 14 },
+        { wch: 26 }, { wch: 26 },
+      ]
+    }
+    const wb = XLSX.utils.book_new()
+    const label = viewMode === 'wo' ? 'WO_List' : viewMode === 'appt' ? 'Appointments' : viewMode === 'calendar' ? 'Service_Calendar' : 'Asset_Master'
+    XLSX.utils.book_append_sheet(wb, ws, label)
+    XLSX.writeFile(wb, `AR15_${label.replace(' ', '_')}_${new Date().toISOString().split('T')[0]}.xlsx`)
+  }
 
   const exportHistoryToCSV = (sys: any) => {
     const { headers, rows } = getHistoryData(sys);
@@ -270,67 +329,93 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
   return (
     <div className="fixed inset-[10px] bg-white dark:bg-zinc-950 z-[100] rounded-[12px] shadow-2xl border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden font-sans animate-in fade-in zoom-in-95 duration-200">
-      <header className="px-4 py-2 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-900">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <Layers className="w-5 h-5 text-amber-800 dark:text-orange-500" />
-            <h1 className="text-base font-black text-slate-800 dark:text-zinc-100 tracking-tight">SYSTEM-CENTRIC ASSET MASTER</h1>
+      <header className="px-4 py-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900">
+        {/* Top Row: Title + Buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-800 dark:text-orange-500" />
+              <h1 className="text-base font-black text-slate-800 dark:text-zinc-100 tracking-tight uppercase">{viewMode === 'wo' ? 'Work Orders' : viewMode === 'appt' ? 'Appointments' : viewMode === 'calendar' ? 'Service Calendar' : 'Asset Master'}</h1>
+            </div>
+            <div className="max-w-[320px] relative ml-4">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 dark:text-zinc-700" />
+              <input 
+                type="text" 
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded text-[11px] font-bold outline-none transition-all focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-amber-500/30 shadow-inner text-amber-900 dark:text-amber-200 placeholder:text-amber-400 dark:placeholder:text-amber-700"
+              />
+            </div>
+
+            {/* Appointment Timeline — visible when appt view active */}
+            <div className={`flex-1 flex items-center transition-all duration-500 ${viewMode === 'appt' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+              <div className="relative w-full h-10 flex items-center">
+                <div className="absolute w-full h-2 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                {(() => {
+                  const now = new Date()
+                  const DAY_MS = 86400000
+                  const startMs = now.getTime() - 30 * DAY_MS
+                  const endMs = now.getTime() + 30 * DAY_MS
+                  const range = endMs - startMs
+                  const todayPos = ((now.getTime() - startMs) / range) * 100
+                  return (
+                    <>
+                      <div className="absolute h-2 bg-amber-400 dark:bg-amber-500 rounded-full" style={{ left: 0, width: `${todayPos}%`, opacity: 0.4 }} />
+                      <div className="absolute h-2 bg-emerald-400 dark:bg-emerald-500 rounded-full" style={{ left: `${todayPos}%`, width: `${100 - todayPos}%`, opacity: 0.4 }} />
+                      <div className="absolute w-0.5 h-6 bg-orange-500 z-20" style={{ left: `${todayPos}%` }} />
+                      <span className="absolute text-[8px] font-black text-orange-500 uppercase -top-1" style={{ left: `${todayPos}%`, transform: 'translateX(-50%)' }}>Now</span>
+                      {filteredApptList.map((a: any, i: number) => {
+                        const apptMs = new Date(a.appointment_date).getTime()
+                        const pos = ((apptMs - startMs) / range) * 100
+                        if (pos < 0 || pos > 100) return null
+                        const isOverdue = apptMs < now.getTime()
+                        return (
+                          <div key={i} className="absolute group z-10" style={{ left: `${pos}%`, top: '50%', marginTop: '-6px' }}>
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 border-white dark:border-zinc-800 shadow-md cursor-pointer hover:scale-150 transition-transform ${isOverdue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-[60] hidden group-hover:block">
+                              <div className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 text-[9px] font-bold rounded-lg px-2.5 py-1.5 shadow-xl border border-slate-200 dark:border-zinc-700 whitespace-nowrap leading-relaxed">
+                                {a.system}<br/>{a.appointment_date}<br/>{a.issue}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </>
+                  )
+                })()}
+              </div>
+            </div>
           </div>
-          
-          <div className="h-6 w-px bg-slate-200 dark:bg-zinc-800" />
-          
-          {/* Interactive Summary Stats as Filters */}
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight">
-            <button 
-              onClick={() => setStatusFilter('All')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'All' ? 'bg-amber-800 text-white border-orange-600 shadow-md' : 'bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 hover:border-orange-400 dark:hover:border-orange-600'}`}
-            >
-              <Box className={`w-4 h-4 ${statusFilter === 'All' ? 'text-white' : 'text-orange-600'}`} /> 
-              <span>Systems: <span className={statusFilter === 'All' ? 'text-white' : 'text-slate-900 dark:text-zinc-100'}>{stats.total}</span></span>
-            </button>
-
-            <button 
-              onClick={() => setStatusFilter('Normal')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Normal' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md' : 'bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 hover:border-emerald-300 dark:hover:border-emerald-500'}`}
-            >
-              <div className={`w-3.5 h-3.5 rounded-full ${statusFilter === 'Normal' ? 'bg-white' : 'bg-emerald-500'}`} /> 
-              <span>Health: <span className={statusFilter === 'Normal' ? 'text-white' : 'text-slate-900 dark:text-zinc-100'}>{stats.health}%</span></span>
-            </button>
-
-            <button 
-              onClick={() => setStatusFilter('Maintenance')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Maintenance' ? 'bg-amber-600 text-white border-amber-500 shadow-md' : 'bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 hover:border-amber-300 dark:hover:border-amber-500'}`}
-            >
-              <div className={`w-3.5 h-3.5 rounded-full ${statusFilter === 'Maintenance' ? 'bg-white' : 'bg-amber-500'}`} />
-              <span>Maintenance: <span className={statusFilter === 'Maintenance' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}>{stats.maintenance}</span></span>
-            </button>
-
-            <button 
-              onClick={() => setStatusFilter('Faulty')}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg border transition-all active:scale-95 ${statusFilter === 'Faulty' ? 'bg-rose-600 text-white border-rose-500 shadow-md' : 'bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700 hover:border-rose-300 dark:hover:border-rose-500'}`}
-            >
-              <AlertCircle className={`w-4 h-4 ${statusFilter === 'Faulty' ? 'text-white' : 'text-rose-500'}`} /> 
-              <span>Faulty: <span className={statusFilter === 'Faulty' ? 'text-white' : 'text-rose-600 dark:text-rose-400'}>{stats.faulty}</span></span>
-            </button>
-          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-rose-500 hover:text-white rounded text-slate-400 dark:text-zinc-500 transition-all"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {copyFeedback && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500 text-white rounded text-[10px] font-black animate-in fade-in slide-in-from-right-2">
-              <Check className="w-3 h-3" /> COPIED!
-            </div>
-          )}
-          <button onClick={copyToClipboard} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 transition-all active:scale-95" title="Copy to Clipboard"><Copy className="w-4 h-4" /></button>
-          <button onClick={exportToCSV} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 transition-all active:scale-95" title="Download CSV"><Download className="w-4 h-4" /></button>
-          <button onClick={exportToXLSX} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-emerald-500 transition-all active:scale-95" title="Download Excel (.xlsx)"><FileSpreadsheet className="w-4 h-4" /></button>
+        {/* Bottom Row: Function Buttons + Stats (expandable under Home) */}
+        <div className="flex items-center gap-2 mt-1.5 relative">
           <button
-            onClick={() => setViewMode(viewMode === 'calendar' ? 'table' : 'calendar')}
-            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'calendar' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
-            title="Calendar View"
+            onClick={() => { setViewMode('table'); setStatusFilter('All') }}
+            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'table' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
+            title="Home"
           >
-            <Calendar className="w-4 h-4" />
+            <Home className="w-4 h-4" />
           </button>
+
+          {/* Stats sub-buttons — always visible */}
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-tight">
+            <button onClick={() => setStatusFilter('All')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'All' ? 'bg-amber-800 text-white border-orange-600' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-orange-400'}`}>
+              <Box className="w-3.5 h-3.5" /> {stats.total}
+            </button>
+            <button onClick={() => setStatusFilter('Normal')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Normal' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-emerald-300'}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Normal' ? 'bg-white' : 'bg-emerald-500'}`} /> {stats.health}%
+            </button>
+            <button onClick={() => setStatusFilter('Maintenance')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Maintenance' ? 'bg-amber-600 text-white border-amber-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-amber-300'}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Maintenance' ? 'bg-white' : 'bg-amber-500'}`} /> {stats.maintenance}
+            </button>
+            <button onClick={() => setStatusFilter('Faulty')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Faulty' ? 'bg-rose-600 text-white border-rose-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-rose-300'}`}>
+              <AlertCircle className="w-3.5 h-3.5" /> {stats.faulty}
+            </button>
+          </div>
+
           <button
             onClick={() => setViewMode(viewMode === 'wo' ? 'table' : 'wo')}
             className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'wo' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
@@ -338,28 +423,68 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           >
             <ListTodo className="w-4 h-4" />
           </button>
-          <button onClick={onClose} className="p-1.5 hover:bg-rose-500 hover:text-white rounded text-slate-400 dark:text-zinc-500 transition-all"><X className="w-5 h-5" /></button>
+          <button
+            onClick={() => setViewMode(viewMode === 'appt' ? 'table' : 'appt')}
+            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'appt' ? 'bg-emerald-200 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
+            title="Appointments"
+          >
+            <CalendarCheck className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode(viewMode === 'calendar' ? 'table' : 'calendar')}
+            className={`p-1.5 rounded transition-all active:scale-95 ${viewMode === 'calendar' ? 'bg-orange-200 dark:bg-orange-900/50 text-amber-800 dark:text-orange-500' : 'hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 dark:text-zinc-500'}`}
+            title="Service Calendar"
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+          <button onClick={exportToXLSX} className="p-1.5 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded text-slate-400 dark:text-zinc-500 transition-all active:scale-95" title="Download Excel"><Download className="w-4 h-4" /></button>
         </div>
       </header>
-
-      <div className="px-4 py-1.5 bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-800 flex items-center gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 dark:text-zinc-700" />
-          <input 
-            type="text" 
-            placeholder="Search System, Room, Brand, WO..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded text-[12px] font-bold outline-none transition-all focus:bg-white dark:focus:bg-zinc-950 focus:ring-1 focus:ring-orange-600/20 shadow-inner"
-          />
-        </div>
-      </div>
 
       <div className="flex-1 overflow-auto custom-scrollbar">
         {viewMode === 'calendar' ? (
           <div className="p-4">
             <PlannedMaintenance assets={assets} onSelect={onSelect} />
           </div>
+        ) : viewMode === 'appt' ? (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
+              <tr className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28">Appointment</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-16 text-center">Status</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36">System</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Location</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Issue / Task</th>
+                <th className="px-4 py-2">Contractor / Reporter</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
+              {filteredApptList.map((a: any, idx: number) => {
+                const isOverdue = a.appointment_date < new Date().toISOString().split('T')[0]
+                const isToday = a.appointment_date === new Date().toISOString().split('T')[0]
+                return (
+                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
+                    <span className={`text-[12px] font-black ${isOverdue ? 'text-rose-600' : isToday ? 'text-emerald-600' : 'text-slate-700 dark:text-zinc-200'}`}>{a.appointment_date}</span>
+                    {isOverdue && <span className="text-[9px] font-black text-rose-400 ml-1">OVERDUE</span>}
+                    {isToday && <span className="text-[9px] font-black text-emerald-500 ml-1">TODAY</span>}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-center">
+                    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${a.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : a.status === 'Faulty' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${a.status === 'Completed' ? 'bg-emerald-500' : a.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />{a.status}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">{a.system}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-500 dark:text-zinc-400">F{a.floor} · {a.room}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-700 dark:text-zinc-200">{a.issue}</td>
+                  <td className="px-4 py-2.5 text-[10px] text-slate-500 dark:text-zinc-400">{a.contractor || a.reporter || '-'}</td>
+                </tr>
+              )})}
+              {filteredApptList.length === 0 && (
+                <tr><td colSpan={6} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[10px] font-black uppercase">No appointments scheduled</td></tr>
+              )}
+            </tbody>
+          </table>
         ) : viewMode === 'wo' ? (
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
@@ -374,7 +499,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
               {filteredWOList.map((wo: any, idx: number) => (
-                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer" onClick={() => onSelectLog(wo.log)}>
+                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
                     <span className="text-[12px] font-mono font-black text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">{wo.wo_number}</span>
                   </td>
@@ -395,26 +520,37 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             </tbody>
           </table>
         ) : (
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse table-fixed">
           <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
             <tr className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800">Location</th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-40">System Group</th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-32 text-center">System Health</th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-28 text-center">Last WO</th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-[550px]">
-                <div className="flex flex-col items-center">
-                  <span className="text-slate-600 dark:text-zinc-300 mb-1 font-black">Life Cycle Timeline (3 Years)</span>
-                  <div className="flex justify-between w-full text-[8px] font-black text-slate-400 dark:text-zinc-500 px-1 uppercase tracking-tighter">
-                    <span>{new Date(new Date().getTime() - (3 * 365 * 24 * 60 * 60 * 1000)).toLocaleDateString()}</span>
-                    <span className="text-orange-600 dark:text-orange-500 italic">Today</span>
-                  </div>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-[140px]">Location</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-32">System Group</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-20 group relative cursor-default">
+                Brand
+                <div className="absolute top-full left-0 mt-1 z-50 hidden group-hover:block min-w-[160px]">
+                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.brand}</div>
                 </div>
               </th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-16 text-center uppercase tracking-tighter text-[9px] font-black text-slate-400 dark:text-zinc-500">AGE(mo)</th>
-              <th className="px-2 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-10 text-center">Hist.</th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800">Functional Components</th>
-              <th className="px-2 py-1.5 text-right w-12"></th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-24 text-center group relative cursor-default">
+                BTU
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 hidden group-hover:block min-w-[160px]">
+                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.btu}</div>
+                </div>
+              </th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-24 text-center">Health</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-20 text-center">WO</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-[380px]">
+                Life Cycle
+              </th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-14 text-center group relative cursor-default">
+                AGE
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 hidden group-hover:block min-w-[120px]">
+                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.age}</div>
+                </div>
+              </th>
+              <th className="px-2 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-8 text-center">H</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-[180px]">Components</th>
+              <th className="px-2 py-1.5 text-right w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
@@ -431,6 +567,12 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100 dark:border-zinc-800">
                     <div className="flex items-center gap-2"><div className="p-1 bg-orange-50 dark:bg-orange-900/30 rounded text-amber-800 dark:text-orange-500 border border-orange-200 dark:border-orange-600/30"><Layers className="w-3.5 h-3.5" /></div><span className="text-[13px] font-black text-slate-900 dark:text-zinc-100 uppercase">{sys.id}</span></div>
+                  </td>
+                  <td className="px-3 py-3 border-r border-slate-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">{sys.brand || '-'}</span>
+                  </td>
+                  <td className="px-2 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
+                    <span className="text-[10px] font-black text-amber-800 dark:text-orange-500">{sys.components[0]?.capacity || '-'}</span>
                   </td>
                   <td className="px-4 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
                     <div className={`px-2 py-0.5 rounded-md border text-[11px] font-black uppercase tracking-tighter flex items-center justify-center gap-2 ${getStatusBg(sys.aggregatedStatus)}`}><div className={`w-3 h-3 rounded-full fill-current ${sys.aggregatedStatus === 'Faulty' ? 'animate-pulse' : ''} bg-current`} />{sys.aggregatedStatus}</div>
@@ -547,14 +689,14 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
           <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700"><span className="text-slate-500 dark:text-zinc-400">ASSETS: {assets.length}</span></div>
           <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700"><span className="text-orange-600 dark:text-orange-400">WO: {woList.length}</span></div>
         </div>
-        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-black tracking-widest"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">AR15-BIM-v0.3.29</span></div>
+        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-black tracking-widest"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">rw-03.40</span></div>
       </footer>
 
       {historySystem && (
         <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-8 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-zinc-950 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
             <header className="px-6 py-4 bg-slate-50 dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 overflow-hidden">
                 <div className="p-2 bg-amber-800 dark:bg-amber-800 rounded-lg text-white"><ClipboardList className="w-5 h-5" /></div>
                 <div>
                   <h2 className="text-[11px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] leading-tight">System Life Cycle History</h2>

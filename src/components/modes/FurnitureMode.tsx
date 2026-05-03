@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import {
   Box, ChevronDown, Armchair,
-  ShoppingCart, Activity, ChevronRight, PlusCircle, ChevronLeft
+  ShoppingCart, Activity, ChevronRight, PlusCircle, Trash2
 } from 'lucide-react'
 import type { Room, FurnitureAsset } from '../../types/bim'
+import { useAppStore } from '../../store'
 import { AddLogModal } from '../ui/AddLogModal'
-import { supabase } from '../../utils/supabase'
+import { supabase, deleteMaintenanceLog } from '../../utils/supabase'
 
 interface FurnitureModeProps {
   selectedRoomId: string | null;
@@ -203,11 +204,20 @@ export const FurnitureLeftPanel: React.FC<FurnitureModeProps> = ({
 export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
   selectedRoomId, rooms, allFurniture, selectedFloor
 }) => {
+  const showDelete = useAppStore(s => s.showDelete)
   const [showAddLog, setShowAddLog] = useState(false)
-  const [logPage, setLogPage] = useState(0)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const LOGS_PER_PAGE = 2
+
+  const handleDeleteLog = async (logId: string) => {
+    if (!confirm('Delete this service log? This cannot be undone.')) return
+    try {
+      await deleteMaintenanceLog(logId)
+      window.dispatchEvent(new CustomEvent('refresh-bim-data'))
+    } catch (err: any) {
+      alert('Failed to delete: ' + err.message)
+    }
+  }
 
   const selectedFur = useMemo(() => {
     if (!selectedRoomId) return undefined;
@@ -276,13 +286,11 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
 
   if (selectedFur) {
     const sortedLogs = [...(selectedFur.logs || [])].sort((a, b) => b.date.localeCompare(a.date));
-    const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
-    const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
+    const currentPageLogs = sortedLogs;
     const isRetired = (selectedFur as any).isRetired;
 
     const handleLogAdded = () => {
       window.dispatchEvent(new CustomEvent('refresh-bim-data'));
-      setLogPage(0)
     }
 
     return (
@@ -402,12 +410,23 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
           <div className="bg-white/80 dark:bg-zinc-900/80 rounded-[10px] border border-zinc-200 dark:border-zinc-800 overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800 shadow-sm">
             {currentPageLogs.length > 0 ? (
               currentPageLogs.map((log, i) => (
-                <div key={i} className={`p-3 leading-tight ${i === 0 ? 'border-l-[3px] border-zinc-300 dark:border-zinc-600' : ''}`}>
+                <div key={i} className={`p-3 leading-tight group ${i === 0 ? 'border-l-[3px] border-zinc-300 dark:border-zinc-600' : ''}`}>
                   <div className="flex flex-col gap-0.5">
-                    <div className="flex gap-2.5 items-center">
-                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getLogBulletColor(log.issue)} shadow-sm`} />
-                      <span className="text-[11px] font-black text-zinc-900 dark:text-zinc-100 shrink-0">{log.date}</span>
-                      <span className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">: {log.issue}</span>
+                    <div className="flex gap-2.5 items-center justify-between">
+                      <div className="flex gap-2.5 items-center">
+                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getLogBulletColor(log.issue)} shadow-sm`} />
+                        <span className="text-[11px] font-black text-zinc-900 dark:text-zinc-100 shrink-0">{log.date}</span>
+                        <span className="text-[11px] font-bold text-zinc-800 dark:text-zinc-300 tracking-tight">: {log.issue}</span>
+                      </div>
+                      {showDelete && (
+                      <button
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="p-0.5 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded text-zinc-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete Log"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                      )}
                     </div>
                     {log.contractor && (
                       <div className="ml-5 pl-2 border-l border-zinc-200 dark:border-zinc-700">
@@ -423,24 +442,10 @@ export const FurnitureRightPanel: React.FC<FurnitureModeProps> = ({
           </div>
 
           {sortedLogs.length > 0 && (
-            <div className="flex items-center justify-between px-2">
-              <button
-                onClick={() => setLogPage(p => Math.max(0, p - 1))}
-                disabled={logPage === 0}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-[6px] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
-              </button>
+            <div className="text-center">
               <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
-                Page {logPage + 1} of {totalPages}
+                {sortedLogs.length} log{sortedLogs.length > 1 ? 's' : ''}
               </span>
-              <button
-                onClick={() => setLogPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={logPage >= totalPages - 1}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-[6px] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronRight className="w-4 h-4 text-slate-500 dark:text-zinc-400" />
-              </button>
             </div>
           )}
         </div>

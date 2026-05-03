@@ -2,11 +2,11 @@ import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { 
   AirVent, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
-  Printer, Clock, Wrench, List, Pencil
+  Printer, Clock, Wrench, List, Pencil, Trash2
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { useAppStore } from '../../store'
-import { supabase } from '../../utils/supabase'
+import { supabase, deleteACMaintenanceLog } from '../../utils/supabase'
 import { AddLogModal } from '../ui/AddLogModal'
 import { SystemTimeline } from '../ui/SystemTimeline'
 
@@ -158,12 +158,21 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
   const selectedFloor = useAppStore(s => s.selectedFloor)
   const setReportAsset = useAppStore(s => s.setReportAsset)
   const setSelectedLog = useAppStore(s => s.setSelectedLog)
+  const showDelete = useAppStore(s => s.showDelete)
   const [showAddLog, setShowAddLog] = useState(false)
   const [logToEdit, setLogToEdit] = useState<any>(null)
-  const [logPage, _setLogPage] = useState(0)
   const [showIFC, setShowIFC] = useState(false)
   const [showResolveLog, setShowResolveLog] = useState(false)
-  const LOGS_PER_PAGE = 5
+
+  const handleDeleteLog = async (logId: string) => {
+    if (!confirm('Delete this service log? This cannot be undone.')) return
+    try {
+      await deleteACMaintenanceLog(logId)
+      window.dispatchEvent(new CustomEvent('refresh-bim-data'))
+    } catch (err: any) {
+      alert('Failed to delete: ' + err.message)
+    }
+  }
 
   const selectedAC = finalACAssets.find((a: any) => a.id.toLowerCase() === selectedRoomId?.toLowerCase());
 
@@ -224,38 +233,33 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
 
   if (selectedAC && systemGroup) {
     const sortedLogs = selectedAC.logs || []; 
-    const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
+    const currentPageLogs = sortedLogs;
 
     return (
       <div className="flex-1 flex flex-col gap-px overflow-y-auto custom-scrollbar bg-slate-50/30 dark:bg-zinc-900/30">
-        {/* ID Card */}
-        <div className="p-5 bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-800 space-y-1">
+        {/* Unified Info Card */}
+        <div className="p-4 bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-800 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-2xl text-slate-900 dark:text-white font-black tracking-tight">{selectedAC.id.toUpperCase()}</span>
             <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-widest">Asset ID</span>
           </div>
-          <div className="text-sm font-black text-amber-800 dark:text-orange-500">
-            {(selectedAC as any).assetId || 'N/A'}
-          </div>
-        </div>
-
-        {/* Spec Card */}
-        <div className="p-5 bg-white dark:bg-zinc-950 border-b border-slate-100 dark:border-zinc-800 space-y-4">
           <div>
-            <div className="text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-3">Specification</div>
-            <div className="text-2xl font-black tracking-tighter uppercase text-slate-800 dark:text-zinc-100">
-              {selectedAC.brand || '---'} : <span className="text-amber-800 dark:text-orange-500">{(selectedAC.capacity || (selectedAC as any).capacity || '---').replace('/hr', '')}</span>
+            <div className="text-lg font-black tracking-tighter uppercase text-slate-800 dark:text-zinc-100">
+              {selectedAC.brand || '---'} <span className="text-amber-800 dark:text-orange-500">· {(selectedAC.capacity || (selectedAC as any).capacity || '---').replace('/hr', '')}</span>
             </div>
-            <div className="text-sm font-black tracking-tight text-slate-500 dark:text-zinc-400 uppercase mt-1">
+            <div className="text-sm font-black tracking-tight text-slate-500 dark:text-zinc-400 uppercase">
               {selectedAC.model || '---'}
             </div>
           </div>
+          <div className="text-sm font-black text-amber-800 dark:text-orange-500">
+            {(selectedAC as any).assetId || 'N/A'}
+          </div>
 
-          <div className="pt-2 border-t border-slate-50 dark:border-zinc-900">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-4 h-4 text-slate-300 dark:text-zinc-700" />
-              <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">Installed {selectedAC.install}</span>
-              <span className="text-[10px] font-black text-slate-400 dark:text-zinc-500 ml-auto bg-slate-50 dark:bg-zinc-900 px-2 py-0.5 rounded">{calculateAge(selectedAC.install)} months old</span>
+          <div className="pt-1.5 border-t border-slate-50 dark:border-zinc-900">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-3.5 h-3.5 text-slate-300 dark:text-zinc-700" />
+              <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400">Installed {selectedAC.install}</span>
+              <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 ml-auto bg-slate-50 dark:bg-zinc-900 px-2 py-0.5 rounded">{calculateAge(selectedAC.install)} months old</span>
             </div>
             <SystemTimeline installDate={systemGroup.installDate} components={systemGroup.components} showLabels={false} />
             {(() => {
@@ -269,11 +273,12 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
               const latestProblemLog = sortedLogs.find((l: any) => l.status === 'Faulty' || l.status === 'In Progress' || l.status === 'Pending')
 
               return (
-                <div className="space-y-3 mt-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-900/50 rounded-xl border border-slate-100 dark:border-zinc-800/50">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-slate-400 dark:text-zinc-600 uppercase">Next Service</span>
-                      <span className={`text-xs font-black ${color}`}>{nextSvc.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <div className="mt-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase">Next Service</span>
+                      <span className={`text-xs font-black cursor-help ${color}`} title={overdue ? 'เกินกำหนดซ่อมแล้ว' : soon ? 'ใกล้ถึงกำหนดซ่อม' : 'อยู่ในกำหนดปกติ'}>{nextSvc.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      <span className={`text-[10px] font-bold ${color}`}>({overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`})</span>
                     </div>
                     {(overdue || soon) && (
                       <button onClick={quickService} className="text-[10px] font-black uppercase text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 px-3 py-1.5 rounded-lg">Mark Serviced</button>
@@ -302,7 +307,7 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
         </div>
 
         {/* Service Logs */}
-        <div className="p-5 bg-white dark:bg-zinc-950 space-y-4">
+        <div className="p-3 bg-white dark:bg-zinc-950 space-y-1">
           <div className="flex items-center justify-between">
             <div className="text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em]">Service History</div>
             <button
@@ -319,13 +324,13 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                 const statusKey = log.status === 'Completed' ? 'normal' : log.status === 'Faulty' ? 'faulty' : 'maintenance';
                 const isLatest = i === 0
                 return (
-                  <div key={log.id || i} className="py-4 first:pt-0 last:pb-0 group">
-                    <div className="flex justify-between items-start mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${getStatusBulletColor(statusKey)}`} />
-                        <span className="text-sm font-black text-slate-800 dark:text-zinc-100">{log.date}</span>
+                  <div key={log.id || i} className="py-2 first:pt-0 last:pb-0 group">
+                    <div className="flex justify-between items-start mb-0.5">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${getStatusBulletColor(statusKey)}`} />
+                        <span className="text-sm font-black text-slate-800 dark:text-zinc-100 truncate">{log.issue}</span>
                       </div>
-                      <div className="flex gap-2.5 items-center">
+                      <div className="flex gap-2.5 items-center shrink-0 ml-2">
                         {isLatest && statusKey !== 'normal' && (
                           <button 
                             onClick={() => setShowResolveLog(true)} 
@@ -350,11 +355,20 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
+                          {showDelete && (
+                          <button 
+                            onClick={() => handleDeleteLog(log.id)} 
+                            className="p-1 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded text-slate-400 hover:text-rose-500 transition-colors"
+                            title="Delete Log"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-slate-500 dark:text-zinc-400 leading-relaxed pl-4 border-l-2 border-slate-100 dark:border-zinc-900 ml-1">
-                      {log.issue}
+                    <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 pl-4 border-l-2 border-slate-100 dark:border-zinc-900 ml-1">
+                      {log.date}{log.reporter ? ` · ${log.reporter}` : ''}{log.contractor ? ` · ${log.contractor}` : ''}{log.appointment_date ? ` · นัด ${log.appointment_date}` : ''}
                       {log.cost && <span className="block mt-1 text-[10px] font-black text-emerald-600">฿{Number(log.cost).toLocaleString()}</span>}
                     </div>
                   </div>

@@ -10,10 +10,8 @@ export function determineStatus(logs: { status: string; issue?: string; date?: s
   }
 
   const latest = logs[0]
-  const issueText = (latest.issue || '').toLowerCase()
 
-  if (issueText.includes('เสีย') || issueText.includes('พัง') || issueText.includes('faulty') || latest.status === 'Faulty')
-    return 'Faulty'
+  if (latest.status === 'Faulty') return 'Faulty'
   if (latest.status === 'Completed') {
     if (installDate) {
       const nextSvc = getNextServiceDate(installDate, logs)

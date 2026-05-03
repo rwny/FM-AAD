@@ -1,0 +1,4 @@
+- AR19
+    - COMMON
+        - CU-1-01 { Type: ConsumerUnitx }
+        - LP-125 { Type: LoadPanel }

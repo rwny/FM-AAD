@@ -111,7 +111,8 @@ export function useMergedAssets(
           status: l.status,
           note: l.note,
           wo_number: l.wo_number,
-          cost: l.cost
+          cost: l.cost,
+          appointment_date: l.appointment_date
         })),
         status,
         systemStatus,

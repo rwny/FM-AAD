@@ -703,7 +703,7 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
         }}
       />
       <footer className="absolute bottom-4 right-24 z-10 px-4 py-2 bg-transparent flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
-        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 font-black tracking-widest"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">AR15-BIM-v0.3.29</span></div>
+        <div className="flex items-center gap-3"><span className="flex items-center gap-1 text-emerald-600 font-black tracking-widest"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> GRAPH_ALIGNED</span><span className="opacity-30">|</span><span className="tracking-widest">rw-03.40</span></div>
       </footer>
     </div>
   );

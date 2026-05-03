@@ -37,6 +37,9 @@ interface AppState {
   acAssets: ACAsset[]
   setAcAssets: (assets: ACAsset[]) => void
 
+  showDelete: boolean
+  toggleShowDelete: () => void
+
   switchMode: (mode: BIMMode) => void
 }
 
@@ -77,6 +80,9 @@ export const useAppStore = create<AppState>((set) => ({
   setRooms: (rooms) => set({ rooms }),
   acAssets: [],
   setAcAssets: (acAssets) => set({ acAssets }),
+
+  showDelete: false,
+  toggleShowDelete: () => set((s) => ({ showDelete: !s.showDelete })),
 
   switchMode: (mode) =>
     set({

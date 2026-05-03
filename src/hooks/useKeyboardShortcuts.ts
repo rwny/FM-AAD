@@ -1,22 +1,15 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store'
 
-export function useAdminShortcut() {
-  const navigate = useNavigate()
-
+export function useDeleteShortcut() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'a') {
         e.preventDefault()
-        const store = useAppStore.getState()
-        const newMode = store.activeMode === 'Admin' ? 'AR' : 'Admin'
-        store.setActiveMode(newMode)
-        store.setShowRight(true)
-        navigate(`/${newMode}`)
+        useAppStore.getState().toggleShowDelete()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [navigate])
+  }, [])
 }

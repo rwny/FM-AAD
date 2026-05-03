@@ -17,7 +17,7 @@ interface AddLogModalProps {
   assetDbId?: string
   roomCode?: string
   category?: string
-  logToEdit?: { id: string; date: string; issue: string; reporter?: string; contractor?: string; contractor_contact?: string; status: string; note?: string; wo_number?: string; cost?: number } | null
+  logToEdit?: { id: string; date: string; issue: string; reporter?: string; contractor?: string; contractor_contact?: string; status: string; note?: string; wo_number?: string; cost?: number; appointment_date?: string } | null
   initialIssue?: string
   initialWoNumber?: string
   onClose: () => void
@@ -43,13 +43,8 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
   const [note, setNote] = useState(logToEdit?.note || '')
   const [cost, setCost] = useState(logToEdit?.cost?.toString() || '')
   const [contractorContact, setContractorContact] = useState(logToEdit?.contractor_contact || '')
+  const [appointmentDate, setAppointmentDate] = useState(logToEdit?.appointment_date || '')
   const [woNumber, setWoNumber] = useState(logToEdit?.wo_number || initialWoNumber || '')
-
-  useEffect(() => {
-    if (!logToEdit?.wo_number && !initialWoNumber) {
-      fetchWONumber().then(n => setWoNumber(n))
-    }
-  }, [])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -69,6 +64,13 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
     setIsSubmitting(true)
 
     try {
+      // Generate WO number on submit (not on open — prevents gaps)
+      let finalWONumber = woNumber
+      if (!isEdit && !woNumber) {
+        finalWONumber = await fetchWONumber()
+        setWoNumber(finalWONumber)
+      }
+
       if (category === 'AC') {
         if (isEdit && logToEdit) {
           const { error } = await supabase
@@ -81,6 +83,7 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
               contractor_contact: contractorContact || null,
               note: note || null,
               cost: cost ? parseFloat(cost) : null,
+              appointment_date: appointmentDate || null,
               status
             })
             .eq('id', logToEdit.id)
@@ -97,7 +100,8 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             contractor_contact: contractorContact || null,
             note: note || null,
             cost: cost ? parseFloat(cost) : null,
-            wo_number: woNumber,
+            wo_number: finalWONumber,
+            appointment_date: appointmentDate || null,
             status
           })
           if (error) throw error
@@ -164,16 +168,25 @@ export const AddLogModal: React.FC<AddLogModalProps> = ({
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-[8px] text-sm font-bold text-slate-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-orange-600/20 focus:border-orange-500 dark:focus:border-orange-700 transition-all"
-            />
-          </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-[8px] text-[11px] font-bold outline-none focus:ring-2 focus:ring-orange-600/20 dark:bg-zinc-900 dark:text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Appointment Date</label>
+              <input
+                type="date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-[8px] text-[11px] font-bold outline-none focus:ring-2 focus:ring-orange-600/20 dark:bg-zinc-900 dark:text-white"
+              />
+            </div>
 
           <div className="space-y-1">
             <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Issue / Activity</label>

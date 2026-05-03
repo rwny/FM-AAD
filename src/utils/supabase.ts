@@ -143,6 +143,22 @@ export async function updateACAsset(arId: string, updateData: { brand?: string, 
   }
 }
 
+export async function deleteMaintenanceLog(logId: string) {
+  const { error } = await supabase
+    .from('maintenance_logs')
+    .delete()
+    .eq('id', logId)
+  if (error) throw error
+}
+
+export async function deleteACMaintenanceLog(logId: string) {
+  const { error } = await supabase
+    .from('ac_maintenance_logs')
+    .delete()
+    .eq('id', logId)
+  if (error) throw error
+}
+
 export async function fetchBuildingData(buildingCode: string) {
   // 1. Fetch Building
   const { data: building, error: bErr } = await supabase

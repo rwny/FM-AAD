@@ -45,3 +45,18 @@ CREATE POLICY "Public Read Access" ON ac_maintenance_logs FOR SELECT USING (true
 CREATE POLICY "Public Insert Access" ON ac_maintenance_logs FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public Insert Access" ON maintenance_logs FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public Insert Access" ON ac_assets FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public Delete Access" ON ac_maintenance_logs FOR DELETE USING (true);
+CREATE POLICY "Public Delete Access" ON maintenance_logs FOR DELETE USING (true);
+
+-- 5. Add appointment_date column
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='ac_maintenance_logs' AND column_name='appointment_date') THEN
+        ALTER TABLE ac_maintenance_logs ADD COLUMN appointment_date DATE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='maintenance_logs' AND column_name='appointment_date') THEN
+        ALTER TABLE maintenance_logs ADD COLUMN appointment_date DATE;
+    END IF;
+END $$;
