@@ -2,8 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { 
   AirVent, Activity, ChevronDown, Box, ChevronRight, PlusCircle, 
-  ChevronLeft, Printer, 
-  Clock, House, Wrench, List, Pencil
+  Printer, Clock, Wrench, List, Pencil
 } from 'lucide-react'
 import type { Room, ACAsset } from '../../types/bim'
 import { useAppStore } from '../../store'
@@ -161,7 +160,7 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
   const setSelectedLog = useAppStore(s => s.setSelectedLog)
   const [showAddLog, setShowAddLog] = useState(false)
   const [logToEdit, setLogToEdit] = useState<any>(null)
-  const [logPage, setLogPage] = useState(0)
+  const [logPage, _setLogPage] = useState(0)
   const [showIFC, setShowIFC] = useState(false)
   const [showResolveLog, setShowResolveLog] = useState(false)
   const LOGS_PER_PAGE = 5
@@ -181,12 +180,6 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
 
     return { id: systemId, components, installDate: selectedAC.install || '2024-01-01' };
   }, [selectedAC, finalACAssets]);
-
-  const formatTime = (timestamp: string) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  }
 
   const getStatusBulletColor = (status: string) => {
     const s = (status || '').toLowerCase();
@@ -231,7 +224,6 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
 
   if (selectedAC && systemGroup) {
     const sortedLogs = selectedAC.logs || []; 
-    const totalPages = Math.max(1, Math.ceil(sortedLogs.length / LOGS_PER_PAGE));
     const currentPageLogs = sortedLogs.slice(logPage * LOGS_PER_PAGE, (logPage + 1) * LOGS_PER_PAGE);
 
     return (

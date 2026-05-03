@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import {
   House,
   AirVent, Share2,
-  PanelRightClose, PanelRight, X,
+  PanelRightClose, PanelRight,
   LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer
 } from 'lucide-react'
 import type { BIMMode } from './types/bim'
@@ -361,13 +361,13 @@ function App() {
           {activeMode === 'Fur' && (
             selectedRoomId ? <FurnitureRightPanel 
               rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
-              allFurniture={allFurniture} searchQuery={searchQuery} expandedFloors={expandedFloors} 
+              allFurniture={allFurniture as any} searchQuery={searchQuery} expandedFloors={expandedFloors} 
               setExpandedFloors={setExpandedFloors} clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
               selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
             /> :
             <FurnitureLeftPanel 
               rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
-              allFurniture={allFurniture} searchQuery={searchQuery} expandedFloors={expandedFloors} 
+              allFurniture={allFurniture as any} searchQuery={searchQuery} expandedFloors={expandedFloors} 
               setExpandedFloors={setExpandedFloors} clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
               selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
             />

@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useEffect } from 'react'
-import { Search, X, Building2, AirVent, Fan, Share2, Sofa, Zap, ChevronRight } from 'lucide-react'
+import { Search, X, AirVent, Fan, Share2, Sofa, ChevronRight, House, Lightbulb } from 'lucide-react'
 import type { BIMMode } from '../../types/bim'
 
 interface SearchResult {
