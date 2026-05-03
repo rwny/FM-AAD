@@ -359,7 +359,7 @@ function App() {
             <h1 className="text-2xl font-black tracking-tight text-slate-800 dark:text-zinc-100 uppercase leading-none">AAD · {buildingCode}</h1>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className={`text-[8px] font-mono font-bold ${isLive ? 'text-emerald-500' : 'text-slate-300 dark:text-zinc-600'}`}>rw-03.40</span>
+            <span className={`text-[8px] font-mono font-bold ${isLive ? 'text-emerald-500' : 'text-slate-300 dark:text-zinc-600'}`}>aad FM rw0.35</span>
           </div>
         </header>
 
