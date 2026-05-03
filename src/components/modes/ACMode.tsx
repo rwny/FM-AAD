@@ -402,10 +402,10 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
               <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showIFC ? 'rotate-90' : ''}`} />
             </button>
             {showIFC && (
-              <div className="mt-1 p-3 bg-zinc-900 dark:bg-black border border-slate-800 dark:border-zinc-900 rounded-[8px] space-y-2 text-slate-300 dark:text-zinc-400 max-h-[300px] overflow-y-auto custom-scrollbar">
+              <div className="mt-1 p-3 bg-zinc-900 dark:bg-black border border-slate-800 dark:border-zinc-900 rounded-[8px] space-y-2 text-slate-300 dark:text-zinc-400 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {(() => {
                   const meta = selectedAC.metadata;
-                  const items: { label: string; value: any }[] = [];
+                  const items: { label: string; value: any; section?: string }[] = [];
                   
                   if (meta.guid) items.push({ label: 'GUID', value: meta.guid });
                   if (meta.ifcType) items.push({ label: 'IFC Type', value: meta.ifcType });
@@ -418,13 +418,32 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
                       items.push({ label: key, value: val });
                     }
                   });
+
+                  if (meta.catalogModel) {
+                    items.push({ label: 'Catalog Model', value: meta.catalogModel, section: 'CATALOG' });
+                    Object.entries(meta.catalogSpecs || {}).forEach(([key, val]) => {
+                      if (val !== undefined && val !== null && val !== '') {
+                        items.push({ label: key, value: val });
+                      }
+                    });
+                  }
                   
-                  return items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                      <span className="text-[9px] font-black uppercase text-slate-500 dark:text-zinc-600 shrink-0 mt-0.5">{item.label}</span>
-                      <span className="text-[11px] font-mono font-bold text-slate-200 dark:text-zinc-300 break-all text-right">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
-                    </div>
-                  ));
+                  let lastSection = '';
+                  return items.map((item, idx) => {
+                    const showHeader = item.section && item.section !== lastSection;
+                    lastSection = item.section || lastSection;
+                    return (
+                      <React.Fragment key={idx}>
+                        {showHeader && (
+                          <div className="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em] border-b border-amber-500/20 pb-1 pt-1">{item.section}</div>
+                        )}
+                        <div className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                          <span className="text-[9px] font-black uppercase text-slate-500 dark:text-zinc-600 shrink-0 mt-0.5">{item.label}</span>
+                          <span className="text-[11px] font-mono font-bold text-slate-200 dark:text-zinc-300 break-all text-right">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
+                        </div>
+                      </React.Fragment>
+                    );
+                  });
                 })()}
               </div>
             )}

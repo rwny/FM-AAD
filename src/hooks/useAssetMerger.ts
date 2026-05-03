@@ -5,6 +5,21 @@ import acSpecsJson from '../utils/ac-specs.json'
 import { tgfData } from '../data/carrier-tgf'
 import { determineStatus, getPeerId, computeACStats, extractFurnitureFromData } from '../utils/asset-utils'
 
+const tgfModels: Record<string, Record<string, any>> = (tgfData as any).models || {};
+
+function enrichMetadataFromCatalog(modelAsset: ACAsset, acType: string, mdMatch: any): any {
+  const originalMeta = (modelAsset as any).metadata || {};
+  const enriched: Record<string, any> = { ...originalMeta };
+
+  const catalogModel = tgfModels[acType];
+  if (catalogModel) {
+    enriched.catalogModel = acType;
+    enriched.catalogSpecs = { ...catalogModel };
+  }
+
+  return enriched;
+}
+
 export function useMergedAssets(
   acAssets: ACAsset[],
   acDbLogs: ACLogRow[],
@@ -83,8 +98,7 @@ export function useMergedAssets(
       let capacity = mdTypeInfo?.capacity || '---'
 
       if (!mdTypeInfo && acType) {
-        const tgfModels = (tgfData as { models?: Record<string, { Brand?: string; NominalCoolingCapacity?: number }> }).models
-        const typeInfo = tgfModels ? tgfModels[acType] : undefined
+        const typeInfo = tgfModels[acType]
         if (typeInfo) {
           brand = typeInfo.Brand || brand
           model = acType
@@ -92,8 +106,11 @@ export function useMergedAssets(
         }
       }
 
+      const enrichedMetadata = enrichMetadataFromCatalog(modelAsset, acType, mdMatch)
+
       return {
         ...modelAsset,
+        metadata: enrichedMetadata,
         assetId: assetIdStr,
         acType: acType || 'Unknown',
         brand,

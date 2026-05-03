@@ -71,6 +71,8 @@ export interface MergedACAsset {
     manufacturer?: string
     model?: string
     systemId?: string
+    catalogModel?: string
+    catalogSpecs?: Record<string, unknown>
   }
   dbId?: string
 }
