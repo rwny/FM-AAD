@@ -359,11 +359,7 @@ function App() {
             <h1 className="text-2xl font-black tracking-tight text-slate-800 dark:text-zinc-100 uppercase leading-none">AAD · {buildingCode}</h1>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-            <div className="flex flex-col items-end leading-none">
-              <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tighter">{isLive ? 'Live' : 'Local'}</span>
-              <span className="text-[8px] font-mono font-bold text-slate-300 dark:text-zinc-600">rw-03.40</span>
-            </div>
+            <span className={`text-[8px] font-mono font-bold ${isLive ? 'text-emerald-500' : 'text-slate-300 dark:text-zinc-600'}`}>rw-03.40</span>
           </div>
         </header>
 
