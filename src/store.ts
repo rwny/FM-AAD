@@ -32,6 +32,9 @@ interface AppState {
   isDarkMode: boolean
   setDarkMode: (dark: boolean) => void
 
+  useThaiLooped: boolean
+  setThaiLooped: (v: boolean) => void
+
   rooms: Room[]
   setRooms: (rooms: Room[]) => void
   acAssets: ACAsset[]
@@ -74,6 +77,12 @@ export const useAppStore = create<AppState>((set) => ({
   setDarkMode: (isDarkMode) => {
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
     set({ isDarkMode })
+  },
+
+  useThaiLooped: localStorage.getItem('font') !== 'sans',
+  setThaiLooped: (useThaiLooped) => {
+    localStorage.setItem('font', useThaiLooped ? 'looped' : 'sans')
+    set({ useThaiLooped })
   },
 
   rooms: [],
