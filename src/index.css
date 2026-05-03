@@ -64,3 +64,11 @@ body, html, #root {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
+
+/* Font switching */
+.font-looped, .font-looped * {
+  font-family: "Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+}
+.font-sans, .font-sans * {
+  font-family: "Noto Sans Thai", "Noto Sans Thai Looped", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+}
