@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 
 interface Node {
@@ -20,13 +20,13 @@ interface GraphData {
 const BIMForceGraph3D: React.FC = () => {
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] });
 
-  // จำลองการดึงข้อมูลจาก Markdown (ในงานจริงอาจจะดึงจาก API หรือ JSON ที่ฟอร์แมตแล้ว)
+  // à¸ˆà¸³à¸¥à¸­à¸‡à¸à¸²à¸£à¸”à¸¶à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸²à¸ Markdown (à¹ƒà¸™à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¸­à¸²à¸ˆà¸ˆà¸°à¸”à¸¶à¸‡à¸ˆà¸²à¸ API à¸«à¸£à¸·à¸­ JSON à¸—à¸µà¹ˆà¸Ÿà¸­à¸£à¹Œà¹à¸¡à¸•à¹à¸¥à¹‰à¸§)
   useEffect(() => {
-    // โครงสร้างจำลองจาก FM_BIM_Structure.md
+    // à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡à¸ˆà¸³à¸¥à¸­à¸‡à¸ˆà¸²à¸ FM_BIM_Structure.md
     const rawNodes = [
       { id: 'AAD', name: 'AAD', group: 1 },
-      { id: 'AR13', name: 'AR13 Shop ไม้', group: 2 },
-      { id: 'AR15', name: 'AR15 Shop ดำ', group: 2 },
+      { id: 'AR13', name: 'AR13 Shop à¹„à¸¡à¹‰', group: 2 },
+      { id: 'AR15', name: 'AR15 Shop à¸”à¸³', group: 2 },
       { id: 'AR13-L1', name: 'Floor 1 (AR13)', group: 3 },
       { id: 'AR13-R101', name: 'Room 101 (AR13)', group: 4 },
       { id: 'AR13-FURNITURE', name: 'Furniture', group: 5 },
@@ -64,3 +64,8 @@ const BIMForceGraph3D: React.FC = () => {
 };
 
 export default BIMForceGraph3D;
+
+
+
+
+

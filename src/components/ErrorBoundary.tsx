@@ -1,4 +1,4 @@
-import { Component, type ReactNode } from 'react'
+﻿import { Component, type ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
@@ -33,10 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback
 
       return (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-900/90 backdrop-blur-sm">
           <div className="text-center space-y-4 p-8">
             <div className="w-16 h-16 mx-auto rounded-full bg-rose-500/20 flex items-center justify-center">
-              <span className="text-2xl">⚠</span>
+              <span className="text-2xl">âš </span>
             </div>
             <div>
               <h2 className="text-lg font-black text-white uppercase tracking-widest">3D Render Error</h2>
@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <button
               onClick={this.handleRetry}
-              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm uppercase tracking-wider transition-all"
+              className="px-6 py-2.5 bg-amber-800 hover:bg-amber-800 text-white rounded-xl font-bold text-sm uppercase tracking-wider transition-all"
             >
               Retry
             </button>
@@ -61,3 +61,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
+
+
+
+
+

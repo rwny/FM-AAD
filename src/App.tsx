@@ -1,11 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import {
-  Building2,
-  Wind, Share2,
+  House,
+  AirVent, Share2,
   PanelRightClose, PanelRight, X,
-  LayoutDashboard
+  LayoutDashboard, Sun, Moon, Armchair, Lightbulb, Printer
 } from 'lucide-react'
 import type { BIMMode } from './types/bim'
 import { useAppStore } from './store'
@@ -15,8 +15,10 @@ import { useMergedAssets, useFurnitureData, useACStats } from './hooks/useAssetM
 import { useAdminShortcut } from './hooks/useKeyboardShortcuts'
 import { useGlobalSearch } from './hooks/useGlobalSearch'
 
-import { ArchRightPanel } from './components/modes/ArchMode'
-import { ACRightPanel } from './components/modes/ACMode'
+import { ArchLeftPanel, ArchRightPanel } from './components/modes/ArchMode'
+import { ACLeftPanel, ACRightPanel } from './components/modes/ACMode'
+import { EELeftPanel, EERightPanel } from './components/modes/EEMode'
+import { FurnitureLeftPanel, FurnitureRightPanel } from './components/modes/FurnitureMode'
 import { PrintReportModal } from './components/ui/PrintReportModal'
 import { KGVisualizer3D } from './components/KGVisualizer3D'
 import { GlobalSearch } from './components/search/GlobalSearch'
@@ -25,8 +27,10 @@ import { Scene } from './components/3d/Scene'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const modes = [
-  { id: 'AR' as BIMMode, label: 'Arch', icon: Building2 },
-  { id: 'AC' as BIMMode, label: 'Air', icon: Wind },
+  { id: 'AR' as BIMMode, label: 'Arch', icon: House },
+  { id: 'Fur' as BIMMode, label: 'FUR', icon: Armchair },
+  { id: 'EE' as BIMMode, label: 'EN', icon: Lightbulb },
+  { id: 'AC' as BIMMode, label: 'Air', icon: AirVent },
   { id: 'KG' as BIMMode, label: 'Graph', icon: Share2 },
 ]
 
@@ -51,26 +55,49 @@ function App() {
   const setSelectedLog = useAppStore(s => s.setSelectedLog)
   const buildingCode = useAppStore(s => s.buildingCode)
   const setBuildingCode = useAppStore(s => s.setBuildingCode)
+  const isDarkMode = useAppStore(s => s.isDarkMode)
+  const setDarkMode = useAppStore(s => s.setDarkMode)
 
   const navigate = useNavigate()
   const params = useParams()
   const segments = (params['*'] || '').split('/').filter(Boolean)
 
   useEffect(() => {
-    const knownModes = ['AR', 'AC', 'KG', 'Admin']
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDarkMode])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!(document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement)) {
+          setDarkMode(!isDarkMode)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isDarkMode, setDarkMode])
+
+  useEffect(() => {
+    const knownModes = ['AR', 'AC', 'KG', 'Fur', 'EE', 'Admin']
     let bld = 'AR15'
     let mode: BIMMode = 'AR'
     let itemId: string | null = null
 
     if (segments.length > 0) {
       const first = segments[0].toUpperCase()
-      if (knownModes.includes(first)) {
+      if (knownModes.some(m => m.toUpperCase() === first)) {
         mode = first as BIMMode
         itemId = segments[1] || null
       } else {
         bld = segments[0]
-        mode = (segments[1]?.toUpperCase() || 'AR') as BIMMode
-        if (knownModes.includes(mode)) {
+        const modeSegment = segments[1]?.toUpperCase() || 'AR'
+        mode = modeSegment as BIMMode
+        if (knownModes.some(m => m.toUpperCase() === modeSegment)) {
           itemId = segments[2] || null
         }
       }
@@ -92,6 +119,35 @@ function App() {
   const allFurniture = useFurnitureData(buildingData)
   const acStats = useACStats(finalACAssets)
 
+  // Auto-select a random AC or restore last selected when entering AC mode
+  useEffect(() => {
+    if (activeMode === 'AC' && finalACAssets.length > 0) {
+      const storageKey = `last_selected_ac_${buildingCode}`;
+      const savedId = localStorage.getItem(storageKey);
+      
+      if (!selectedRoomId) {
+        if (savedId && finalACAssets.some(a => a.id === savedId)) {
+          // Restore last selected
+          setSelectedRoomId(savedId);
+        } else {
+          // Select a random one if nothing saved or saved asset not found
+          const randomIndex = Math.floor(Math.random() * finalACAssets.length);
+          const randomAsset = finalACAssets[randomIndex];
+          setSelectedRoomId(randomAsset.id);
+          localStorage.setItem(storageKey, randomAsset.id);
+        }
+      } else {
+        // If an ID is selected (manually or via search), save it
+        // Check if the selected ID is actually an AC asset
+        if (finalACAssets.some(a => a.id === selectedRoomId)) {
+          localStorage.setItem(storageKey, selectedRoomId);
+        }
+      }
+    }
+  }, [activeMode, selectedRoomId, finalACAssets, setSelectedRoomId, buildingCode])
+
+  const [expandedFloors, setExpandedFloors] = useState<{[key: number]: boolean}>({})
+
   useAdminShortcut()
 
   const globalSearchResults = useGlobalSearch(
@@ -108,7 +164,7 @@ function App() {
   }
 
   return (
-    <div className="relative h-screen w-screen bg-sky-50 overflow-hidden font-sans select-none text-slate-900">
+    <div className="relative h-screen w-screen bg-stone-50 dark:bg-zinc-950 overflow-hidden font-sans select-none text-slate-900 dark:text-zinc-100">
       {showDashboard && (
         <ProjectDashboard
           assets={finalACAssets}
@@ -123,13 +179,13 @@ function App() {
       )}
 
       {/* 3D Scene */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#7dd3fc] to-[#f0f9ff]">
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#d6d3d1] to-[#fafaf9] dark:from-zinc-900 dark:to-zinc-950">
         {activeMode === 'KG' && <KGVisualizer3D kgNodes={kgNodes} kgEdges={kgEdges} acDbLogs={acDbLogs} />}
 
         <div style={{ display: activeMode === 'KG' ? 'none' : 'block', width: '100%', height: '100%' }}>
           <ErrorBoundary>
             <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, preserveDrawingBuffer: true, localClippingEnabled: true }}>
-              <color attach="background" args={['#bae6fd']} />
+              <color attach="background" args={['#d6d3d1']} />
               <Scene
                 selectedRoomId={selectedRoomId}
                 rightVisible={showRight}
@@ -144,78 +200,137 @@ function App() {
       </div>
 
       {/* Floating Top Bar */}
-      <div className="absolute top-3 left-3 right-3 z-30 flex items-start gap-2">
+      <div className={`absolute top-3 left-3 z-30 flex items-start gap-2 transition-all duration-400 ease-in-out ${
+        showRight ? 'right-[344px]' : 'right-3'
+      }`}>
         {/* Search */}
         <div className="flex-1 max-w-[360px]">
-          <GlobalSearch
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            results={globalSearchResults}
-            onSelect={handleGlobalSearchSelect}
-          />
+          {activeMode !== 'KG' && (
+            <GlobalSearch
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              results={globalSearchResults}
+              onSelect={handleGlobalSearchSelect}
+            />
+          )}
         </div>
 
         {/* Mode Icons + Dashboard + Sidebar Toggle */}
-        <div className="flex items-center gap-1.5 ml-auto">
-          {modes.map((m) => (
+        <div className="flex items-start gap-4 ml-auto">
+          {/* Column A: Main Modes & Dashboard */}
+          <div className="flex flex-col gap-1.5 relative">
+            {/* 1.1: 4 Main Modes */}
+            <div className="flex items-center gap-1.5">
+              {modes.slice(0, 4).map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => switchMode(m.id)}
+                  title={m.label}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    activeMode === m.id
+                      ? 'bg-white dark:bg-zinc-800 shadow-lg text-amber-800 dark:text-orange-500 ring-1 ring-slate-200/50 dark:ring-zinc-700/50'
+                      : 'bg-white dark:bg-zinc-900 text-slate-400 dark:text-zinc-300 hover:text-slate-700 dark:hover:text-zinc-100 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <m.icon className="w-[18px] h-[18px]" />
+                </button>
+              ))}
+            </div>
+
+            {/* 1.2: Sub Dashboard (Sliding under active mode if applicable) */}
+            <div 
+              className="absolute top-[42px] transition-all duration-300 ease-out flex justify-center"
+              style={{ 
+                left: `${modes.slice(0, 4).findIndex(m => m.id === activeMode) !== -1 
+                  ? modes.findIndex(m => m.id === activeMode) * 42 
+                  : 0
+                }px`,
+                width: '36px',
+                // Show only for main 4 modes, but full opacity only for AC
+                opacity: activeMode === 'AC' ? 1 : (modes.slice(0, 4).some(m => m.id === activeMode) ? 0.2 : 0),
+                pointerEvents: activeMode === 'AC' ? 'auto' : 'none'
+              }}
+            >
+              <button
+                onClick={() => activeMode === 'AC' && setShowDashboard(true)}
+                disabled={activeMode !== 'AC'}
+                title={activeMode === 'AC' ? "System Dashboard" : "Dashboard only available in Air mode"}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/50 relative ${
+                  activeMode === 'AC'
+                    ? 'text-slate-500 dark:text-zinc-300 hover:text-amber-800 dark:hover:text-orange-500 hover:bg-slate-50 dark:hover:bg-zinc-800 shadow-md'
+                    : 'text-slate-300 dark:text-zinc-700 cursor-default'
+                }`}
+              >
+                <LayoutDashboard className="w-[18px] h-[18px]" />
+                {activeMode === 'AC' && (acStats.red > 0 || acStats.orange > 0) && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white dark:border-zinc-950 animate-pulse" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Column B: System Controls & Graph */}
+          <div className="flex flex-col items-center gap-1.5 w-9">
+            {/* 2.1: Sidebar Toggle */}
             <button
-              key={m.id}
-              onClick={() => switchMode(m.id)}
-              title={m.label}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all backdrop-blur-md ${
-                activeMode === m.id
-                  ? 'bg-white shadow-lg text-indigo-600 ring-1 ring-slate-200/50'
-                  : 'bg-white/60 text-slate-400 hover:text-slate-700 hover:bg-white/90'
+              onClick={() => setShowRight(!showRight)}
+              title={showRight ? 'Close panel' : 'Open panel'}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                showRight
+                  ? 'bg-white dark:bg-zinc-800 shadow-lg text-amber-800 dark:text-orange-500 ring-1 ring-slate-200/50 dark:ring-zinc-700/50'
+                  : 'bg-white dark:bg-zinc-900 text-slate-400 dark:text-zinc-300 hover:text-slate-700 dark:hover:text-zinc-100 hover:bg-slate-50 dark:hover:bg-zinc-800'
               }`}
             >
-              <m.icon className="w-[18px] h-[18px]" />
+              {showRight ? <PanelRightClose className="w-[18px] h-[18px]" /> : <PanelRight className="w-[18px] h-[18px]" />}
             </button>
-          ))}
 
-          {/* Dashboard button */}
-          {activeMode === 'AC' && (
+            {/* Dark/Light Switch */}
             <button
-              onClick={() => setShowDashboard(true)}
-              title="Dashboard"
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/60 backdrop-blur-md text-slate-500 hover:text-indigo-600 hover:bg-white/90 relative"
+              onClick={() => setDarkMode(!isDarkMode)}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-300 hover:text-amber-800 dark:hover:text-amber-400 hover:bg-slate-50 dark:hover:bg-zinc-800"
             >
-              <LayoutDashboard className="w-[18px] h-[18px]" />
-              {(acStats.red > 0 || acStats.orange > 0) && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white animate-pulse" />
-              )}
-            </button>
-          )}
-
-          {/* Sidebar toggle */}
-          <button
-            onClick={() => setShowRight(!showRight)}
-            title={showRight ? 'Close panel' : 'Open panel'}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all backdrop-blur-md ${
-              showRight
-                ? 'bg-white shadow-lg text-indigo-600 ring-1 ring-slate-200/50'
-                : 'bg-white/60 text-slate-400 hover:text-slate-700 hover:bg-white/90'
-            }`}
-          >
-            {showRight ? <PanelRightClose className="w-[18px] h-[18px]" /> : <PanelRight className="w-[18px] h-[18px]" />}
+              {isDarkMode ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
           </button>
         </div>
       </div>
+    </div>
 
-      {/* Data Sidebar */}
-      <aside className={`absolute right-3 top-3 bottom-3 w-[320px] flex flex-col bg-white/80 backdrop-blur-xl z-20 rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden transition-all duration-400 ease-in-out ${
+    {/* Bottom Right: Graph Mode Toggle */}
+    <div className={`absolute bottom-3 z-30 transition-all duration-400 ease-in-out ${
+      showRight ? 'right-[344px]' : 'right-3'
+    }`}>
+      {modes.slice(4).map((m) => (
+        <button
+          key={m.id}
+          onClick={() => switchMode(m.id)}
+          title={m.label}
+          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+            activeMode === m.id
+              ? 'bg-white dark:bg-zinc-800 shadow-lg text-amber-800 dark:text-orange-500 ring-1 ring-slate-200/50 dark:ring-zinc-700/50'
+              : 'bg-white dark:bg-zinc-900 text-slate-400 dark:text-zinc-300 hover:text-slate-700 dark:hover:text-zinc-100 hover:bg-slate-50 dark:hover:bg-zinc-800'
+          }`}
+        >
+          <m.icon className="w-[18px] h-[18px]" />
+        </button>
+      ))}
+    </div>
+
+    {/* Data Sidebar */}
+      <aside className={`absolute right-3 top-3 bottom-3 w-[320px] flex flex-col bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-20 rounded-2xl border border-slate-200/60 dark:border-zinc-800/60 shadow-xl overflow-hidden transition-all duration-400 ease-in-out ${
         showRight ? 'translate-x-0 opacity-100' : 'translate-x-[340px] opacity-0 pointer-events-none'
       }`}>
         {/* Header */}
-        <header className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+        <header className="px-4 py-2.5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-indigo-600 rounded-[4px] flex items-center justify-center shadow-md shrink-0">
-              <Building2 className="w-3 h-3 text-white" />
+            <div className="w-5 h-5 bg-amber-800 dark:bg-orange-600 rounded-[4px] flex items-center justify-center shadow-md shrink-0">
+              <House className="w-3 h-3 text-white" />
             </div>
             <div className="flex flex-col leading-none">
-              <h1 className="text-[11px] font-black tracking-tight text-slate-800 uppercase italic">FM_{buildingCode}</h1>
+              <h1 className="text-[11px] font-black tracking-tight text-slate-800 dark:text-zinc-100 uppercase italic">FM_{buildingCode}</h1>
               <div className="flex items-center gap-1 mt-0.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{isLive ? 'Live' : 'Local'}</span>
+                <span className="text-[8px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tighter">{isLive ? 'Live' : 'Local'}</span>
               </div>
             </div>
           </div>
@@ -223,8 +338,49 @@ function App() {
 
         {/* Data Panel */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {activeMode === 'AR' && <ArchRightPanel finalACAssets={finalACAssets} />}
-          {activeMode === 'AC' && <ACRightPanel finalACAssets={finalACAssets} />}
+          {activeMode === 'AR' && (
+            selectedRoomId ? <ArchRightPanel finalACAssets={finalACAssets} /> : 
+            <ArchLeftPanel 
+              rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
+              searchQuery={searchQuery} expandedFloors={expandedFloors} setExpandedFloors={setExpandedFloors} 
+              clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
+              selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
+              finalACAssets={finalACAssets} setShowDashboard={setShowDashboard}
+            />
+          )}
+          {activeMode === 'AC' && (
+            selectedRoomId ? <ACRightPanel finalACAssets={finalACAssets} /> :
+            <ACLeftPanel 
+              rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
+              searchQuery={searchQuery} expandedFloors={expandedFloors} setExpandedFloors={setExpandedFloors} 
+              clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
+              selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
+              finalACAssets={finalACAssets}
+            />
+          )}
+          {activeMode === 'Fur' && (
+            selectedRoomId ? <FurnitureRightPanel 
+              rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
+              allFurniture={allFurniture} searchQuery={searchQuery} expandedFloors={expandedFloors} 
+              setExpandedFloors={setExpandedFloors} clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
+              selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
+            /> :
+            <FurnitureLeftPanel 
+              rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
+              allFurniture={allFurniture} searchQuery={searchQuery} expandedFloors={expandedFloors} 
+              setExpandedFloors={setExpandedFloors} clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
+              selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
+            />
+          )}
+          {activeMode === 'EE' && (
+            selectedRoomId ? <EERightPanel selectedRoomId={selectedRoomId} rooms={rooms} selectedFloor={useAppStore.getState().selectedFloor} /> :
+            <EELeftPanel 
+              rooms={rooms} selectedRoomId={selectedRoomId} setSelectedRoomId={setSelectedRoomId} 
+              searchQuery={searchQuery} expandedFloors={expandedFloors} setExpandedFloors={setExpandedFloors} 
+              clipFloor={clipFloor} setClipFloor={useAppStore.getState().setClipFloor}
+              selectedFloor={useAppStore.getState().selectedFloor} setSelectedFloor={useAppStore.getState().setSelectedFloor}
+            />
+          )}
         </div>
       </aside>
 
@@ -233,48 +389,152 @@ function App() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-6">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${
-                  selectedLog.status === 'Completed' ? 'bg-emerald-500' :
-                  selectedLog.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'
-                }`} />
-                <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Maintenance Activity Detail</h2>
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
+            {/* Document Header */}
+            <div className="p-8 border-b-2 border-slate-900 bg-white flex flex-col gap-4">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <h1 className="text-2xl font-bold tracking-tight uppercase">Maintenance Service Report</h1>
+                  <p className="text-xs font-mono text-slate-500">Document Reference: {selectedLog.id}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-bold uppercase text-slate-400">Work Order No.</div>
+                  <div className="text-lg font-mono font-bold text-amber-800">{selectedLog.wo_number || '---'}</div>
+                </div>
               </div>
-              <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
-                <X className="w-6 h-6 text-slate-400" />
-              </button>
+              
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Building</div>
+                  <div className="text-sm font-bold font-mono">{buildingCode}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Asset Category</div>
+                  <div className="text-sm font-bold">AIR CONDITIONING</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Status</div>
+                  <div className={`text-xs font-black uppercase inline-flex items-center gap-1 ${
+                    selectedLog.status === 'Completed' ? 'text-emerald-700' :
+                    selectedLog.status === 'Faulty' ? 'text-rose-700' : 'text-amber-700'
+                  }`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      selectedLog.status === 'Completed' ? 'bg-emerald-600' :
+                      selectedLog.status === 'Faulty' ? 'bg-rose-600' : 'bg-amber-600'
+                    }`} />
+                    {selectedLog.status}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="p-8 space-y-8">
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Date & Time</div>
-                  <div className="text-xl font-black text-slate-900">{selectedLog.date} <span className="text-indigo-400 ml-2">{new Date(selectedLog.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span></div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Reporter</div>
-                  <div className="text-xl font-black text-indigo-600">{selectedLog.reporter || '---'}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Contractor</div>
-                  <div className="text-xl font-black text-amber-600">{selectedLog.contractor || '---'}</div>
+
+            {/* Document Body */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-white">
+              {/* Section 1: Schedule */}
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">1. Date and Time Information</h3>
+                <div className="grid grid-cols-2 gap-8 text-sm">
+                  <div>
+                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Service Date</span>
+                    <span className="font-bold underline decoration-slate-200 underline-offset-4">{selectedLog.date}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Recorded Timestamp</span>
+                    <span className="font-bold">{new Date(selectedLog.created_at).toLocaleString('th-TH')}</span>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Issue / Activity</div>
-                <div className="text-2xl font-black text-slate-800 leading-tight">{selectedLog.issue}</div>
+
+              {/* Section 2: Personnel */}
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">2. Personnel in Charge</h3>
+                <div className="grid grid-cols-2 gap-8 text-sm">
+                  <div>
+                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Reporter / Inspector</span>
+                    <span className="font-bold italic">{selectedLog.reporter || '---'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold block text-[10px] uppercase">Contractor Entity</span>
+                    <span className="font-bold">{selectedLog.contractor || 'Internal Team'}</span>
+                    {selectedLog.contractor_contact && (
+                      <span className="block text-[11px] text-slate-500 font-bold mt-0.5">{selectedLog.contractor_contact}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Notes & Remarks</div>
-                <div className="text-lg font-bold text-slate-600 leading-relaxed italic">{selectedLog.note || 'No additional notes provided for this record.'}</div>
+
+              {/* Section 3: Work Description */}
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">3. Subject / Activity Description</h3>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-sm">
+                  <p className="text-lg font-bold leading-snug">{selectedLog.issue}</p>
+                </div>
+              </div>
+
+              {/* Section 4: Costs */}
+              <div className="space-y-4 text-right pt-4 border-t-2 border-dashed border-slate-200">
+                <div className="inline-block min-w-[200px]">
+                  <div className="flex justify-between items-baseline gap-4">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Service Fee (THB)</span>
+                    <span className="text-xl font-black underline decoration-double">
+                      {selectedLog.cost ? Number(selectedLog.cost).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 5: Field Remarks */}
+              <div className="space-y-4">
+                <h3 className="text-[11px] font-black uppercase tracking-widest border-b border-slate-200 pb-1">4. Field Remarks & Observations</h3>
+                <div className="text-sm leading-relaxed text-slate-600 italic whitespace-pre-wrap min-h-[100px]">
+                  {selectedLog.note || 'No additional remarks recorded by the onsite engineer.'}
+                </div>
+              </div>
+
+              {/* Signature Area */}
+              <div className="pt-12 grid grid-cols-2 gap-12">
+                <div className="border-t border-slate-300 pt-2 text-center">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Inspector Signature</span>
+                </div>
+                <div className="border-t border-slate-300 pt-2 text-center">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Authorized Receiver</span>
+                </div>
               </div>
             </div>
-            <div className="p-6 bg-slate-50/50 border-t border-slate-50 flex justify-end">
-              <button onClick={() => setSelectedLog(null)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs shadow-lg hover:bg-slate-800 transition-all">Close Detail</button>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-100 border-t border-slate-300 flex justify-between items-center shrink-0 print:hidden">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Printed on: {new Date().toLocaleDateString()} | System Generated</span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => window.print()} 
+                  className="px-6 py-1.5 bg-amber-800 text-white rounded-sm font-bold uppercase text-[10px] hover:bg-amber-900 transition-colors flex items-center gap-2"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Print PDF
+                </button>
+                <button 
+                  onClick={() => setSelectedLog(null)} 
+                  className="px-6 py-1.5 bg-slate-800 text-white rounded-sm font-bold uppercase text-[10px] hover:bg-black transition-colors"
+                >
+                  Close Document
+                </button>
+              </div>
             </div>
           </div>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body * { visibility: hidden; }
+              .fixed.inset-0.z-\\[110\\] { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; }
+              .fixed.inset-0.z-\\[110\\] * { visibility: visible; }
+              .fixed.inset-0.z-\\[110\\] .max-w-2xl { max-width: 100%; border: none; shadow: none; margin: 0; padding: 0; }
+              .print\\:hidden { display: none !important; }
+              @page { size: A4; margin: 20mm; }
+              .custom-scrollbar { overflow: visible !important; height: auto !important; max-height: none !important; }
+              .overflow-y-auto { overflow: visible !important; height: auto !important; max-height: none !important; }
+            }
+          `}} />
         </div>
       )}
 

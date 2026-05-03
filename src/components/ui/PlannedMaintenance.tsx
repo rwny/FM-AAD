@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+﻿import React, { useMemo } from 'react'
 import { Calendar, ChevronRight, AlertCircle } from 'lucide-react'
 
 interface PlannedMaintenanceProps {
@@ -69,18 +69,18 @@ export const PlannedMaintenance: React.FC<PlannedMaintenanceProps> = ({ assets, 
   return (
     <div className="space-y-4">
       {overdueCount > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-500/30 rounded-lg">
           <AlertCircle className="w-4 h-4 text-rose-500" />
-          <span className="text-[11px] font-black text-rose-600 uppercase">{overdueCount} unit{overdueCount > 1 ? 's' : ''} overdue</span>
+          <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 uppercase">{overdueCount} unit{overdueCount > 1 ? 's' : ''} overdue</span>
         </div>
       )}
 
       {schedule.map(({ month, label, items }) => (
         <div key={month} className="space-y-1">
           <div className="flex items-center gap-2 px-1">
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{label}</span>
-            <span className="text-[9px] text-slate-400">({items.length})</span>
+            <Calendar className="w-3.5 h-3.5 text-orange-500 dark:text-orange-600" />
+            <span className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-wider">{label}</span>
+            <span className="text-[9px] text-slate-400 dark:text-zinc-600">({items.length})</span>
           </div>
           <div className="space-y-0.5">
             {items.map((item) => (
@@ -88,24 +88,24 @@ export const PlannedMaintenance: React.FC<PlannedMaintenanceProps> = ({ assets, 
                 key={item.id}
                 onClick={() => onSelect(item.id)}
                 className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all hover:scale-[1.01] ${
-                  item.overdue ? 'bg-rose-50 border border-rose-200 hover:bg-rose-100' :
-                  item.soon ? 'bg-amber-50 border border-amber-200 hover:bg-amber-100' :
-                  'bg-white border border-slate-100 hover:bg-slate-50'
+                  item.overdue ? 'bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-100 dark:hover:bg-rose-900/30' :
+                  item.soon ? 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 dark:hover:bg-amber-900/30' :
+                  'bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${item.overdue ? 'bg-rose-500' : item.soon ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                  <span className="text-[11px] font-black text-slate-700 truncate">{item.id.toUpperCase()}</span>
-                  <span className="text-[9px] text-slate-400 truncate">{item.brand}</span>
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${item.overdue ? 'bg-rose-500' : item.soon ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                  <span className="text-[11px] font-black text-slate-700 dark:text-zinc-200 truncate">{item.id.toUpperCase()}</span>
+                  <span className="text-[9px] text-slate-400 dark:text-zinc-500 truncate">{item.brand}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] font-bold ${item.overdue ? 'text-rose-500' : item.soon ? 'text-amber-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] font-bold ${item.overdue ? 'text-rose-500' : item.soon ? 'text-amber-500' : 'text-slate-400 dark:text-zinc-500'}`}>
                     {item.nextDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
                   </span>
-                  <span className={`text-[9px] font-bold ${item.overdue ? 'text-rose-500' : item.soon ? 'text-amber-500' : 'text-slate-400'}`}>
+                  <span className={`text-[9px] font-bold ${item.overdue ? 'text-rose-500' : item.soon ? 'text-amber-500' : 'text-slate-400 dark:text-zinc-500'}`}>
                     ({item.overdue ? `${Math.abs(item.daysLeft)}d late` : `${item.daysLeft}d`})
                   </span>
-                  <ChevronRight className="w-3 h-3 text-slate-300" />
+                  <ChevronRight className="w-3 h-3 text-slate-300 dark:text-zinc-700" />
                 </div>
               </div>
             ))}
@@ -115,3 +115,8 @@ export const PlannedMaintenance: React.FC<PlannedMaintenanceProps> = ({ assets, 
     </div>
   )
 }
+
+
+
+
+

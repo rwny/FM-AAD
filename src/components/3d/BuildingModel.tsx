@@ -1,4 +1,4 @@
-import { useGLTF, Html } from '@react-three/drei'
+﻿import { useGLTF, Html } from '@react-three/drei'
 import { useEffect, useMemo, useState } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -20,10 +20,10 @@ const COLORS = {
   furniture: '#f97316',      // Furniture selected
   highlight: '#eeeeee',      // AC selection highlight (tubes & spheres)
   status: {
-    normal: '#10b981',       // 🟢 Emerald 500
-    faulty: '#f43f5e',       // 🔴 Rose 500
-    maintenance: '#f59e0b',  // 🟡 Amber 500
-    warning: '#f59e0b',      // 🟡 Amber 500
+    normal: '#10b981',       // ðŸŸ¢ Emerald 500
+    faulty: '#f43f5e',       // ðŸ”´ Rose 500
+    maintenance: '#f59e0b',  // ðŸŸ¡ Amber 500
+    warning: '#f59e0b',      // ðŸŸ¡ Amber 500
     default: '#0ea5e9',      // Default Blue
   }
 }
@@ -229,7 +229,7 @@ useEffect(() => {
         type: item.type as 'FCU' | 'CDU',
         brand: bimMetadata.manufacturer || 'System Default',
         model: bimMetadata.model || 'BIM-Model-V1',
-        capacity: bimMetadata.specs?.capacity ? `${bimMetadata.specs.capacity} BTU/hr` : 'Auto-detected',
+        capacity: bimMetadata.specs?.capacity ? `${bimMetadata.specs.capacity} BTU` : 'Auto-detected',
         status: item.mesh.userData.status as any,
         lastService: '2026-03-10',
         nextService: 'Pending',
@@ -296,7 +296,7 @@ useEffect(() => {
       let isSelectedPipe = false;
       let selectedPipeColor = COLORS.pipe; // Default structure color
       if (isPipe && pipeACSet && cleanSelectedId) {
-        // Extract AC set from selected ID (e.g., "fcu-101-1" → "101-1")
+        // Extract AC set from selected ID (e.g., "fcu-101-1" â†’ "101-1")
         const selectedParts = cleanSelectedId.split('-');
         if (selectedParts.length >= 2) {
           const selectedACSet = selectedParts.slice(1).join('-');
@@ -450,7 +450,7 @@ useEffect(() => {
         // Check if this is a floor object (rm-xx-floor)
         const isFloorObject = nameLower.endsWith('-floor');
         
-        // Extract room number from selected AC (e.g., "fcu-201-1" → "201")
+        // Extract room number from selected AC (e.g., "fcu-201-1" â†’ "201")
         let isRoomFloorForSelectedAC = false;
         if (cleanSelectedId && (cleanSelectedId.startsWith('fcu-') || cleanSelectedId.startsWith('cdu-'))) {
           const acParts = cleanSelectedId.split('-');
@@ -559,7 +559,7 @@ useEffect(() => {
   
   // Create wireframe highlight for selected AC system (FCU-CDU pair with same room+level)
   if (cleanSelectedId && (cleanSelectedId.startsWith('fcu-') || cleanSelectedId.startsWith('cdu-'))) {
-    // Extract full identifier after type (e.g., "fcu-201-1" → "201-1")
+    // Extract full identifier after type (e.g., "fcu-201-1" â†’ "201-1")
     const acParts = cleanSelectedId.split('-');
     const selectedIdentifier = acParts.length >= 3 ? acParts.slice(1).join('-') : null; // "201-1"
     
@@ -729,7 +729,7 @@ return (
     {/* Room labels - AR mode */}
     {activeMode === 'AR' && roomLabels.filter(r => !clipFloor || r.floor === clipFloor || (clipFloor === 2 && r.floor <= 2)).map((room) => (
       <Html key={room.id} position={room.position} className="pointer-events-none transition-all duration-300">
-        <div className={`px-2 py-1 rounded-[4px] text-[10px] font-black shadow-xl whitespace-nowrap transition-all -translate-x-1/2 ${room.id === selectedRoomId ? 'text-slate-900 bg-white scale-110 z-50 ring-2 ring-indigo-50' : 'text-slate-800 bg-white/95 border border-slate-200'}`}>
+        <div className={`px-2 py-1 rounded-[4px] text-[10px] font-black shadow-xl whitespace-nowrap transition-all -translate-x-1/2 ${room.id === selectedRoomId ? 'text-slate-900 bg-white scale-110 z-50 ring-2 ring-orange-50' : 'text-slate-800 bg-white/95 border border-slate-200'}`}>
           {room.number}
         </div>
       </Html>
@@ -745,7 +745,7 @@ return (
     ))}
     {(activeMode === 'AC' || activeMode === 'Fur') && selectedLabel && (
       <Html position={selectedLabel.position} className="pointer-events-none">
-        <div className="px-2 py-1 bg-white text-slate-900 text-[10px] font-black rounded-[4px] shadow-xl whitespace-nowrap transition-all -translate-x-1/2 scale-110 z-50 ring-2 ring-indigo-500">
+        <div className="px-2 py-1 bg-white text-slate-900 text-[10px] font-black rounded-[4px] shadow-xl whitespace-nowrap transition-all -translate-x-1/2 scale-110 z-50 ring-2 ring-orange-600">
           {selectedLabel.id}
         </div>
       </Html>
@@ -756,7 +756,7 @@ return (
         <div className="flex flex-col items-center gap-1 -translate-x-1/2 -translate-y-full mb-2">
           <div className={`relative flex items-center justify-center`}>
             {issue.isSelfIssue ? (
-              /* 🔻 Triangle with White Border for self-issue */
+              /* ðŸ”» Triangle with White Border for self-issue */
               <div className="relative flex flex-col items-center animate-bounce">
                   {/* Outer Pulse */}
                   <div className={`absolute -top-1 w-8 h-8 rounded-full animate-ping opacity-40 ${issue.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />
@@ -773,7 +773,7 @@ return (
                   </svg>
               </div>
             ) : (
-              /* 🟠 Small static dot for peer-issue */
+              /* ðŸŸ  Small static dot for peer-issue */
               <div className={`relative w-2 h-2 rounded-full border border-white shadow-lg opacity-80 ${
                 issue.status === 'Faulty' ? 'bg-rose-400' : 'bg-amber-400'
               }`} />
@@ -787,3 +787,8 @@ return (
 }
 
 useGLTF.preload('/models/ar15-302.glb')
+
+
+
+
+

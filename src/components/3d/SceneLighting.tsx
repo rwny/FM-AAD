@@ -1,4 +1,4 @@
-import { Sky, ContactShadows } from '@react-three/drei'
+﻿import { Sky, ContactShadows } from '@react-three/drei'
 import { useRef } from 'react'
 import { useHelper } from '@react-three/drei'
 import * as THREE from 'three'
@@ -65,3 +65,8 @@ export function SceneLighting() {
     </>
   )
 }
+
+
+
+
+

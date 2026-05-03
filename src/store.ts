@@ -29,6 +29,9 @@ interface AppState {
   selectedLog: ACLogSummary | null
   setSelectedLog: (log: ACLogSummary | null) => void
 
+  isDarkMode: boolean
+  setDarkMode: (dark: boolean) => void
+
   rooms: Room[]
   setRooms: (rooms: Room[]) => void
   acAssets: ACAsset[]
@@ -63,6 +66,12 @@ export const useAppStore = create<AppState>((set) => ({
   setReportAsset: (reportAsset) => set({ reportAsset }),
   selectedLog: null,
   setSelectedLog: (selectedLog) => set({ selectedLog }),
+
+  isDarkMode: localStorage.getItem('theme') === 'dark',
+  setDarkMode: (isDarkMode) => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
+    set({ isDarkMode })
+  },
 
   rooms: [],
   setRooms: (rooms) => set({ rooms }),

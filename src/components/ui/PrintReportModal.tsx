@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Printer, FileText } from 'lucide-react';
 
 interface PrintReportModalProps {
@@ -14,43 +14,43 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto print:p-0 print:bg-white print:static print:inset-auto">
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto print:p-0 print:bg-white print:static print:inset-auto">
       {/* Modal Container */}
-      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-full print:shadow-none print:rounded-none print:max-w-none print:h-auto">
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-full print:shadow-none print:rounded-none print:max-w-none print:h-auto border border-slate-100 dark:border-zinc-800">
         
         {/* Modal Header (Hidden on Print) */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 print:hidden">
+        <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50 dark:bg-zinc-900 print:hidden">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+            <div className="p-2 bg-orange-100 dark:bg-orange-950 rounded-lg text-amber-800 dark:text-orange-500">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">Maintenance Report Preview</h2>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Ready for A4 PDF export</p>
+              <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-tight">Maintenance Report Preview</h2>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase">Ready for A4 PDF export</p>
             </div>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-200 text-xs font-black uppercase"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-800 dark:bg-amber-800 hover:bg-amber-800 dark:hover:bg-amber-800 text-white rounded-xl transition-all shadow-lg shadow-orange-300 dark:shadow-none text-xs font-black uppercase"
             >
               <Printer className="w-4 h-4" />
               Print / Save PDF
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
-              <X className="w-5 h-5 text-slate-400" />
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+              <X className="w-5 h-5 text-slate-400 dark:text-zinc-500" />
             </button>
           </div>
         </div>
 
         {/* Report Content (A4 Container) */}
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-100 print:bg-white print:overflow-visible print:p-0">
+        <div className="flex-1 overflow-y-auto p-8 bg-slate-100 dark:bg-black/50 print:bg-white print:overflow-visible print:p-0">
           <div className="bg-white shadow-xl mx-auto min-h-[29.7cm] w-[21cm] p-[2cm] text-slate-800 print:shadow-none print:w-full print:min-h-0 print:mx-0">
             
             {/* Report Header */}
-            <div className="flex justify-between items-start border-b-4 border-indigo-600 pb-6 mb-8">
+            <div className="flex justify-between items-start border-b-4 border-orange-700 pb-6 mb-8">
               <div>
-                <h1 className="text-3xl font-black tracking-tighter text-indigo-900 mb-1">ASSET REPORT</h1>
+                <h1 className="text-3xl font-black tracking-tighter text-orange-900 mb-1">ASSET REPORT</h1>
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Facility Management - AR15 Building</p>
               </div>
               <div className="text-right">
@@ -62,7 +62,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
             {/* Asset Identity */}
             <div className="grid grid-cols-2 gap-8 mb-10">
               <div className="space-y-4">
-                <h2 className="text-xs font-black text-indigo-600 uppercase tracking-widest border-b border-indigo-100 pb-1">Asset Identity</h2>
+                <h2 className="text-xs font-black text-amber-800 uppercase tracking-widest border-b border-orange-200 pb-1">Asset Identity</h2>
                 <div className="space-y-3">
                   <div>
                     <div className="text-[10px] font-black text-slate-400 uppercase">System Name</div>
@@ -70,7 +70,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                   </div>
                   <div>
                     <div className="text-[10px] font-black text-slate-400 uppercase">System Type</div>
-                    <div className="text-sm font-bold text-indigo-600 uppercase">{asset.acType || '---'}</div>
+                    <div className="text-sm font-bold text-amber-800 uppercase">{asset.acType || '---'}</div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -79,14 +79,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                     </div>
                     <div>
                       <div className="text-[10px] font-black text-slate-400 uppercase">Asset ID (Tag)</div>
-                      <div className="text-sm font-black text-indigo-700">{asset.assetId || 'N/A'}</div>
+                      <div className="text-sm font-black text-amber-800">{asset.assetId || 'N/A'}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-xs font-black text-indigo-600 uppercase tracking-widest border-b border-indigo-100 pb-1">Technical Specifications</h2>
+                <h2 className="text-xs font-black text-amber-800 uppercase tracking-widest border-b border-orange-200 pb-1">Technical Specifications</h2>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                   <div>
                     <div className="text-[10px] font-black text-slate-400 uppercase">Brand</div>
@@ -124,7 +124,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
 
             {/* Service Logs Table */}
             <div className="space-y-4">
-              <h2 className="text-xs font-black text-indigo-600 uppercase tracking-widest border-b border-indigo-100 pb-1">Maintenance History (Service Logs)</h2>
+              <h2 className="text-xs font-black text-amber-800 uppercase tracking-widest border-b border-orange-200 pb-1">Maintenance History (Service Logs)</h2>
               <div className="overflow-hidden rounded-lg border border-slate-200">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -133,7 +133,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200">Issue & Description</th>
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-24 text-center">Status</th>
                       <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-24">Reporter</th>
-                      <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-32 text-indigo-600">Contractor</th>
+                      <th className="p-3 text-[10px] font-black text-slate-500 uppercase border-b border-slate-200 w-32 text-amber-800">Contractor</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -160,7 +160,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
                           <td className="p-3 text-xs font-bold text-slate-600">
                             {log.reporter || '---'}
                           </td>
-                          <td className="p-3 text-xs font-black text-indigo-700">
+                          <td className="p-3 text-xs font-black text-amber-800">
                             {log.contractor || '---'}
                           </td>
                         </tr>
@@ -206,3 +206,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({ asset, onClo
     </div>
   );
 };
+
+
+
+
+

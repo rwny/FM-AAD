@@ -1,4 +1,4 @@
-import { useThree, useFrame } from '@react-three/fiber'
+﻿import { useThree, useFrame } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import { useRef, useEffect } from 'react'
 import * as THREE from 'three'
@@ -56,3 +56,8 @@ export function SceneControls({ rightVisible }: { leftVisible?: boolean, rightVi
     </>
   )
 }
+
+
+
+
+

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+﻿import { useEffect, useState, useRef, useMemo } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { RotateCw, Pause, Search, Layers, Sun, Moon, ArrowUp, ArrowDown } from 'lucide-react';
@@ -447,7 +447,7 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
                 const nodeStatus = (selectedNode.metadata?.status || '').toLowerCase();
                 const isNodeFaulty = nodeStatus === 'faulty';
                 const isNodeWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(nodeStatus);
-                const statusColor = isNodeFaulty ? 'text-red-500' : (isNodeWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'));
+                const statusColor = isNodeFaulty ? 'text-red-500' : (isNodeWarning ? 'text-orange-600' : (theme === 'light' ? 'text-black' : 'text-white'));
                 const latestLog = selectedNode.metadata?.latest_log || selectedNode.metadata?.last_maintenance_log || '';
                 
                 return (
@@ -456,7 +456,7 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
                     <div className={`opacity-80 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{`CLASS: ${selectedNode.type.toUpperCase()}`}</div>
                     <div className={`${theme === 'light' ? 'text-black/60' : 'text-white/60'}`}>{`UUID: ${selectedNode.id}`}</div>
                     {latestLog && (
-                      <div className={`mt-2 text-[12px] uppercase tracking-wider px-3 py-2 rounded ${isNodeFaulty ? 'bg-red-500 text-white font-black' : (isNodeWarning ? 'bg-orange-500 text-white font-black' : (theme === 'light' ? 'text-black/60' : 'text-white/60'))}`}>
+                      <div className={`mt-2 text-[12px] uppercase tracking-wider px-3 py-2 rounded ${isNodeFaulty ? 'bg-red-500 text-white font-black' : (isNodeWarning ? 'bg-orange-600 text-white font-black' : (theme === 'light' ? 'text-black/60' : 'text-white/60'))}`}>
                         :: {latestLog}
                       </div>
                     )}
@@ -531,9 +531,9 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
                         </span>
                         <div className="flex flex-col flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`font-bold uppercase ${isFaulty ? 'text-red-500' : (isWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'))}`}>{`[ ${r.otherNode?.name || r.otherId} ]`}</span>
+                            <span className={`font-bold uppercase ${isFaulty ? 'text-red-500' : (isWarning ? 'text-orange-600' : (theme === 'light' ? 'text-black' : 'text-white'))}`}>{`[ ${r.otherNode?.name || r.otherId} ]`}</span>
                             {isFaulty && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
-                            {isWarning && <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />}
+                            {isWarning && <span className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />}
                           </div>
                           <span className={`text-[9px] uppercase ${theme === 'light' ? 'text-black/40' : 'text-white/40'}`}>{`${r.link.name.toUpperCase()} (LVL-${r.otherNode?.level || '?'})`}</span>
                         </div>
@@ -544,16 +544,16 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
                   const currentNodeStatus = (selectedNode.metadata?.status || '').toLowerCase();
                   const isCurrentFaulty = currentNodeStatus === 'faulty';
                   const isCurrentWarning = ['maintenance', 'warning', 'pending', 'in progress'].includes(currentNodeStatus);
-                  const currentNodeTextColor = isCurrentFaulty ? 'text-red-500' : (isCurrentWarning ? 'text-orange-500' : (theme === 'light' ? 'text-black' : 'text-white'));
-                  const currentNodeBorderColor = isCurrentFaulty ? 'border-red-500/60' : (isCurrentWarning ? 'border-orange-500/60' : (theme === 'light' ? 'border-black/40' : 'border-white/40'));
-                  const currentNodeBgColor = isCurrentFaulty ? 'bg-red-500/10' : (isCurrentWarning ? 'bg-orange-500/10' : (theme === 'light' ? 'bg-black/5' : 'bg-white/5'));
+                  const currentNodeTextColor = isCurrentFaulty ? 'text-red-500' : (isCurrentWarning ? 'text-orange-600' : (theme === 'light' ? 'text-black' : 'text-white'));
+                  const currentNodeBorderColor = isCurrentFaulty ? 'border-red-500/60' : (isCurrentWarning ? 'border-orange-600/60' : (theme === 'light' ? 'border-black/40' : 'border-white/40'));
+                  const currentNodeBgColor = isCurrentFaulty ? 'bg-red-500/10' : (isCurrentWarning ? 'bg-orange-600/10' : (theme === 'light' ? 'bg-black/5' : 'bg-white/5'));
 
                   return (
                     <>
                       {upward.filter(r => r.otherNode && parseInt(r.otherNode.level) <= parseInt(selectedNode.level) - 2).map((r, i) => renderNodeLink(r, i, 0))}
                       {upward.filter(r => r.otherNode && parseInt(r.otherNode.level) === parseInt(selectedNode.level) - 1).map((r, i) => renderNodeLink(r, i + 50, 1))}
                       <div className={`my-2 py-2 px-3 border-2 rounded ${currentNodeBorderColor} ${currentNodeBgColor}`}>
-                        <div className={`text-[9px] uppercase tracking-wider mb-1 ${isCurrentFaulty ? 'text-red-500/70' : (isCurrentWarning ? 'text-orange-500/70' : (theme === 'light' ? 'text-black/50' : 'text-white/50'))}`}>// CURRENT_TARGET</div>
+                        <div className={`text-[9px] uppercase tracking-wider mb-1 ${isCurrentFaulty ? 'text-red-500/70' : (isCurrentWarning ? 'text-orange-600/70' : (theme === 'light' ? 'text-black/50' : 'text-white/50'))}`}>// CURRENT_TARGET</div>
                         <div className={`font-black tracking-[0.1em] flex items-center gap-2 ${currentNodeTextColor}`}>
                           <span className="text-[12px] animate-pulse">{`< ${selectedNode.name.toUpperCase()} >`}</span>
                         </div>
@@ -589,7 +589,7 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
 
         <button 
           onClick={() => setLayoutMode(prev => prev === 'hierarchy' ? 'radial' : 'hierarchy')} 
-          className={`px-4 py-2.5 rounded-[5px] border transition-all duration-[2000ms] ease-in-out flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200 shadow-md' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 shadow-2xl'}`}
+          className={`px-4 py-2.5 rounded-[5px] border transition-all duration-[2000ms] ease-in-out flex items-center gap-3 shrink-0 ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200 shadow-md' : 'bg-orange-600/10 border-orange-600/30 text-orange-500 hover:bg-orange-600/20 shadow-2xl'}`}
         >
           <Layers className="w-4 h-4" />
           <span className="text-[10px] font-black uppercase tracking-widest">Mode: {layoutMode === 'hierarchy' ? 'Hierarchy' : 'Radial'}</span>
@@ -708,3 +708,8 @@ export function KGVisualizer3D({ kgNodes, kgEdges, acDbLogs }: KGVisualizer3DPro
     </div>
   );
 }
+
+
+
+
+
