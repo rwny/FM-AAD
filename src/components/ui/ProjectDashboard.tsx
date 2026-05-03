@@ -348,7 +348,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             </div>
 
             {/* Appointment Timeline — visible when appt view active */}
-            <div className={`flex-1 flex items-center transition-all duration-500 ${viewMode === 'appt' ? 'opacity-100' : 'opacity-0 hidden'}`}>
+            <div className="flex-1 flex items-center">
               <div className="relative w-full h-10 flex items-center">
                 <div className="absolute w-full h-2 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 {(() => {
