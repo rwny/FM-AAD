@@ -494,7 +494,7 @@ function App() {
               {/* Remarks */}
               <div className="bg-slate-50 dark:bg-zinc-950 rounded-xl p-4 border border-slate-100 dark:border-zinc-800">
                 <span className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Remarks & Observations</span>
-                <p className="mt-1.5 text-[11px] font-bold text-slate-600 dark:text-zinc-400 italic leading-relaxed whitespace-pre-wrap min-h-[60px]">
+                <p className="mt-1.5 text-[12px] font-bold text-slate-700 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap min-h-[60px]">
                   {selectedLog.note || 'No additional remarks recorded by the onsite engineer.'}
                 </p>
               </div>
