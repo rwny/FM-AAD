@@ -7,7 +7,7 @@ import { determineStatus, getPeerId, computeACStats, extractFurnitureFromData } 
 
 const tgfModels: Record<string, Record<string, any>> = (tgfData as any).models || {};
 
-function enrichMetadataFromCatalog(modelAsset: ACAsset, acType: string, mdMatch: any): any {
+function enrichMetadataFromCatalog(modelAsset: ACAsset, acType: string): any {
   const originalMeta = (modelAsset as any).metadata || {};
   const enriched: Record<string, any> = { ...originalMeta };
 
@@ -106,7 +106,7 @@ export function useMergedAssets(
         }
       }
 
-      const enrichedMetadata = enrichMetadataFromCatalog(modelAsset, acType, mdMatch)
+      const enrichedMetadata = enrichMetadataFromCatalog(modelAsset, acType)
 
       return {
         ...modelAsset,
