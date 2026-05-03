@@ -3,7 +3,7 @@ import {
   X, Search, 
   ArrowUpRight, AlertCircle, 
   Box, Layers, Home,
-  ClipboardList, Copy, Check, Calendar, ListTodo, Download, CalendarCheck
+  ClipboardList, Copy, Check, Calendar, ListTodo, Download, CalendarCheck, AirVent
 } from 'lucide-react'
 import type { ACAsset, Room } from '../../types/bim'
 import { PlannedMaintenance } from './PlannedMaintenance'
@@ -113,6 +113,15 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
     })
     wos.sort((a, b) => b.wo_number.localeCompare(a.wo_number))
     return wos
+  }, [allSystems])
+
+  const systemPrimaryAsset = useMemo(() => {
+    const map: Record<string, string> = {}
+    allSystems.forEach(sys => {
+      const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]
+      if (primary) map[sys.id] = primary.id
+    })
+    return map
   }, [allSystems])
 
   const filteredWOList = useMemo(() => {
@@ -392,17 +401,17 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
           {/* Stats sub-buttons — always visible */}
           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-tight">
-            <button onClick={() => setStatusFilter('All')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'All' ? 'bg-amber-800 text-white border-orange-600' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-orange-400'}`}>
+            <button onClick={() => { setViewMode('table'); setStatusFilter('All') }} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'All' ? 'bg-amber-800 text-white border-orange-600' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-orange-400'}`}>
               <Box className="w-3.5 h-3.5" /> {stats.total}
             </button>
-            <button onClick={() => setStatusFilter('Normal')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Normal' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-emerald-300'}`}>
+            <button onClick={() => { setViewMode('table'); setStatusFilter('Normal') }} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Normal' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-emerald-300'}`}>
               <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Normal' ? 'bg-white' : 'bg-emerald-500'}`} /> {stats.health}%
             </button>
-            <button onClick={() => setStatusFilter('Maintenance')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Maintenance' ? 'bg-amber-600 text-white border-amber-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-amber-300'}`}>
+            <button onClick={() => { setViewMode('table'); setStatusFilter('Maintenance') }} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Maintenance' ? 'bg-amber-600 text-white border-amber-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-amber-300'}`}>
               <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Maintenance' ? 'bg-white' : 'bg-amber-500'}`} /> {stats.maintenance}
             </button>
-            <button onClick={() => setStatusFilter('Faulty')} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Faulty' ? 'bg-rose-600 text-white border-rose-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-rose-300'}`}>
-              <AlertCircle className="w-3.5 h-3.5" /> {stats.faulty}
+            <button onClick={() => { setViewMode('table'); setStatusFilter('Faulty') }} className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all whitespace-nowrap w-14 ${statusFilter === 'Faulty' ? 'bg-rose-600 text-white border-rose-500' : 'bg-white dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700 hover:border-rose-300'}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${statusFilter === 'Faulty' ? 'bg-white' : 'bg-rose-500'}`} /> {stats.faulty}
             </button>
           </div>
 
@@ -441,7 +450,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
               <tr className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28">Appointment</th>
-                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36 text-center">Status</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-32">WO</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-14 text-center">Status</th>
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36">System</th>
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Location</th>
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Issue / Task</th>
@@ -455,23 +465,40 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                 return (
                 <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
-                    <span className={`text-[12px] font-black ${isOverdue ? 'text-rose-600' : isToday ? 'text-emerald-600' : 'text-slate-700 dark:text-zinc-200'}`}>{a.appointment_date}</span>
-                    {isOverdue && <span className="text-[9px] font-black text-rose-400 ml-1">OVERDUE</span>}
-                    {isToday && <span className="text-[9px] font-black text-emerald-500 ml-1">TODAY</span>}
+                    <span className={`text-[11px] font-black ${isOverdue ? 'text-rose-600' : isToday ? 'text-emerald-600' : 'text-slate-700 dark:text-zinc-200'}`}>{a.appointment_date}</span>
+                    {isOverdue && <span className="text-[11px] font-black text-rose-400 ml-1">OVERDUE</span>}
+                    {isToday && <span className="text-[11px] font-black text-emerald-500 ml-1">TODAY</span>}
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
+                    {a.log?.wo_number ? (
+                      <span onClick={() => onSelectLog(a.log)} className={`text-[11px] font-mono font-black text-slate-800 dark:text-zinc-100 px-2 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity ${a.status === 'Completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-800/50' : a.status === 'Faulty' ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800/50' : 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-800/50'}`}>{a.log.wo_number}</span>
+                    ) : <span className="text-[11px] font-bold text-slate-300 dark:text-zinc-700">-</span>}
                   </td>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-center">
-                    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${a.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : a.status === 'Faulty' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${a.status === 'Completed' ? 'bg-emerald-500' : a.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />{a.status}
+                    <AirVent className={`w-5 h-5 stroke-[2.5] mx-auto ${
+                      a.status === 'Completed' ? 'text-emerald-500' :
+                      a.status === 'Faulty' ? 'text-rose-500' : 'text-amber-500'
+                    }`} />
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">
+                    <div className="flex items-center gap-1.5">
+                      {a.system}
+                      <button
+                        onClick={() => { const aid = systemPrimaryAsset[a.system]; if (aid) onSelect(aid) }}
+                        className="p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded text-orange-500 dark:text-orange-400 hover:text-amber-800 dark:hover:text-orange-300 transition-colors"
+                        title="Locate in 3D Model"
+                      >
+                        <Box className="w-3 h-3 stroke-[2.5]" />
+                      </button>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">{a.system}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-500 dark:text-zinc-400">F{a.floor} · {a.room}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-700 dark:text-zinc-200">{a.issue}</td>
-                  <td className="px-4 py-2.5 text-[10px] text-slate-500 dark:text-zinc-400">{a.contractor || a.reporter || '-'}</td>
+                  <td className="px-4 py-2.5 text-[11px] font-bold text-slate-500 dark:text-zinc-400">{a.contractor || a.reporter || '-'}</td>
                 </tr>
               )})}
               {filteredApptList.length === 0 && (
-                <tr><td colSpan={6} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[10px] font-black uppercase">No appointments scheduled</td></tr>
+                <tr><td colSpan={7} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[11px] font-black uppercase">No appointments scheduled</td></tr>
               )}
             </tbody>
           </table>
@@ -480,32 +507,44 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             <thead className="sticky top-0 bg-slate-50 dark:bg-zinc-900 z-10 border-b border-slate-200 dark:border-zinc-800 shadow-sm">
               <tr className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36">WO Number</th>
-                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28">Date</th>
-                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-36 text-center">Status</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-14 text-center">Status</th>
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-40">System</th>
+                <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-28">Date</th>
                 <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800">Location</th>
                 <th className="px-4 py-2">Issue / Activity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
               {filteredWOList.map((wo: any, idx: number) => (
-                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer" onClick={() => onSelectLog(wo.log)}>
+                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
-                    <span className="text-[12px] font-mono font-black text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">{wo.wo_number}</span>
+                    <span onClick={() => onSelectLog(wo.log)} className={`text-[11px] font-mono font-black text-slate-800 dark:text-zinc-100 px-2 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity ${wo.status === 'Completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-800/50' : wo.status === 'Faulty' ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800/50' : 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-800/50'}`}>{wo.wo_number}</span>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-500 dark:text-zinc-400">{wo.date}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-center">
-                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-black uppercase ${wo.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : wo.status === 'Faulty' ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                      <div className={`w-2 h-2 rounded-full ${wo.status === 'Completed' ? 'bg-emerald-500' : wo.status === 'Faulty' ? 'bg-rose-500' : 'bg-amber-500'}`} />{wo.status || '-'}
+                    <AirVent className={`w-5 h-5 stroke-[2.5] mx-auto ${
+                      wo.status === 'Completed' ? 'text-emerald-500' :
+                      wo.status === 'Faulty' ? 'text-rose-500' : 'text-amber-500'
+                    }`} />
+                  </td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">
+                    <div className="flex items-center gap-1.5">
+                      {wo.system}
+                      <button
+                        onClick={() => { const aid = systemPrimaryAsset[wo.system]; if (aid) onSelect(aid) }}
+                        className="p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded text-orange-500 dark:text-orange-400 hover:text-amber-800 dark:hover:text-orange-300 transition-colors"
+                        title="Locate in 3D Model"
+                      >
+                        <Box className="w-3 h-3 stroke-[2.5]" />
+                      </button>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">{wo.system}</td>
+                  <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-500 dark:text-zinc-400">{wo.date}</td>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800 text-[11px] font-bold text-slate-600 dark:text-zinc-300">F{wo.floor} • {wo.room}</td>
                   <td className="px-4 py-2.5 text-[11px] font-bold text-slate-700 dark:text-zinc-200 leading-tight">{wo.issue}</td>
                 </tr>
               ))}
               {filteredWOList.length === 0 && (
-                <tr><td colSpan={6} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[10px] font-black uppercase">No work orders found</td></tr>
+                <tr><td colSpan={6} className="p-10 text-center text-slate-300 dark:text-zinc-700 text-[11px] font-black uppercase">No work orders found</td></tr>
               )}
             </tbody>
           </table>
@@ -518,16 +557,16 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
               <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-20 group relative cursor-default">
                 Brand
                 <div className="absolute top-full left-0 mt-1 z-50 hidden group-hover:block min-w-[160px]">
-                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.brand}</div>
+                  <div className="bg-slate-700 dark:bg-zinc-200 text-white dark:text-zinc-800 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.brand}</div>
                 </div>
               </th>
               <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-24 text-center group relative cursor-default">
                 BTU
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 hidden group-hover:block min-w-[160px]">
-                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.btu}</div>
+                  <div className="bg-slate-700 dark:bg-zinc-200 text-white dark:text-zinc-800 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.btu}</div>
                 </div>
               </th>
-              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-24 text-center">Health</th>
+              <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-14 text-center">Health</th>
               <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-32 text-center">WO</th>
               <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-[380px]">
                 Life Cycle
@@ -535,12 +574,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
               <th className="px-4 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-14 text-center group relative cursor-default">
                 AGE
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 hidden group-hover:block min-w-[120px]">
-                  <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.age}</div>
+                  <div className="bg-slate-700 dark:bg-zinc-200 text-white dark:text-zinc-800 text-[10px] font-bold rounded-lg px-3 py-2 shadow-xl whitespace-pre leading-relaxed">{hoverSummaries.age}</div>
                 </div>
               </th>
               <th className="px-2 py-1.5 border-r border-slate-100 dark:border-zinc-800 w-8 text-center">H</th>
               <th className="px-4 py-2 border-r border-slate-100 dark:border-zinc-800 w-[260px]">Components</th>
-              <th className="px-2 py-1.5 text-right w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
@@ -550,22 +588,36 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                 <tr key={sys.id} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors border-b border-slate-50 dark:border-zinc-900">
                   <td className="px-4 py-3 border-r border-slate-100 dark:border-zinc-800 min-w-[140px]">
                     {isFirstInRoom ? (
-                      <><div className="text-[13px] font-black text-slate-800 dark:text-zinc-100 tracking-tight leading-tight">{sys.roomName}</div><div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tighter leading-none">BIM LEVEL 0{sys.floor}</div></>
+                      <><div className="text-[11px] font-black text-slate-800 dark:text-zinc-100 tracking-tight leading-tight">{sys.roomName}</div></>
                     ) : (
                       <div className="w-full h-4 border-l-2 border-slate-50 dark:border-zinc-900 ml-2" />
                     )}
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-2"><div className="p-1 bg-orange-50 dark:bg-orange-900/30 rounded text-amber-800 dark:text-orange-500 border border-orange-200 dark:border-orange-600/30"><Layers className="w-3.5 h-3.5" /></div><span className="text-[13px] font-black text-slate-900 dark:text-zinc-100 uppercase">{sys.id}</span></div>
+                    <div className="flex items-center gap-1.5"><span className="text-[11px] font-black text-slate-700 dark:text-zinc-200 uppercase">{sys.id}</span>
+                    <button
+                      onClick={() => { 
+                        const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]; 
+                        if (primary) onSelect(primary.id); 
+                      }} 
+                      className="p-1 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded text-orange-500 dark:text-orange-400 hover:text-amber-800 dark:hover:text-orange-300 transition-colors"
+                      title="Locate in 3D Model"
+                    >
+                      <Box className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </button>
+                    </div>
                   </td>
                   <td className="px-3 py-3 border-r border-slate-100 dark:border-zinc-800">
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase">{sys.brand || '-'}</span>
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-zinc-200 uppercase">{sys.brand || '-'}</span>
                   </td>
                   <td className="px-2 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
-                    <span className="text-[10px] font-black text-amber-800 dark:text-orange-500">{sys.components[0]?.capacity || '-'}</span>
+                    <span className="text-[11px] font-black text-slate-700 dark:text-zinc-200">{sys.components[0]?.capacity || '-'}</span>
                   </td>
                   <td className="px-4 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
-                    <div className={`px-2 py-0.5 rounded-md border text-[11px] font-black uppercase tracking-tighter flex items-center justify-center gap-2 ${getStatusBg(sys.aggregatedStatus)}`}><div className={`w-3 h-3 rounded-full fill-current ${sys.aggregatedStatus === 'Faulty' ? 'animate-pulse' : ''} bg-current`} />{sys.aggregatedStatus}</div>
+                    <AirVent className={`w-5 h-5 stroke-[2.5] mx-auto ${
+                      sys.aggregatedStatus === 'Normal' || sys.aggregatedStatus === 'Completed' ? 'text-emerald-500' :
+                      sys.aggregatedStatus === 'Faulty' ? 'text-rose-500' : 'text-amber-500'
+                    }`} />
                   </td>
                   <td className="px-2 py-3 text-center border-r border-slate-100 dark:border-zinc-800">
                     {(() => {
@@ -574,11 +626,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                       return latestWOLog ? (
                         <button
                           onClick={() => onSelectLog(latestWOLog)}
-                          className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 dark:hover:bg-orange-900/70 transition-colors cursor-pointer"
+                          className={`text-[11px] font-mono font-black text-slate-800 dark:text-zinc-100 px-2 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity ${latestWOLog.status === 'Completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-800/50' : latestWOLog.status === 'Faulty' ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-300 dark:border-rose-800/50' : 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-800/50'}`}
                         >
                           {latestWOLog.wo_number}
                         </button>
-                      ) : <span className="text-[9px] text-slate-300 dark:text-zinc-700">-</span>
+                      ) : <span className="text-[11px] font-bold text-slate-300 dark:text-zinc-700">-</span>
                     })()}
                   </td>
                   <td className="px-4 py-3 border-r border-slate-100 dark:border-zinc-800">
@@ -613,7 +665,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                                );
                             })}
                             <div className="absolute right-0 w-0.5 h-3 bg-orange-400 dark:bg-orange-600 z-10" title="Today" />
-                            {installMs < startWindowMs && <div className="absolute -bottom-4 left-0 text-[7px] font-black text-slate-300 dark:text-zinc-600 uppercase tracking-tighter">Installed {sys.installDate}</div>}
+                            {installMs < startWindowMs && <div className="absolute -bottom-4 left-0 text-[11px] font-black text-slate-300 dark:text-zinc-600 uppercase tracking-tighter">Installed {sys.installDate}</div>}
                           </>
                         );
                       })()}
@@ -643,18 +695,6 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                       {sys.components.map((comp: any) => comp.id).join(', ')}
                     </div>
                   </td>
-                  <td className="px-2 py-3 text-right">
-                    <button 
-                      onClick={() => { 
-                        const primary = sys.components.find((c: any) => c.id.startsWith('fcu')) || sys.components[0]; 
-                        if (primary) onSelect(primary.id); 
-                      }} 
-                      className="p-1.5 hover:bg-amber-800 dark:hover:bg-amber-800 hover:text-white text-amber-800 dark:text-orange-500 rounded-lg transition-all shadow-sm border border-transparent hover:border-orange-600"
-                      title="Locate in 3D Model"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                    </button>
-                  </td>
                 </tr>
               );
             })}
@@ -673,8 +713,8 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       </footer>
 
       {historySystem && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-8 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-950 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-8 animate-in fade-in duration-200" onClick={() => setHistorySystem(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-zinc-950 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
             <header className="px-6 py-4 bg-slate-50 dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 overflow-hidden">
                 <div className="p-2 bg-amber-800 dark:bg-amber-800 rounded-lg text-white"><ClipboardList className="w-5 h-5" /></div>

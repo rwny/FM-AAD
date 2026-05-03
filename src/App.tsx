@@ -417,8 +417,8 @@ function App() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setSelectedLog(null) } }} tabIndex={-1} ref={el => el?.focus()}>
-          <div className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onClick={() => setSelectedLog(null)} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setSelectedLog(null) } }} tabIndex={-1} ref={el => el?.focus()}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
             {/* Document Header */}
             <div className="p-8 border-b-2 border-slate-900 bg-white flex flex-col gap-4">
               <div className="text-center border-b border-slate-200 pb-2">
