@@ -27,9 +27,11 @@ function DirectionalLightHelper({ position, intensity, color, castShadow, shadow
 export function SceneLighting() {
   const groupRef = useRef<THREE.Group>(null)
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.001
+      const now = new Date()
+      const hours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600
+      groupRef.current.rotation.y = ((hours % 12) / 12) * Math.PI * 2
     }
   })
 

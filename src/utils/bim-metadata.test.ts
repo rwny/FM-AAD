@@ -18,8 +18,8 @@ describe('BIM Metadata Extraction', () => {
 
     expect(metadata.ifcType).toBe('IfcUnitaryEquipment');
     expect(metadata.guid).toBe('1234-5678');
-    expect(metadata.specs.capacity).toBe(13300);
-    expect(metadata.specs.voltage).toBe(220);
+    expect(metadata.specs.NominalCoolingCapacity).toBe(13300);
+    expect(metadata.specs.NominalVoltage).toBe(220);
     expect(metadata.manufacturer).toBe('Carrier');
     expect(metadata.model).toBe('42TGF0131CP');
   });

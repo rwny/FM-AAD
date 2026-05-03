@@ -402,20 +402,30 @@ export const ACRightPanel: React.FC<{ finalACAssets: any[] }> = ({
               <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showIFC ? 'rotate-90' : ''}`} />
             </button>
             {showIFC && (
-              <div className="mt-1 p-3 bg-zinc-900 dark:bg-black border border-slate-800 dark:border-zinc-900 rounded-[8px] space-y-2 text-slate-300 dark:text-zinc-400">
-                {[
-                  { label: 'GUID', value: selectedAC.metadata.guid },
-                  { label: 'Voltage', value: selectedAC.metadata.specs?.voltage ? `${selectedAC.metadata.specs.voltage}V` : null },
-                  { label: 'Frequency', value: selectedAC.metadata.specs?.frequency ? `${selectedAC.metadata.specs.frequency}Hz` : null },
-                  { label: 'Phases', value: selectedAC.metadata.specs?.phases },
-                  { label: 'Power', value: selectedAC.metadata.specs?.power ? `${selectedAC.metadata.specs.power}kW` : null },
-                  { label: 'IFC Type', value: selectedAC.metadata.ifcType }
-                ].filter(item => item.value !== null && item.value !== undefined).map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                    <span className="text-[9px] font-black uppercase text-slate-500 dark:text-zinc-600 shrink-0 mt-0.5">{item.label}</span>
-                    <span className="text-[11px] font-mono font-bold text-slate-200 dark:text-zinc-300 break-all text-right">{item.value}</span>
-                  </div>
-                ))}
+              <div className="mt-1 p-3 bg-zinc-900 dark:bg-black border border-slate-800 dark:border-zinc-900 rounded-[8px] space-y-2 text-slate-300 dark:text-zinc-400 max-h-[300px] overflow-y-auto custom-scrollbar">
+                {(() => {
+                  const meta = selectedAC.metadata;
+                  const items: { label: string; value: any }[] = [];
+                  
+                  if (meta.guid) items.push({ label: 'GUID', value: meta.guid });
+                  if (meta.ifcType) items.push({ label: 'IFC Type', value: meta.ifcType });
+                  if (meta.manufacturer) items.push({ label: 'Manufacturer', value: meta.manufacturer });
+                  if (meta.model) items.push({ label: 'Model Reference', value: meta.model });
+                  if (meta.systemId) items.push({ label: 'System ID', value: meta.systemId });
+                  
+                  Object.entries(meta.specs || {}).forEach(([key, val]) => {
+                    if (val !== undefined && val !== null && val !== '') {
+                      items.push({ label: key, value: val });
+                    }
+                  });
+                  
+                  return items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-start gap-4 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                      <span className="text-[9px] font-black uppercase text-slate-500 dark:text-zinc-600 shrink-0 mt-0.5">{item.label}</span>
+                      <span className="text-[11px] font-mono font-bold text-slate-200 dark:text-zinc-300 break-all text-right">{typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value)}</span>
+                    </div>
+                  ));
+                })()}
               </div>
             )}
           </div>
