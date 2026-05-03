@@ -57,6 +57,7 @@ function App() {
   const setBuildingCode = useAppStore(s => s.setBuildingCode)
   const isDarkMode = useAppStore(s => s.isDarkMode)
   const setDarkMode = useAppStore(s => s.setDarkMode)
+  const fontOption = useAppStore(s => s.fontOption)
 
   const prevModeRef = useRef<BIMMode>('AR')
 
@@ -75,6 +76,17 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  useEffect(() => {
+    const fonts: Record<number, string> = {
+      1: '"Noto Sans Thai Looped", "Noto Sans Thai", Inter, system-ui, sans-serif',
+      2: '"Noto Sans Thai", "Noto Sans Thai Looped", Inter, system-ui, sans-serif',
+      3: '"IBM Plex Sans Thai", "Noto Sans Thai", Inter, system-ui, sans-serif',
+      4: '"Kanit", "Noto Sans Thai", Inter, system-ui, sans-serif',
+      5: '"Sarabun", "Noto Sans Thai", Inter, system-ui, sans-serif',
+    }
+    document.documentElement.style.setProperty('font-family', fonts[fontOption] || fonts[1], 'important')
+  }, [fontOption])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
