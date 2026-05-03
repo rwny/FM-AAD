@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai+Looped:wght@100;200;300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@100..900&family=IBM+Plex+Sans+Thai:wght@100..700&family=Kanit:wght@100..900&family=Sarabun:wght@100..800&display=swap" rel="stylesheet">
     <title>fm-ar15</title>
     <script>
-      (function(){ var n=parseInt(localStorage.getItem('fontV')||'5'); document.documentElement.className='font-'+n; })();
+      (function(){ var c=document.documentElement.className; var n=parseInt(localStorage.getItem('fontV')||'5'); document.documentElement.className=c.replace(/font-\d/g,'').trim()+' font-'+n; })();
     </script>
   </head>
   <body>
