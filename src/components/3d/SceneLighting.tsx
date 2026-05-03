@@ -1,6 +1,6 @@
 ﻿import { Sky, ContactShadows } from '@react-three/drei'
 import { useRef } from 'react'
-import { useHelper } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 function DirectionalLightHelper({ position, intensity, color, castShadow, shadowConfig }: { 
@@ -11,7 +11,6 @@ function DirectionalLightHelper({ position, intensity, color, castShadow, shadow
   shadowConfig?: any
 }) {
   const lightRef = useRef<any>(null)
-  useHelper(lightRef, THREE.DirectionalLightHelper, 5, color || '#ff0000')
   
   return (
     <directionalLight 
@@ -26,38 +25,48 @@ function DirectionalLightHelper({ position, intensity, color, castShadow, shadow
 }
 
 export function SceneLighting() {
+  const groupRef = useRef<THREE.Group>(null)
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.001
+    }
+  })
+
   return (
     <>
       <ambientLight intensity={0.6} />
       
-      {/* Key Light - Main light source */}
-      <DirectionalLightHelper 
-        position={[-20, 60, 40]} 
-        intensity={1.5}
-        castShadow
-        shadowConfig={{
-          'shadow-bias': -0.001,
-          'shadow-mapSize': [4096, 4096],
-          'shadow-camera-left': -100,
-          'shadow-camera-right': 100,
-          'shadow-camera-top': 100,
-          'shadow-camera-bottom': -100,
-        }}
-      />
-      
-      {/* Fill Light - Softens shadows from opposite side */}
-      <DirectionalLightHelper 
-        position={[30, 40, -30]} 
-        intensity={0.6}
-        color="#e0f2fe"
-      />
-      
-      {/* Back Light / Rim Light - Creates separation from background */}
-      <DirectionalLightHelper 
-        position={[0, 30, -50]} 
-        intensity={0.4}
-        color="#f0f9ff"
-      />
+      <group ref={groupRef}>
+        {/* Key Light - Main light source */}
+        <DirectionalLightHelper 
+          position={[-20, 60, 40]} 
+          intensity={1.5}
+          castShadow
+          shadowConfig={{
+            'shadow-bias': -0.001,
+            'shadow-mapSize': [8192, 8192],
+            'shadow-camera-left': -100,
+            'shadow-camera-right': 100,
+            'shadow-camera-top': 100,
+            'shadow-camera-bottom': -100,
+          }}
+        />
+        
+        {/* Fill Light - Softens shadows from opposite side */}
+        <DirectionalLightHelper 
+          position={[30, 40, -30]} 
+          intensity={0.6}
+          color="#e0f2fe"
+        />
+        
+        {/* Back Light / Rim Light - Creates separation from background */}
+        <DirectionalLightHelper 
+          position={[0, 30, -50]} 
+          intensity={0.4}
+          color="#f0f9ff"
+        />
+      </group>
       
       <hemisphereLight args={['#87ceeb', '#f0f9ff', 0.4]} />
       <Sky distance={450000} sunPosition={[5, 1, 8]} inclination={0} azimuth={0.25} turbidity={0.05} rayleigh={0.3} />
