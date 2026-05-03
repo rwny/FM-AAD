@@ -98,13 +98,19 @@ function App() {
       const first = segments[0].toUpperCase()
       if (knownModes.some(m => m.toUpperCase() === first)) {
         mode = first as BIMMode
-        itemId = segments[1] || null
+        const sid = segments[1] || null
+        if (sid && !['dashboard', 'wo', 'appt', 'cal'].includes(sid.toLowerCase())) {
+          itemId = sid
+        }
       } else {
         bld = segments[0]
         const modeSegment = segments[1]?.toUpperCase() || 'AC'
         mode = modeSegment as BIMMode
         if (knownModes.some(m => m.toUpperCase() === modeSegment)) {
-          itemId = segments[2] || null
+          const tid = segments[2] || null
+          if (tid && !['dashboard', 'wo', 'appt', 'cal'].includes(tid.toLowerCase())) {
+            itemId = tid
+          }
         }
       }
     }
@@ -112,6 +118,12 @@ function App() {
     if (bld !== buildingCode) setBuildingCode(bld)
     if (mode !== activeMode) setActiveMode(mode)
     if (itemId) setSelectedRoomId(itemId)
+
+    // Open dashboard if URL has /dashboard segment
+    const joined = segments.join('/').toLowerCase()
+    if (joined.includes('dashboard')) {
+      setShowDashboard(true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -181,10 +193,12 @@ function App() {
             if (id.startsWith('fcu') || id.startsWith('cdu')) setActiveMode('AC')
           }}
           onSelectLog={(log) => {
-            setShowDashboard(false)
             setSelectedLog(log)
           }}
-          onClose={() => setShowDashboard(false)}
+          onClose={() => {
+            setShowDashboard(false)
+            window.history.replaceState(null, '', window.location.pathname.replace(/\/dashboard.*$/, ''))
+          }}
         />
       )}
 
@@ -262,7 +276,10 @@ function App() {
               }}
             >
               <button
-                onClick={() => activeMode === 'AC' && setShowDashboard(true)}
+                onClick={() => activeMode === 'AC' && (
+                  setShowDashboard(true),
+                  window.history.pushState(null, '', window.location.pathname.replace(/\/dashboard.*$/, '').replace(/\/(fcu-[\w-]+|cdu-[\w-]+|rm-[\w-]+)$/, '') + '/dashboard')
+                )}
                 disabled={activeMode !== 'AC'}
                 title={activeMode === 'AC' ? "System Dashboard" : "Dashboard only available in Air mode"}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white dark:bg-zinc-900 border border-slate-200/50 dark:border-zinc-800/50 relative ${
@@ -400,25 +417,23 @@ function App() {
       )}
 
       {selectedLog && (
-        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onKeyDown={(e) => e.key === 'Escape' && setSelectedLog(null)} tabIndex={-1} ref={el => el?.focus()}>
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[110] flex items-center justify-center p-4" onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setSelectedLog(null) } }} tabIndex={-1} ref={el => el?.focus()}>
           <div className="bg-white dark:bg-zinc-50 rounded-sm w-full max-w-2xl shadow-xl overflow-hidden border border-slate-400 flex flex-col max-h-[95vh] text-slate-900">
             {/* Document Header */}
             <div className="p-8 border-b-2 border-slate-900 bg-white flex flex-col gap-4">
+              <div className="text-center border-b border-slate-200 pb-2">
+                <h2 className="text-xs font-bold tracking-[0.3em] text-slate-400 uppercase">คณะสถาปัตยกรรม ศิลปะและการออกแบบ</h2>
+                <h2 className="text-[9px] font-bold tracking-[0.2em] text-slate-300 uppercase mt-0.5">School of Architecture, Art and Design</h2>
+              </div>
               <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <h1 className="text-2xl font-bold tracking-tight uppercase">
-                    {selectedLog.wo_number ? `Service Report • ${selectedLog.wo_number}` : 'Maintenance Service Report'}
-                  </h1>
-                  <p className="text-xs font-mono text-slate-500">Document Reference: {selectedLog.id}</p>
-                </div>
+                <h1 className="text-2xl font-bold tracking-tight uppercase">Service Report</h1>
                 <div className="flex items-start gap-4">
                   <div className="text-right">
-                    <div className="text-xs font-bold uppercase text-slate-400">Work Order No.</div>
                     <div className="text-lg font-mono font-bold text-amber-800">{selectedLog.wo_number || '---'}</div>
                   </div>
                   <button
                     onClick={() => setSelectedLog(null)}
-                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors print:hidden"
                   >
                     <X className="w-5 h-5" />
                   </button>

@@ -298,12 +298,11 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   };
 
   const getStatusBg = (status: string) => {
-    switch (status) {
-      case 'Normal': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'Faulty': return 'bg-rose-50 text-rose-700 border-rose-100';
-      case 'Maintenance': return 'bg-amber-50 text-amber-700 border-amber-100';
-      default: return 'bg-slate-50 text-slate-700 border-slate-100';
-    }
+    const s = (status || '').toLowerCase();
+    if (s === 'normal' || s === 'completed') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    if (s === 'faulty') return 'bg-rose-50 text-rose-700 border-rose-100';
+    if (s === 'maintenance' || s === 'in progress' || s === 'pending') return 'bg-amber-50 text-amber-700 border-amber-100';
+    return 'bg-slate-50 text-slate-700 border-slate-100';
   }
 
   const getCompStatusColor = (status: string) => {
@@ -499,7 +498,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-800 bg-white dark:bg-zinc-950">
               {filteredWOList.map((wo: any, idx: number) => (
-                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors">
+                <tr key={idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer" onClick={() => onSelectLog(wo.log)}>
                   <td className="px-4 py-2.5 border-r border-slate-100 dark:border-zinc-800">
                     <span className="text-[12px] font-mono font-black text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">{wo.wo_number}</span>
                   </td>
