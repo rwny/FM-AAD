@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import type { Room, ACAsset } from '../../types/bim'
 import { extractBimMetadata } from '../../utils/bim-metadata'
 import { useAppStore } from '../../store'
+import { buildings } from '../../utils/buildings'
 
 // Material Colors
 const COLORS = {
@@ -786,7 +787,8 @@ return (
 )
 }
 
-useGLTF.preload('/models/ar15-302.glb')
+// Preload all available building GLB models
+buildings.filter(b => b.hasModel && b.glb).forEach(b => useGLTF.preload(`/models/${b.glb}`))
 
 
 
