@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAD FM — BIM Digital Twin</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --orange: #d2991d; --purple: #a371f7; --cyan: #39d2c0; --red: #f85149;
+    --sidebar: 220px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7;
+    display: flex;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: var(--sidebar); height: 100vh;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 1rem 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .sidebar .brand {
+    padding: 0.3rem 1rem 0.8rem;
+    font-size: 1rem; font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+  }
+  .sidebar .brand small {
+    display: block;
+    font-size: 0.65rem; font-weight: 400;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+  .sidebar .menu-group {
+    margin-bottom: 0.3rem;
+  }
+  .sidebar .menu-label {
+    padding: 0.4rem 1rem 0.15rem;
+    font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .sidebar a.menu-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 1rem;
+    font-size: 0.78rem;
+    color: var(--text);
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar a.menu-item:hover {
+    background: #1c2333;
+    border-left-color: var(--accent);
+    text-decoration: none;
+  }
+  .sidebar a.menu-item.active {
+    border-left-color: var(--accent);
+    background: #1c2333;
+  }
+  .sidebar a.menu-item .icon { width: 16px; text-align: center; font-size: 0.75rem; }
+  .sidebar .menu-divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 0.4rem 1rem;
+  }
+  .sidebar .plan-badge {
+    display: inline-block;
+    font-size: 0.55rem;
+    background: #1a2a2a;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin-left: auto;
+  }
+
+  /* ===== MAIN ===== */
+  .main {
+    margin-left: var(--sidebar);
+    max-width: 900px;
+    padding: 2rem;
+    flex: 1;
+  }
+  h1 { font-size: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  h2 { font-size: 1.1rem; margin: 1.8rem 0 0.8rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { font-size: 0.95rem; margin: 1rem 0 0.4rem; color: var(--cyan); }
+  p, li { color: var(--muted); font-size: 0.88rem; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.7rem; margin-bottom: 1.5rem; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 1rem; }
+  .summary-card .label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-card .value { font-size: 1rem; font-weight: 600; margin-top: 0.15rem; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; }
+  .badge.green { background: #1a3a2a; color: var(--green); border: 1px solid #2ea043; }
+  .badge.orange { background: #2a2a1a; color: var(--orange); border: 1px solid #bb8009; }
+  .badge.purple { background: #2a1a3a; color: var(--purple); border: 1px solid #8957e5; }
+  .badge.cyan { background: #1a2a2a; color: var(--cyan); border: 1px solid var(--cyan); }
+  .badge.red { background: #3a1a1a; color: var(--red); border: 1px solid #da3633; }
+  .mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem; margin: 1rem 0; }
+  .mode-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; border-top: 3px solid var(--accent); }
+  .mode-card.arch { border-top-color: var(--green); }
+  .mode-card.fur { border-top-color: var(--orange); }
+  .mode-card.ac { border-top-color: var(--cyan); }
+  .mode-card.ee { border-top-color: var(--purple); }
+  .mode-card h3 { margin: 0 0 0.2rem; font-size: 0.9rem; }
+  .mode-card .desc { font-size: 0.78rem; color: var(--muted); }
+  .tree { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.78rem; line-height: 1.5; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; margin: 0.8rem 0; white-space: pre; color: var(--text); overflow-x: auto; }
+  .tree .highlight { color: var(--accent); font-weight: 600; }
+  .tree .dim { color: var(--muted); }
+  .cmd { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.8rem; margin: 0.4rem 0; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.78rem; overflow-x: auto; white-space: pre; color: var(--green); }
+  .step { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 1.1rem; margin-bottom: 0.6rem; border-left: 4px solid var(--accent); }
+  .step-title { font-weight: 600; font-size: 0.88rem; }
+  .step-desc { color: var(--muted); font-size: 0.8rem; margin: 0.2rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.8rem 0; }
+  @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 0.8rem; }
+  th, td { padding: 0.3rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.3px; }
+  td { color: var(--text); }
+  ul { padding-left: 1.2rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ===== Plan Cards ===== */
+  .plan-phase { margin-bottom: 0.8rem; }
+  .plan-phase .phase-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+  .plan-phase .phase-header .dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .plan-phase .phase-header .title {
+    font-weight: 600; font-size: 0.88rem;
+  }
+  .plan-task { 
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.2rem 0 0.2rem 1.2rem;
+    font-size: 0.82rem; color: var(--muted);
+  }
+  .plan-task .code {
+    font-family: monospace; font-size: 0.75rem; font-weight: 600;
+    min-width: 24px; color: var(--accent);
+  }
+
+  /* ===== Plan Steps ===== */
+  .plan-steps { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.8rem 0; }
+  .plan-step {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.6rem 1rem;
+    border-left: 4px solid var(--green);
+    display: flex; align-items: flex-start; gap: 0.6rem;
+  }
+  .plan-step .num {
+    font-size: 0.8rem; font-weight: 700; color: var(--green);
+    min-width: 28px; padding-top: 0.1rem;
+  }
+  .plan-step .body { flex: 1; }
+  .plan-step .body .title { font-weight: 600; font-size: 0.85rem; }
+  .plan-step .body .desc { font-size: 0.78rem; color: var(--muted); }
+
+  .scroll-top {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--accent); width: 36px; height: 36px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; cursor: pointer;
+    opacity: 0.5; transition: opacity 0.2s;
+  }
+  .scroll-top:hover { opacity: 1; }
+
+  /* Mobile */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar">
+  <div class="brand">
+    🏗️ AAD FM
+    <small>BIM Digital Twin</small>
+  </div>
+
+  <div class="menu-group">
+    <div class="menu-label">Overview</div>
+    <a href="#overview" class="menu-item"><span class="icon">🏠</span> ภาพรวม</a>
+    <a href="#structure" class="menu-item"><span class="icon">📁</span> โครงสร้าง</a>
+    <a href="#tech" class="menu-item"><span class="icon">⚙️</span> Tech Stack</a>
+  </div>
+
+  <div class="menu-group">
+    <div class="menu-label">ระบบ</div>
+    <a href="#modes" class="menu-item"><span class="icon">🔍</span> 4 โหมด</a>
+    <a href="#pipeline" class="menu-item"><span class="icon">📦</span> Data Pipeline</a>
+    <a href="#features" class="menu-item"><span class="icon">🌟</span> Features v2</a>
+    <a href="#v3" class="menu-item"><span class="icon">🚀</span> แผน v3</a>
+  </div>
+
+  <hr class="menu-divider">
+
+  <div class="menu-group">
+    <div class="menu-label">📋 แผนงาน</div>
+    <a href="#plans" class="menu-item" style="color: var(--cyan); font-weight: 600;">
+      <span class="icon">🏗️</span> Multi-Building
+      <span class="plan-badge">14</span>
+    </a>
+    <a href="#plan-start" class="menu-item"><span class="icon">▶️</span> เริ่มยังไง</a>
+    <a href="plans/task-breakdown.md" class="menu-item" style="color: var(--muted); font-size: 0.72rem;">
+      <span class="icon">📄</span> task-breakdown.md →
+    </a>
+  </div>
+
+  <hr class="menu-divider">
+
+  <div class="menu-group">
+    <div class="menu-label">อื่นๆ</div>
+    <a href="#scripts" class="menu-item"><span class="icon">📜</span> คำสั่ง</a>
+    <a href="#db" class="menu-item"><span class="icon">🗄️</span> Database</a>
+    <a href="#notes" class="menu-item"><span class="icon">📝</span> ข้อควรรู้</a>
+    <a href="#log" class="menu-item"><span class="icon">📋</span> Working Log</a>
+  </div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main">
+
+<h1 id="overview">🏗️ AAD FM — BIM Digital Twin</h1>
+<p style="margin-bottom: 0.5rem; color: var(--muted); font-size: 0.85rem;">
+  <code>D:\Works\AR3D\3-App\web50_FM2-AR15-3</code> · v0.3.40
+</p>
+
+<div class="summary">
+  <div class="summary-card">
+    <div class="label">Tech Stack</div>
+    <div class="value" style="font-size: 0.85rem;">React 19 + R3F + Supabase</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">3D Engine</div>
+    <div class="value">Three.js</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Buildings</div>
+    <div class="value">AR15 · AR19</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Data Pipeline</div>
+    <div class="value" style="font-size: 0.8rem;">MD → JSON → Supabase KG</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Version</div>
+    <div class="value">v2 → v3</div>
+  </div>
+</div>
+
+<p>
+เว็บแอปพลิเคชันสำหรับ <strong>บริหารจัดการสิ่งอำนวยความสะดวก (Facility Management)</strong> 
+ของอาคาร คณะสถาปัตยกรรม ศิลปะและการออกแบบ 
+โดยใช้ <strong>โมเดล 3D Digital Twin</strong> จาก Blender ผสานกับ 
+<strong>ฐานข้อมูล Knowledge Graph</strong> บน Supabase
+</p>
+
+<!-- ===== PLANS (มาเป็นอันดับต้น) ===== -->
+<h2 id="plans">🏗️ แผนงาน: Multi-Building Expansion</h2>
+<p>ขยายระบบจาก 1 อาคาร (AR15) → รองรับ 30+ อาคาร · <a href="plans/task-breakdown.md">ดูเต็ม</a></p>
+
+<div class="plan-phase">
+  <div class="phase-header">
+    <div class="dot" style="background: var(--accent);"></div>
+    <div class="title">Phase 0 — Foundation</div>
+    <span class="badge">2 งาน · ไม่ขึ้นกับใคร</span>
+  </div>
+  <div class="plan-task"><span class="code">A1</span> 🔷 buildings.ts — registry อาคาร <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">A2</span> Building type</div>
+</div>
+
+<div class="plan-phase">
+  <div class="phase-header">
+    <div class="dot" style="background: var(--orange);"></div>
+    <div class="title">Phase 1 — UI + Routing</div>
+    <span class="badge orange">3 งาน</span>
+  </div>
+  <div class="plan-task"><span class="code">B1</span> 🔶 Landing page — แสดง card อาคาร <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">B2</span> 🔶 Building Selector — dropdown ที่ Header <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">B3</span> 🔶 Dashboard filter by building <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+</div>
+
+<div class="plan-phase">
+  <div class="phase-header">
+    <div class="dot" style="background: var(--purple);"></div>
+    <div class="title">Phase 2 — 3D Model</div>
+    <span class="badge purple">3 งาน</span>
+  </div>
+  <div class="plan-task"><span class="code">C1</span> 🟣 Scene.tsx GLB path <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">C2</span> 🟣 BuildingModel.tsx preload <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">C3</span> 🟣 AR19 GLB model (Blender)</div>
+</div>
+
+<div class="plan-phase">
+  <div class="phase-header">
+    <div class="dot" style="background: var(--green);"></div>
+    <div class="title">Phase 3 — Data</div>
+    <span class="badge green">3 งาน</span>
+  </div>
+  <div class="plan-task"><span class="code">D1</span> 🟢 AR19 data content</div>
+  <div class="plan-task"><span class="code">D2</span> 🟢 AC Logs filter by building <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">D3</span> 🟢 KG nodes/edges filter <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+</div>
+
+<div class="plan-phase">
+  <div class="phase-header">
+    <div class="dot" style="background: var(--red);"></div>
+    <div class="title">Phase 4 — Polish</div>
+    <span class="badge red">3 งาน</span>
+  </div>
+  <div class="plan-task"><span class="code">E1</span> ⚪ State cleanup ตอน switch building</div>
+  <div class="plan-task"><span class="code">E2</span> ⚪ Fallback 3D placeholder <span class="badge green" style="font-size:0.6rem;">✅ done</span></div>
+  <div class="plan-task"><span class="code">E3</span> ⚪ 404 / building not found</div>
+</div>
+
+<h3 id="plan-start">▶️ แนะนำ: เริ่มยังไง?</h3>
+
+<div class="plan-steps">
+  <div class="plan-step">
+    <div class="num">1</div>
+    <div class="body">
+      <div class="title">A1: buildings.ts</div>
+      <div class="desc">10 นาที — สร้าง registry อาคาร ไฟล์ใหม่ ไม่กระทบอะไรเลย</div>
+    </div>
+  </div>
+  <div class="plan-step">
+    <div class="num">2</div>
+    <div class="body">
+      <div class="title">B1: Landing page</div>
+      <div class="desc">20-30 นาที — แสดง card อาคารให้คลิกเลือกตรง /</div>
+    </div>
+  </div>
+  <div class="plan-step">
+    <div class="num">3</div>
+    <div class="body">
+      <div class="title">B2: Building Selector</div>
+      <div class="desc">15 นาที — dropdown ที่ Header สลับอาคาร</div>
+    </div>
+  </div>
+  <div class="plan-step" style="border-left-color: var(--cyan);">
+    <div class="num" style="color: var(--cyan);">⚡</div>
+    <div class="body">
+      <div class="title">Batch 1 (Multi-Agent)</div>
+      <div class="desc">A1 + D2 + D3 + C1 — ทำพร้อมกัน 4 งานเพราะคนละไฟล์ ลดเวลาจาก ~2 ชม. เหลือ ~30 นาที</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== โครงสร้าง ===== -->
+<h2 id="structure">📁 โครงสร้างโปรเจค</h2>
+<div class="tree">web50_FM2-AR15-3\
+├── <span class="highlight">src/</span>
+│   ├── App.tsx                  <span class="dim"># 270 บรรทัด</span>
+│   ├── store.ts                 <span class="dim"># Zustand state</span>
+│   ├── components/
+│   │   ├── <span class="highlight">3d/</span>        <span class="dim"># Scene, BuildingModel</span>
+│   │   ├── <span class="highlight">modes/</span>     <span class="dim"># Arch, AC, EE, Furniture panels</span>
+│   │   ├── <span class="highlight">ui/</span>        <span class="dim"># Dashboard, PrintReport</span>
+│   │   └── <span class="highlight">search/</span>   <span class="dim"># GlobalSearch</span>
+│   ├── hooks/                    <span class="dim"># useDatabase, useAssetMerger</span>
+│   ├── types/                    <span class="dim"># TypeScript types</span>
+│   └── <span class="highlight">utils/</span>
+│       ├── supabase.ts
+│       ├── data/AR15/, AR19/     <span class="dim"># Markdown source</span>
+│       └── ...
+├── <span class="highlight">scripts/</span>                  <span class="dim"># check, combine, build, sync</span>
+├── <span class="highlight">public/models/</span>            <span class="dim"># GLB: ar15-302.glb (159 KB)</span>
+├── <span class="highlight">3DModel/</span>                  <span class="dim"># Blender source</span>
+├── <span class="highlight">hermes/</span>                    <span class="dim"># 🆕 วางแผนกับ AI</span>
+│   ├── index.html               <span class="dim"># หน้านี้</span>
+│   └── plans/
+│       └── task-breakdown.md    <span class="dim"># 14 งาน 4 Phase</span>
+└── package.json</div>
+
+<!-- ===== TECH STACK ===== -->
+<h2 id="tech">⚙️ Tech Stack</h2>
+<table>
+  <tr><th>Layer</th><th>เทคโนโลยี</th></tr>
+  <tr><td>Frontend</td><td>React 19 + TypeScript (Vite 8)</td></tr>
+  <tr><td>3D Engine</td><td>Three.js + @react-three/fiber (R3F)</td></tr>
+  <tr><td>State</td><td>Zustand</td></tr>
+  <tr><td>Routing</td><td>React Router v7 — deep link: /ar15/ac/fcu-101-1</td></tr>
+  <tr><td>Database</td><td>Supabase (PostgreSQL) — kg_nodes, kg_edges, ac_maintenance_logs</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS 3 — Dual-theme Light + Dark</td></tr>
+  <tr><td>Export</td><td>xlsx, pdf-parse</td></tr>
+  <tr><td>Testing</td><td>Vitest — 29 test cases</td></tr>
+  <tr><td>Deploy</td><td>Vercel</td></tr>
+</table>
+
+<!-- ===== 4 MODES ===== -->
+<h2 id="modes">🔍 4 โหมดการทำงาน</h2>
+<div class="mode-grid">
+  <div class="mode-card arch">
+    <h3>🏛️ ARCH</h3>
+    <div class="desc">นำชมอาคาร · <code>RM-</code> room labels · clipping plane</div>
+  </div>
+  <div class="mode-card fur">
+    <h3>🛋️ FURNITURE</h3>
+    <div class="desc">ครุภัณฑ์ · สถานะ <code>LF-</code>/<code>BF-</code> · Normal/Maintenance/Faulty</div>
+  </div>
+  <div class="mode-card ac">
+    <h3>❄️ AC</h3>
+    <div class="desc">ระบบปรับอากาศ — FCU/CDU Sync · Service log · WO · Calendar</div>
+  </div>
+  <div class="mode-card ee">
+    <h3>⚡ EE</h3>
+    <div class="desc">ระบบไฟฟ้า · กำลังพัฒนา</div>
+  </div>
+</div>
+
+<!-- ===== DATA PIPELINE ===== -->
+<h2 id="pipeline">📦 Data Pipeline</h2>
+<div class="step" style="border-left-color: var(--green);">
+  <div class="step-title">① Authoring</div>
+  <div class="step-desc">Markdown <code>src/utils/data/[BuildingID]/floor-*.md</code> — indent 4 spaces = hierarchy, <code>{ }</code> = metadata</div>
+</div>
+<div class="step" style="border-left-color: var(--orange);">
+  <div class="step-title">② Check + Combine</div>
+  <div class="step-desc"><code>npm run data:check</code> → <code>npm run data:combine</code> → รวมเป็น <code>[BuildingID]-DATA.md</code></div>
+</div>
+<div class="step" style="border-left-color: var(--purple);">
+  <div class="step-title">③ Generate</div>
+  <div class="step-desc"><code>npm run data:generate</code> → Parse MD → JSON + TS</div>
+</div>
+<div class="step" style="border-left-color: var(--cyan);">
+  <div class="step-title">④ Sync to Supabase</div>
+  <div class="step-desc"><code>npm run data:sync</code> → <code>kg_nodes</code> + <code>kg_edges</code> (auto-prefix BuildingID-)</div>
+</div>
+<div class="step" style="border-left-color: var(--red);">
+  <div class="step-title">⑤ 3D Model Sync</div>
+  <div class="step-desc"><code>npm run data:sync:glb</code> → อัปโหลด GLB ไป Supabase storage</div>
+</div>
+
+<!-- ===== FEATURES ===== -->
+<h2 id="features">🌟 ฟีเจอร์หลัก (v2)</h2>
+<div class="grid-2">
+  <div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">📊 Dashboard</div>
+      <div class="step-desc">Asset Master, Work Orders, Appointments, Calendar, CSV/XLSX export</div>
+    </div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">📝 Service Log</div>
+      <div class="step-desc">WO auto-gen (WO-2026-NNNN), cost, warranty, vendor, 1-click serviced</div>
+    </div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">🎨 Dual Theme</div>
+      <div class="step-desc">Light + Dark, toggle + shortcut 'T'</div>
+    </div>
+  </div>
+  <div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">🧠 Knowledge Graph v2.0</div>
+      <div class="step-desc">Hierarchy + Radial, 9 สี, search fly-to, transitive flow tracing</div>
+    </div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">🏗️ Architecture Refactor</div>
+      <div class="step-desc">App.tsx -52%, Zustand, Router, Error Boundary, Code Splitting (4 chunks)</div>
+    </div>
+    <div class="step" style="border-left-color: var(--cyan);">
+      <div class="step-title">🧪 Tests</div>
+      <div class="step-desc">29 cases: determineStatus, computeACStats, extractFurniture</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== v3 ===== -->
+<h2 id="v3">🚀 แผน v3 (BIM-Centric)</h2>
+<table>
+  <tr><th>Phase</th><th>รายละเอียด</th></tr>
+  <tr><td>1. Data Extraction</td><td>PDF Catalog Carrier → JSON</td></tr>
+  <tr><td>2. BIM Injection</td><td>Blender + Carrier Addon → IFC metadata in GLB</td></tr>
+  <tr><td>3. Web Integration</td><td>อ่าน userData จาก GLB → Spec + System Linking</td></tr>
+</table>
+
+<!-- ===== SCRIPTS ===== -->
+<h2 id="scripts">📜 คำสั่ง</h2>
+<div class="cmd">npm run dev              # dev server
+npm run build             # build production
+npm run data:check        # validate MD
+npm run data:sync         # MD → Supabase (full pipeline)
+npm run data:sync:glb     # upload 3D models
+npm test                  # run tests</div>
+
+<!-- ===== DATABASE ===== -->
+<h2 id="db">🗄️ Database (Supabase)</h2>
+<table>
+  <tr><th>Table</th><th>ใช้ทำอะไร</th></tr>
+  <tr><td><code>kg_nodes</code></td><td>Entities — auto-prefix [BuildingID]-</td></tr>
+  <tr><td><code>kg_edges</code></td><td>Relationships — contains, connectsTo, monitors</td></tr>
+  <tr><td><code>ac_maintenance_logs</code></td><td>Service logs — WO, cost, warranty, appointment</td></tr>
+</table>
+
+<!-- ===== NOTES ===== -->
+<h2 id="notes">📝 ข้อควรรู้</h2>
+<ul>
+  <li>⚠️ ห้ามรัน <code>data:generate</code> หรือ <code>data:sync</code> อัตโนมัติ — รอคำสั่งจาก user</li>
+  <li>🏫 Buildings: AR15 + AR19 — รองรับถึง 30 อาคาร</li>
+  <li>🔗 Deep link: <code>/ar15/ac/fcu-101-1</code></li>
+  <li>📐 SAN: indent = flow direction (connectsTo) ไม่ใช่ containment</li>
+</ul>
+
+<!-- ===== WORKING LOG ===== -->
+<h2 id="log">📋 Working Log</h2>
+
+<div class="step" style="border-left-color: var(--orange);">
+  <div class="step-title">690601 19.34 — ✅ อ่านและทำความเข้าใจโปรเจค</div>
+  <div class="step-desc">
+    อ่าน docs ทั้งหมด, สร้าง <code>hermes/</code> + index.html นี้
+  </div>
+</div>
+
+<div class="step" style="border-left-color: var(--cyan);">
+  <div class="step-title">690601 — 📋 แบ่งงาน Multi-Building Expansion</div>
+  <div class="step-desc">
+    วิเคราะห์ codebase → 14 งาน 4 Phase → <code>plans/task-breakdown.md</code>
+  </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.75rem; text-align: center;">
+  AAD — Facility Management BIM Digital Twin · คณะสถาปัตยกรรม ศิลปะและการออกแบบ
+</div>
+
+</div>
+
+<a href="#" class="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑</a>
+
+</body>
+</html>

@@ -11,32 +11,53 @@ export function useDatabase(buildingCode: string) {
   const [isLive, setIsLive] = useState(false)
 
   const loadData = useCallback(async () => {
+    // 1. Fetch building data
+    let data: Record<string, unknown> | null = null
     try {
-      let data: Record<string, unknown> | null = null
-      try { data = await fetchBuildingData(buildingCode) } catch { /* expected */ }
-      if (data) setBuildingData(data)
-
-      let logs: ACLogRow[] = []
-      let nodes: KGNodeRow[] = []
-      let edges: KGEdgeRow[] = []
-
-      try { logs = await fetchAllACLogs() || [] } catch { /* ignore */ }
-      try {
-        const res = await supabase.from('kg_nodes').select('*')
-        nodes = res.data || []
-      } catch { /* ignore */ }
-      try {
-        const res = await supabase.from('kg_edges').select('*')
-        edges = res.data || []
-      } catch { /* ignore */ }
-
-      setAllDbLogs(logs)
-      setAllKgNodes(nodes)
-      setAllKgEdges(edges)
-      setIsLive(true)
-    } catch (err: unknown) {
-      console.warn('⚠️ Supabase connection failed:', (err as Error).message)
+      data = await fetchBuildingData(buildingCode)
+    } catch (e) {
+      console.warn(`[DB] building "${buildingCode}" not found in DB — using fallback`)
     }
+    if (data) {
+      setBuildingData(data)
+      console.log(`[DB] ✅ building data loaded for ${buildingCode}`)
+    }
+
+    // 2. Fetch AC logs
+    let logs: ACLogRow[] = []
+    try {
+      const raw = await fetchAllACLogs()
+      logs = raw || []
+      console.log(`[DB] AC logs count: ${logs.length}`)
+    } catch (e) {
+      console.warn('[DB] fetchAllACLogs failed:', e)
+    }
+
+    // 3. Fetch KG nodes
+    let nodes: KGNodeRow[] = []
+    try {
+      const res = await supabase.from('kg_nodes').select('*')
+      nodes = res.data || []
+      console.log(`[DB] KG nodes count: ${nodes.length}`)
+    } catch (e) {
+      console.warn('[DB] kg_nodes fetch failed:', e)
+    }
+
+    // 4. Fetch KG edges
+    let edges: KGEdgeRow[] = []
+    try {
+      const res = await supabase.from('kg_edges').select('*')
+      edges = res.data || []
+      console.log(`[DB] KG edges count: ${edges.length}`)
+    } catch (e) {
+      console.warn('[DB] kg_edges fetch failed:', e)
+    }
+
+    setAllDbLogs(logs)
+    setAllKgNodes(nodes)
+    setAllKgEdges(edges)
+    setIsLive(true)
+    console.log(`[DB] 📡 Connected — bld=${buildingCode} logs=${logs.length} nodes=${nodes.length} edges=${edges.length}`)
   }, [buildingCode])
 
   useEffect(() => {
@@ -46,10 +67,10 @@ export function useDatabase(buildingCode: string) {
     return () => window.removeEventListener('refresh-bim-data', handleRefresh)
   }, [loadData])
 
-  // AC logs — pass through unfiltered (filtering happens in useMergedAssets)
+  // AC logs — pass through unfiltered
   const acDbLogs = allDbLogs
 
-  // Filter KG nodes by building prefix (e.g., "AR15-")
+  // Filter KG nodes by building prefix
   const kgNodes = useMemo(() => {
     return allKgNodes.filter(n => {
       const name = (n.name || '').toLowerCase()
@@ -57,7 +78,7 @@ export function useDatabase(buildingCode: string) {
     })
   }, [allKgNodes, buildingCode])
 
-  // Filter KG edges — keep edges where at least one endpoint is in this building
+  // Filter KG edges
   const kgEdges = useMemo(() => {
     const nodeNames = new Set(kgNodes.map(n => n.name?.toLowerCase()))
     return allKgEdges.filter(e => {
