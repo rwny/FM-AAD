@@ -46,23 +46,33 @@ export function MasterDashboard() {
           const name = (unit.name || '').replace(`${prefix}-`, '').toLowerCase()
           const acType: 'FCU' | 'CDU' = (unit.type || '').toLowerCase() === 'cdu' ? 'CDU' : 'FCU'
           let installDate = ''
+          // Try parent AC_SET first, then unit's own metadata
           const parentEdges = allEdges.filter(e => e.object_id === unit.id && e.predicate === 'contains')
           for (const pe of parentEdges) {
             const parent = nodeMap.get(pe.subject_id)
             if (parent && ((parent.type === 'ac_set') || (parent.name || '').includes('AC-'))) {
-              installDate = ((parent.metadata || {}) as any).install_date || ''
-              break
+              const pm = (parent.metadata || {}) as any
+              installDate = pm.install_date || pm.InstallDate || ''
+              if (installDate) break
             }
+          }
+          // Fallback: unit's own metadata
+          if (!installDate) {
+            const um = (unit.metadata || {}) as any
+            installDate = um.install_date || um.InstallDate || ''
           }
           const unitLogs = allLogs.filter(l => {
             const aid = (l.asset_id || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
             const nid = name.replace(/[^a-z0-9-]/g, '')
             return aid === nid || nid.includes(aid) || aid.includes(nid)
           })
+          const status = determineStatus(unitLogs, installDate || undefined)
+          if (name.includes('204-1')) console.log('[Master] fcu-204-1 logs:', unitLogs.length, 'install:', installDate, 'status:', status)
+
           assets.push({
             id: name, name: name.toUpperCase(), type: acType,
             brand: '', model: '', capacity: '',
-            status: determineStatus(unitLogs, installDate || undefined),
+            status,
             lastService: '', nextService: '',
             metadata: { buildingCode: b.code }, install: installDate,
           } as any)
