@@ -2,6 +2,7 @@
 import { SceneLighting } from './SceneLighting'
 import { SceneControls } from './SceneControls'
 import { BuildingModel } from './BuildingModel'
+import { BuildingPlaceholder } from './BuildingPlaceholder'
 import { useAppStore } from '../../store'
 import { getBuilding } from '../../utils/buildings'
 import type { BIMMode, ACAsset } from '../../types/bim'
@@ -38,11 +39,7 @@ export function Scene({
             finalACAssets={finalACAssets}
           />
         ) : (
-          /* Fallback: show a centered message when no 3D model */
-          <mesh position={[0, 1.5, 0]}>
-            <boxGeometry args={[4, 0.1, 3]} />
-            <meshStandardMaterial color="#292524" transparent opacity={0.3} />
-          </mesh>
+          <BuildingPlaceholder />
         )}
       </Suspense>
     </>
