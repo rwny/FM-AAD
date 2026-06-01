@@ -165,9 +165,10 @@ export async function fetchBuildingData(buildingCode: string) {
     .from('buildings')
     .select('*')
     .eq('code', buildingCode)
-    .single()
+    .maybeSingle()
 
   if (bErr) throw bErr
+  if (!building) return null    // Building not in DB yet — expected for new buildings
 
   // 2. Fetch Floors, Rooms, and Assets in one go (using Supabase relations)
   const { data: floors, error: fErr } = await supabase
