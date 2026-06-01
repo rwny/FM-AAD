@@ -166,6 +166,7 @@ function App() {
   }, [activeMode, selectedRoomId, finalACAssets, setSelectedRoomId, buildingCode])
 
   const [expandedFloors, setExpandedFloors] = useState<{[key: number]: boolean}>({})
+  const [showBldMenu, setShowBldMenu] = useState(false)
 
   useDeleteShortcut()
 
@@ -357,42 +358,51 @@ function App() {
         {/* Header */}
         <header className="px-4 py-2.5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/50 shrink-0">
           <div className="flex items-center gap-3">
-            {/* Building Selector Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 text-2xl font-black tracking-tight text-slate-800 dark:text-zinc-100 uppercase leading-none hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+            {/* Building Selector — Click to toggle */}
+            <div className="relative">
+              <button
+                onClick={() => setShowBldMenu(v => !v)}
+                className="flex items-center gap-1.5 text-2xl font-black tracking-tight text-slate-800 dark:text-zinc-100 uppercase leading-none hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+              >
                 AAD · {buildingCode}
-                <svg className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                <svg className={`w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 mt-1 transition-transform ${showBldMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
               </button>
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl shadow-black/10 dark:shadow-black/40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 max-h-80 overflow-y-auto custom-scrollbar">
-                {buildings.map((b) => {
-                  const isActive = b.code === buildingCode
-                  const bld = getBuilding(b.code)
-                  return (
-                    <button
-                      key={b.code}
-                      onClick={() => {
-                        if (!isActive) {
-                          setBuildingCode(b.code)
-                          navigate(`/${b.code}/ac`)
-                        }
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors
-                        ${isActive
-                          ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-medium'
-                          : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
-                        }
-                        ${b === buildings[0] ? 'rounded-t-xl' : ''}
-                        ${b === buildings[buildings.length - 1] ? 'rounded-b-xl' : ''}
-                      `}
-                    >
-                      <span className="text-xs font-mono font-bold text-slate-400 dark:text-zinc-500 w-10 shrink-0">{b.code}</span>
-                      <span className="truncate">{bld?.name === 'x' ? '-' : bld?.name}</span>
-                      {b.hasModel && <span className="ml-auto text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded shrink-0">3D</span>}
-                      {isActive && <span className="ml-auto text-amber-500 text-xs shrink-0">◀</span>}
-                    </button>
-                  )
-                })}
-              </div>
+              {showBldMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowBldMenu(false)} />
+                  <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl shadow-black/10 dark:shadow-black/40 z-50 max-h-80 overflow-y-auto custom-scrollbar">
+                    {buildings.map((b, i) => {
+                      const isActive = b.code === buildingCode
+                      const bld = getBuilding(b.code)
+                      return (
+                        <button
+                          key={b.code}
+                          onClick={() => {
+                            setShowBldMenu(false)
+                            if (!isActive) {
+                              setBuildingCode(b.code)
+                              navigate(`/${b.code}/ac`)
+                            }
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors
+                            ${isActive
+                              ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-medium'
+                              : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800'
+                            }
+                            ${i === 0 ? 'rounded-t-xl' : ''}
+                            ${i === buildings.length - 1 ? 'rounded-b-xl' : ''}
+                          `}
+                        >
+                          <span className="text-xs font-mono font-bold text-slate-400 dark:text-zinc-500 w-10 shrink-0">{b.code}</span>
+                          <span className="truncate">{bld?.name === 'x' ? '-' : bld?.name}</span>
+                          {b.hasModel && <span className="ml-auto text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded shrink-0">3D</span>}
+                          {isActive && <span className="ml-auto text-amber-500 text-xs shrink-0">◀</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
