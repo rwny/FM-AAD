@@ -66,6 +66,12 @@ export function MasterDashboard() {
             const nid = name.replace(/[^a-z0-9-]/g, '')
             return aid === nid
           })
+          // Debug: show actual formats
+          if (name.includes('204-1') && unitLogs.length === 0) {
+            const sample = allLogs.filter(l => (l.asset_id || '').toLowerCase().includes('204-1')).slice(0, 3)
+            console.log('[Master] fcu-204-1: name=', name, 'nid=', name.replace(/[^a-z0-9-]/g, ''))
+            console.log('[Master] fcu-204-1 log sample:', sample.map((l: any) => ({ asset_id: l.asset_id, aid: l.asset_id?.toLowerCase().replace(/[^a-z0-9-]/g, '') })))
+          }
           const status = determineStatus(unitLogs, installDate || undefined)
           if (name.includes('204-1')) console.log('[Master] fcu-204-1 logs:', unitLogs.length, 'install:', installDate, 'status:', status)
 
