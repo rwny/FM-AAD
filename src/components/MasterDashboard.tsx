@@ -64,7 +64,7 @@ export function MasterDashboard() {
           const unitLogs = allLogs.filter(l => {
             const aid = (l.asset_id || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
             const nid = name.replace(/[^a-z0-9-]/g, '')
-            return aid === nid || nid.includes(aid) || aid.includes(nid)
+            return aid === nid
           })
           const status = determineStatus(unitLogs, installDate || undefined)
           if (name.includes('204-1')) console.log('[Master] fcu-204-1 logs:', unitLogs.length, 'install:', installDate, 'status:', status)
