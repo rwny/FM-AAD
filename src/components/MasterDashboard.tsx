@@ -69,6 +69,7 @@ export function MasterDashboard() {
       })
 
       setStats(result)
+      console.log('[Master] stats loaded:', result.length, 'buildings, total AC:', result.reduce((s, b) => s + b.acTotal, 0))
     } catch (e) {
       console.warn('[Master] Supabase query failed:', e)
     } finally {
@@ -83,7 +84,7 @@ export function MasterDashboard() {
   const buildingsWithData = stats.filter(b => b.acTotal > 0).length
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans select-none">
+    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 font-sans select-none overflow-y-auto">
       {/* Header */}
       <header className="border-b border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
