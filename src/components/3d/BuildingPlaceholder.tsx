@@ -1,75 +1,52 @@
 import { Text } from '@react-three/drei'
-import { getBuilding } from '../../utils/buildings'
 import { useAppStore } from '../../store'
 import * as THREE from 'three'
 
+const GRID_COLOR = '#f59e0b'      // amber grid lines
+const GRID_CENTER = '#1c1917'     // dark center
+const TEXT_COLOR = '#facc15'      // bright yellow text
+const BG_COLOR = '#1a1a2e'        // deep blue bg
+const GLOW_COLOR = '#f59e0b'
+
 export function BuildingPlaceholder() {
   const buildingCode = useAppStore(s => s.buildingCode)
-  const building = getBuilding(buildingCode)
-  const displayName = building?.name === 'x' ? '' : (building?.name || '')
 
   return (
     <group>
-      {/* Ground plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+      {/* Dark base plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color="#292524" transparent opacity={0.15} side={THREE.DoubleSide} />
+        <meshStandardMaterial color={BG_COLOR} />
       </mesh>
 
-      {/* Grid helper */}
-      <gridHelper args={[10, 10, '#44403c', '#292524']} position={[0, 0, 0]} />
+      {/* Neon grid helper */}
+      <gridHelper args={[10, 10, GRID_COLOR, '#292524']} position={[0, 0, 0]} />
 
-      {/* Building code — big text */}
+      {/* Glowing center pad */}
+      <mesh position={[0, 0.01, 0]}>
+        <planeGeometry args={[2.5, 1.8]} />
+        <meshBasicMaterial color={GRID_CENTER} transparent opacity={0.6} />
+      </mesh>
+
+      {/* Building code — big bold */}
       <Text
-        position={[0, 2.2, 0]}
-        fontSize={1.2}
+        position={[0, 1.2, 0.1]}
+        fontSize={1.0}
         fontWeight={900}
-        color="#d97706"
+        color={TEXT_COLOR}
         anchorX="center"
         anchorY="middle"
-        letterSpacing={0.15}
+        letterSpacing={0.12}
+        outlineWidth={0.04}
+        outlineColor="#000000"
       >
         {buildingCode}
       </Text>
 
-      {/* Building name — smaller text below */}
-      {displayName && (
-        <Text
-          position={[0, 1.0, 0]}
-          fontSize={0.4}
-          color="#a8a29e"
-          anchorX="center"
-          anchorY="middle"
-        >
-          {displayName}
-        </Text>
-      )}
-
-      {/* Status badge */}
-      <Text
-        position={[0, 0, 0]}
-        fontSize={0.2}
-        color="#57534e"
-        anchorX="center"
-        anchorY="middle"
-      >
-        ยังไม่มีโมเดล 3D
-      </Text>
-
-      {/* Info at bottom */}
-      <Text
-        position={[0, -1.2, 0]}
-        fontSize={0.18}
-        color="#57534e"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {building?.floors || '?'} ชั้น
-      </Text>
-
-      {/* Subtle ambient glow */}
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 10, 5]} intensity={0.6} />
+      {/* Lights */}
+      <ambientLight intensity={0.5} />
+      <pointLight position={[0, 4, 3]} intensity={2} color={GLOW_COLOR} />
+      <pointLight position={[0, 4, -3]} intensity={1} color="#6366f1" />
     </group>
   )
 }
