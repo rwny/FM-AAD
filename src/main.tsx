@@ -5,6 +5,7 @@ import { inject } from '@vercel/analytics'
 import './index.css'
 import App from './App.tsx'
 import { LandingPage } from './components/LandingPage.tsx'
+import { MasterDashboard } from './components/MasterDashboard.tsx'
 
 inject()
 
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/master" element={<MasterDashboard />} />
         <Route path="/*" element={<App />} />
       </Routes>
     </BrowserRouter>

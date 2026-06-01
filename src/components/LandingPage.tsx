@@ -23,12 +23,20 @@ export function LandingPage() {
             คณะสถาปัตยกรรม ศิลปะและการออกแบบ · ระบบบริหารจัดการอาคาร
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-[10px] uppercase tracking-widest text-stone-400 dark:text-zinc-500">
-            Buildings
-          </div>
-          <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
-            {buildings.length}
+        <div className="text-right flex items-center gap-3">
+          <button
+            onClick={() => navigate('/master')}
+            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-1.5 transition-colors"
+          >
+            📊 Master
+          </button>
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-stone-400 dark:text-zinc-500">
+              Buildings
+            </div>
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+              {buildings.length}
+            </div>
           </div>
         </div>
       </header>
