@@ -28,10 +28,15 @@ export function MasterFullDashboard() {
       const nodeMap = new Map<string, any>()
       for (const n of allNodes) nodeMap.set(n.id, n)
 
+      // Collect buildings first, then sort
+      const buildingAssets: Map<string, ACAsset[]> = new Map()
+
       for (const b of buildings) {
         const prefix = b.code.toUpperCase()
         const bldNodes = allNodes.filter(n => (n.name || '').toUpperCase().startsWith(`${prefix}-`))
         if (bldNodes.length === 0) continue
+
+        const bldAssets: ACAsset[] = []
 
         for (const n of bldNodes) {
           if ((n.type || '').toLowerCase() === 'room') {
@@ -72,9 +77,9 @@ export function MasterFullDashboard() {
           })
           const status = unitLogs.length > 0 ? (unitLogs[0].status || 'Normal') : 'Normal'
 
-          assets.push({
+          bldAssets.push({
             id: name,
-            name: `[${b.code}] ${name.toUpperCase()}`,
+            name: `${name.toUpperCase()}`,
             type: acType,
             brand, model, capacity,
             status,
@@ -84,8 +89,37 @@ export function MasterFullDashboard() {
             install: installDate,
           } as any)
         }
+
+        bldAssets.sort((a, b) => a.id.localeCompare(b.id))
+
+        // Insert a divider row before each building group
+        if (bldAssets.length > 0) {
+          const separator: any = {
+            id: `---divider-${b.code}`,
+            name: `── ${b.code} · ${b.name === 'x' ? '' : b.name} · ${bldAssets.length} เครื่อง ──`,
+            type: 'DIV' as any,
+            brand: '',
+            model: '',
+            capacity: '',
+            status: 'Divider',
+            lastService: '',
+            nextService: '',
+            metadata: { isDivider: true, buildingCode: b.code },
+            install: '',
+          }
+          bldAssets.unshift(separator)
+        }
+
+        if (bldAssets.length > 0) {
+          buildingAssets.set(b.code, bldAssets)
+        }
       }
-      assets.sort((a, b) => a.id.localeCompare(b.id))
+
+      // Sort buildings by code, flatten with dividers
+      const sortedCodes = Array.from(buildingAssets.keys()).sort()
+      for (const code of sortedCodes) {
+        assets.push(...buildingAssets.get(code)!)
+      }
     } catch (e) {
       console.warn('[MasterFull] load failed:', e)
     }
