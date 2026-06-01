@@ -3,29 +3,6 @@ import { supabase, fetchBuildingData, fetchAllACLogs } from '../utils/supabase'
 import acSpecsJson from '../utils/ac-specs.json'
 import type { ACLogRow, KGNodeRow, KGEdgeRow } from '../types/database'
 
-/** Extract all asset IDs from building data (for filtering logs by building) */
-function extractAssetIds(data: Record<string, unknown> | null): Set<string> {
-  const ids = new Set<string>()
-  if (!data || !data.floors) return ids
-  
-  // floors can be array or object — handle both
-  const floors: any[] = Array.isArray(data.floors)
-    ? data.floors
-    : Object.values(data.floors as object)
-  
-  for (const f of floors) {
-    if (!f.rooms) continue
-    for (const r of f.rooms) {
-      if (!r.assets) continue
-      for (const a of r.assets) {
-        if (a.id) ids.add(a.id.toLowerCase())
-        if (a.assetId) ids.add(a.assetId.toLowerCase())
-      }
-    }
-  }
-  return ids
-}
-
 export function useDatabase(buildingCode: string) {
   const [buildingData, setBuildingData] = useState<Record<string, unknown>>(acSpecsJson)
   const [allDbLogs, setAllDbLogs] = useState<ACLogRow[]>([])
@@ -69,15 +46,8 @@ export function useDatabase(buildingCode: string) {
     return () => window.removeEventListener('refresh-bim-data', handleRefresh)
   }, [loadData])
 
-  // Filter logs by current building — only show logs for assets in this building
-  const acDbLogs = useMemo(() => {
-    const assetIds = extractAssetIds(buildingData)
-    if (assetIds.size === 0) return allDbLogs  // no building data → show all (fallback)
-    return allDbLogs.filter(log => {
-      const aid = (log.asset_id || '').toLowerCase()
-      return assetIds.has(aid) || assetIds.has(aid.replace(/[^a-z0-9-]/g, ''))
-    })
-  }, [allDbLogs, buildingData])
+  // AC logs — pass through unfiltered (filtering happens in useMergedAssets)
+  const acDbLogs = allDbLogs
 
   // Filter KG nodes by building prefix (e.g., "AR15-")
   const kgNodes = useMemo(() => {
