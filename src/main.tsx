@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { inject } from '@vercel/analytics'
 import './index.css'
 import App from './App.tsx'
+import { LandingPage } from './components/LandingPage.tsx'
 
 inject()
 
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/*" element={<App />} />
       </Routes>
     </BrowserRouter>
