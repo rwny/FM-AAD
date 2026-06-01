@@ -14,6 +14,7 @@ interface BldGroup {
 }
 
 export function MasterDashboard() {
+  console.log('[Master] COMPONENT MOUNTED')
   const navigate = useNavigate()
   const [groups, setGroups] = useState<BldGroup[]>([])
   const [loading, setLoading] = useState(true)
