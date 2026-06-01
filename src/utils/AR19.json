@@ -6,17 +6,146 @@
         "ARCH": {},
         "FUR": {},
         "AC": {
-          "AC-101-1": {
-            "id": "AC-101-1",
+          "AC-119-1": {
+            "id": "AC-119-1",
             "type": "42TGF0361CP",
-            "assetid": "สถ.19-2568-123-456-001",
-            "installdate": "2024-02-01"
+            "assetid": "สถ.2569-119-456-001",
+            "installdate": "2025-03-15"
           },
-          "FCU-101-1": {
-            "id": "FCU-101-1"
+          "FCU-119-1": {
+            "id": "FCU-119-1"
           },
-          "CDU-101-1": {
-            "id": "CDU-101-1"
+          "PIPE-DRN-119-1": {
+            "id": "PIPE-DRN-119-1"
+          },
+          "CDU-119-1": {
+            "id": "CDU-119-1"
+          },
+          "PIPE-ELE-119-1": {
+            "id": "PIPE-ELE-119-1",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-119-1": {
+            "id": "PIPE-REF-119-1",
+            "connectsto": "FCU-119-1"
+          },
+          "AC-119-2": {
+            "id": "AC-119-2",
+            "type": "42TGF0241CP",
+            "assetid": "สถ.2569-119-456-002",
+            "installdate": "2025-06-20"
+          },
+          "FCU-119-2": {
+            "id": "FCU-119-2"
+          },
+          "PIPE-DRN-119-2": {
+            "id": "PIPE-DRN-119-2"
+          },
+          "CDU-119-2": {
+            "id": "CDU-119-2"
+          },
+          "PIPE-ELE-119-2": {
+            "id": "PIPE-ELE-119-2",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-119-2": {
+            "id": "PIPE-REF-119-2",
+            "connectsto": "FCU-119-2"
+          }
+        },
+        "EE": {
+          "PG-101": {
+            "id": "PG-101",
+            "type": "PG-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01"
+          },
+          "SW-101": {
+            "id": "SW-101",
+            "type": "SW-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01",
+            "connectsfrom": "LP-123"
+          },
+          "LI-101.1": {
+            "id": "LI-101.1",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01"
+          },
+          "LI-101.2": {
+            "id": "LI-101.2",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01"
+          },
+          "LI-101.3": {
+            "id": "LI-101.3",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01"
+          },
+          "LI-101.4": {
+            "id": "LI-101.4",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-03-01"
+          }
+        }
+      },
+      "102": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-119-3": {
+            "id": "AC-119-3",
+            "type": "42TGF0361CP",
+            "assetid": "สถ.2569-119-456-003",
+            "installdate": "2025-02-10"
+          },
+          "FCU-119-3": {
+            "id": "FCU-119-3"
+          },
+          "PIPE-DRN-119-3": {
+            "id": "PIPE-DRN-119-3"
+          },
+          "CDU-119-3": {
+            "id": "CDU-119-3"
+          },
+          "PIPE-ELE-119-3": {
+            "id": "PIPE-ELE-119-3",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-119-3": {
+            "id": "PIPE-REF-119-3",
+            "connectsto": "FCU-119-3"
+          }
+        },
+        "EE": {
+          "PG-102": {
+            "id": "PG-102",
+            "type": "PG-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-05-01"
+          },
+          "SW-102": {
+            "id": "SW-102",
+            "type": "SW-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-05-01",
+            "connectsfrom": "LP-123"
+          },
+          "LI-102.1": {
+            "id": "LI-102.1",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-05-01"
+          },
+          "LI-102.2": {
+            "id": "LI-102.2",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-05-01"
           }
         }
       }
@@ -26,29 +155,141 @@
         "ARCH": {},
         "FUR": {},
         "AC": {
-          "AC-201-1": {
-            "id": "AC-201-1",
+          "AC-119-4": {
+            "id": "AC-119-4",
+            "type": "42TGF0241CP",
+            "assetid": "สถ.2569-119-456-004",
+            "installdate": "2025-08-01"
+          },
+          "FCU-119-4": {
+            "id": "FCU-119-4"
+          },
+          "PIPE-DRN-119-4": {
+            "id": "PIPE-DRN-119-4"
+          },
+          "CDU-119-4": {
+            "id": "CDU-119-4"
+          },
+          "PIPE-ELE-119-4": {
+            "id": "PIPE-ELE-119-4",
+            "connectsfrom": "CU-1-01"
+          },
+          "PIPE-REF-119-4": {
+            "id": "PIPE-REF-119-4",
+            "connectsto": "FCU-119-4"
+          }
+        },
+        "EE": {
+          "PG-201": {
+            "id": "PG-201",
+            "type": "PG-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-04-01"
+          },
+          "SW-201": {
+            "id": "SW-201",
+            "type": "SW-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-10-01",
+            "connectsfrom": "LP-123"
+          },
+          "LI-201.1": {
+            "id": "LI-201.1",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-10-01"
+          },
+          "LI-201.2": {
+            "id": "LI-201.2",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-10-01"
+          }
+        }
+      },
+      "202": {
+        "ARCH": {},
+        "FUR": {},
+        "AC": {
+          "AC-119-5": {
+            "id": "AC-119-5",
             "type": "42TGF0361CP",
-            "assetid": "สถ.19-2568-123-456-006",
-            "installdate": "2025-01-01"
+            "assetid": "สถ.2569-119-456-005",
+            "installdate": "2025-09-15"
           },
-          "FCU-201-1": {
-            "id": "FCU-201-1"
+          "FCU-119-5": {
+            "id": "FCU-119-5"
           },
-          "CDU-201-1": {
-            "id": "CDU-201-1"
+          "PIPE-DRN-119-5": {
+            "id": "PIPE-DRN-119-5"
           },
-          "AC-201-2": {
-            "id": "AC-201-2",
-            "type": "42TGF0361CP",
-            "assetid": "สถ.19-2568-123-456-007",
-            "installdate": "2025-01-01"
+          "CDU-119-5": {
+            "id": "CDU-119-5"
           },
-          "FCU-201-2": {
-            "id": "FCU-201-2"
+          "PIPE-ELE-119-5": {
+            "id": "PIPE-ELE-119-5",
+            "connectsfrom": "CU-1-01"
           },
-          "CDU-201-2": {
-            "id": "CDU-201-2"
+          "PIPE-REF-119-5": {
+            "id": "PIPE-REF-119-5",
+            "connectsto": "FCU-119-5"
+          }
+        },
+        "EE": {
+          "PG-202": {
+            "id": "PG-202",
+            "type": "PG-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-07-01"
+          },
+          "SW-202": {
+            "id": "SW-202",
+            "type": "SW-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-07-01",
+            "connectsfrom": "LP-123"
+          },
+          "LI-202.1": {
+            "id": "LI-202.1",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-07-01"
+          },
+          "LI-202.2": {
+            "id": "LI-202.2",
+            "type": "LI-01",
+            "assetid": "สถ.2569-119",
+            "installdate": "2025-07-01"
+          }
+        },
+        "CCTV": {
+          "CCTV-1": {
+            "id": "CCTV-1",
+            "type": "CCTV-xiaomi-home14852pro",
+            "assetid": "สถ.2569-cctv-119-002",
+            "installdate": "2025-06-01",
+            "monitors": "room-101"
+          },
+          "CCTV-2": {
+            "id": "CCTV-2",
+            "type": "CCTV-xiaomi-home14852pro",
+            "assetid": "สถ.2569-cctv-119-003",
+            "installdate": "2025-06-01",
+            "monitors": "room-102"
+          },
+          "CCTV-3": {
+            "id": "CCTV-3",
+            "type": "CCTV-xiaomi-home14852pro",
+            "assetid": "สถ.2569-cctv-119-004",
+            "installdate": "2025-06-01",
+            "monitors": "room-201"
+          },
+          "CCTV-4": {
+            "id": "CCTV-4",
+            "type": "CCTV-xiaomi-home14852pro",
+            "assetid": "สถ.2569-cctv-119-005",
+            "installdate": "2025-06-01",
+            "monitors": "room-202"
           }
         }
       }

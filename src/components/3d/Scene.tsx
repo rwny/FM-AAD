@@ -39,7 +39,7 @@ export function Scene({
             finalACAssets={finalACAssets}
           />
         ) : (
-          <BuildingPlaceholder />
+          <BuildingPlaceholder buildingData={buildingData} />
         )}
       </Suspense>
     </>
