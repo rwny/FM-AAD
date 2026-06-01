@@ -23,7 +23,7 @@ export function MasterDashboard() {
     const result: BldGroup[] = []
     try {
       const { data: nodes } = await supabase.from('kg_nodes').select('*')
-      const { data: logs } = await supabase.from('ac_maintenance_logs').select('*')
+      const { data: logs } = await supabase.from('ac_maintenance_logs').select('*').order('created_at', { ascending: false })
       const { data: edges } = await supabase.from('kg_edges').select('*')
       const allNodes = nodes || []
       const allLogs: any[] = logs || []
