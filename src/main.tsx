@@ -6,7 +6,6 @@ import './index.css'
 import App from './App.tsx'
 import { LandingPage } from './components/LandingPage.tsx'
 import { MasterDashboard } from './components/MasterDashboard.tsx'
-import { MasterFullDashboard } from './components/MasterFullDashboard.tsx'
 
 inject()
 
@@ -30,7 +29,6 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/master" element={<MasterDashboard />} />
-        <Route path="/master/full" element={<MasterFullDashboard />} />
         <Route path="/*" element={<App />} />
       </Routes>
     </BrowserRouter>

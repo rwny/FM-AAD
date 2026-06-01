@@ -142,7 +142,6 @@ export function MasterDashboard() {
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> {groups.reduce((s,g) => s + g.summary.normal, 0)}</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500"></span> {totalMaint}</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> {totalFaulty}</span>
-          <button onClick={() => navigate('/master/full')} className="ml-2 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1 font-semibold">📋 Full</button>
         </div>
       </header>
 
