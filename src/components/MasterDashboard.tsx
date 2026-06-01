@@ -9,7 +9,6 @@ export function MasterDashboard() {
   const navigate = useNavigate()
   const [allAssets, setAllAssets] = useState<ACAsset[]>([])
   const [allRooms, setAllRooms] = useState<Room[]>([])
-  const [allLogs, setAllLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -20,92 +19,85 @@ export function MasterDashboard() {
     setLoading(true)
     const combinedAssets: ACAsset[] = []
     const combinedRooms: Room[] = []
-    const allLogList: any[] = []
 
     try {
       for (const b of buildings) {
-        try {
-          // Fetch building data from Supabase
-          const { data: bldRes } = await supabase
-            .from('buildings')
-            .select('*')
-            .eq('code', b.code)
-            .maybeSingle()
+        // Only fetch buildings that exist in Supabase
+        const { data: bldRes } = await supabase
+          .from('buildings')
+          .select('id, code')
+          .eq('code', b.code)
+          .maybeSingle()
 
-          if (!bldRes) continue
+        if (!bldRes) continue
 
-          const { data: floors } = await supabase
-            .from('floors')
-            .select('*, rooms(*, assets(*, maintenance_logs(*)))')
-            .eq('building_id', bldRes.id)
-            .order('floor_number', { ascending: true })
+        // Fetch floors for this building
+        const { data: floors } = await supabase
+          .from('floors')
+          .select('*, rooms(*)')
+          .eq('building_id', bldRes.id)
 
-          if (!floors) continue
+        if (!floors || floors.length === 0) continue
 
-          for (const f of floors) {
-            const floorNum = f.floor_number || 1
-            for (const room of f.rooms || []) {
-              const roomId = room.room_id?.toLowerCase() || `rm-${room.name}`
-              const roomNumber = (room.room_id || room.name || '').replace(/[^0-9]/g, '') || '0'
-              const roomName = room.name || room.room_id || ''
+        for (const f of floors) {
+          const floorNum = f.floor_number || 1
+          for (const room of f.rooms || []) {
+            const roomId = room.room_id?.toLowerCase() || `rm-${room.name}`
+            const roomNumber = (room.room_id || room.name || '').replace(/[^0-9]/g, '') || '0'
 
-              combinedRooms.push({
-                id: roomId,
-                number: roomNumber,
-                floor: floorNum,
-                name: roomName,
-              })
+            combinedRooms.push({
+              id: roomId,
+              number: roomNumber,
+              floor: floorNum,
+              name: room.name || room.room_id || '',
+            })
 
-              for (const a of room.assets || []) {
-                const assetId = (a.metadata?.id || a.asset_id || '').toLowerCase()
-                const type: 'FCU' | 'CDU' = assetId.startsWith('cdu') ? 'CDU' : 'FCU'
-                combinedAssets.push({
-                  id: assetId,
-                  name: assetId.toUpperCase(),
-                  type,
-                  brand: a.brand || 'Unknown',
-                  model: a.model || '---',
-                  capacity: a.metadata?.capacity || '---',
-                  status: a.status || 'Normal',
-                  lastService: a.last_service || '',
-                  nextService: a.next_service || '',
-                  metadata: { buildingCode: b.code, installDate: a.install_date || '' },
-                  install: a.install_date || '',
-                } as any)
+            // Fetch assets for this room
+            const { data: assets } = await supabase
+              .from('assets')
+              .select('*')
+              .eq('room_id', room.id)
 
-                for (const log of a.maintenance_logs || []) {
-                  allLogList.push({ ...log, _buildingCode: b.code })
-                }
-              }
+            if (!assets) continue
+
+            for (const a of assets) {
+              const metadata = a.metadata || {}
+              const assetId = (metadata.id || a.asset_id || '').toLowerCase()
+              if (!assetId) continue
+
+              const type: 'FCU' | 'CDU' = assetId.startsWith('cdu') ? 'CDU' : 'FCU'
+              combinedAssets.push({
+                id: assetId,
+                name: assetId.toUpperCase(),
+                type,
+                brand: a.brand || 'Unknown',
+                model: a.model || '---',
+                capacity: metadata.capacity || '---',
+                status: a.status || 'Normal',
+                lastService: a.last_service || '',
+                nextService: a.next_service || '',
+                metadata: { buildingCode: b.code },
+                install: a.install_date || '',
+              } as any)
             }
           }
-        } catch { /* building has no data — skip */ }
+        }
+        console.log(`[Master] ${b.code}: ${combinedAssets.length} total AC so far`)
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.warn('[Master] load failed:', e)
+    }
 
-    // Sort assets by building code then id
-    combinedAssets.sort((a, b) => {
-      const ca = (a as any).metadata?.buildingCode || ''
-      const cb = (b as any).metadata?.buildingCode || ''
-      return ca.localeCompare(cb) || a.id.localeCompare(b.id)
-    })
-    combinedRooms.sort((a, b) => a.number.localeCompare(b.number))
-
+    combinedAssets.sort((a, b) => a.id.localeCompare(b.id))
     setAllAssets(combinedAssets)
     setAllRooms(combinedRooms)
-    setAllLogs(allLogList)
     setLoading(false)
+    console.log(`[Master] DONE: ${combinedAssets.length} AC units from all buildings`)
   }
 
   const handleSelect = (assetId: string) => {
     const asset = allAssets.find(a => a.id === assetId)
     const bldCode = (asset as any)?.metadata?.buildingCode || 'AR15'
-    navigate(`/${bldCode}/ac/${assetId}`)
-  }
-
-  const handleSelectLog = (log: any) => {
-    const bldCode = log._buildingCode || 'AR15'
-    const assetId = log.asset_id || ''
     navigate(`/${bldCode}/ac/${assetId}`)
   }
 
@@ -131,7 +123,7 @@ export function MasterDashboard() {
           assets={allAssets}
           rooms={allRooms}
           onSelect={handleSelect}
-          onSelectLog={handleSelectLog}
+          onSelectLog={(log: any) => handleSelect(log.asset_id || '')}
           onClose={() => navigate('/')}
         />
       )}
