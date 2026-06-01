@@ -12,7 +12,6 @@ const GLOW_COLOR = '#f59e0b'
 
 interface Props {
   buildingData?: Record<string, unknown>
-  acDbLogs?: any[]
 }
 
 /** Extract rooms + AC assets from buildingData (Supabase) when no 3D model exists */
