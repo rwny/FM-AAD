@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 import { buildings } from '../utils/buildings'
@@ -11,88 +11,118 @@ export function MasterDashboard() {
   const [allRooms, setAllRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadAllData()
-  }, [])
+  useEffect(() => { loadAllData() }, [])
 
   async function loadAllData() {
     setLoading(true)
-    const combinedAssets: ACAsset[] = []
-    const combinedRooms: Room[] = []
+    const assets: ACAsset[] = []
+    const rooms: Room[] = []
 
     try {
+      // Fetch ALL KG nodes at once (AC type nodes have room/floor info in metadata)
+      const { data: nodes } = await supabase.from('kg_nodes').select('*')
+      const allNodes = nodes || []
+      console.log('[Master] Raw kg_nodes sample:', allNodes.slice(0, 5).map(n => ({ name: n.name, type: n.type, metadata: n.metadata })))
+      console.log('[Master] Total kg_nodes:', allNodes.length)
+
+      // Fetch ALL AC maintenance logs to get status
+      const { data: logs } = await supabase.from('ac_maintenance_logs').select('*')
+      const allLogs: any[] = logs || []
+
+      // Group by building
       for (const b of buildings) {
-        // Only fetch buildings that exist in Supabase
-        const { data: bldRes } = await supabase
-          .from('buildings')
-          .select('id, code')
-          .eq('code', b.code)
-          .maybeSingle()
+        const prefix = b.code.toUpperCase()
+        const bldNodes = allNodes.filter(n => {
+          const name = (n.name || '').toUpperCase()
+          return name.startsWith(`${prefix}-`)
+        })
 
-        if (!bldRes) continue
+        if (bldNodes.length === 0) continue
 
-        // Fetch floors for this building
-        const { data: floors } = await supabase
-          .from('floors')
-          .select('*, rooms(*)')
-          .eq('building_id', bldRes.id)
+        // Find AC type nodes and their parent rooms
+        const acNodes = bldNodes.filter(n => {
+          const type = ((n.metadata as any)?.type || n.type || '').toLowerCase()
+          return type === 'ac' || (n.name || '').toLowerCase().includes('ac-')
+        })
 
-        if (!floors || floors.length === 0) continue
+        // Find room nodes (ARCH, FUR, AC parents)
+        const roomNodes = bldNodes.filter(n => {
+          const name = (n.name || '').toUpperCase()
+          return name.includes('ROOM-') || (name.match(/-AC-/) && !name.endsWith('-AC'))
+        })
 
-        for (const f of floors) {
-          const floorNum = f.floor_number || 1
-          for (const room of f.rooms || []) {
-            const roomId = room.room_id?.toLowerCase() || `rm-${room.name}`
-            const roomNumber = (room.room_id || room.name || '').replace(/[^0-9]/g, '') || '0'
+        // Map rooms
+        for (const rn of roomNodes) {
+          const name = (rn.name || '').replace(`${prefix}-`, '')
+          const roomNum = name.replace(/[^0-9]/g, '') || '0'
+          let floor = parseInt(roomNum.charAt(0)) || 1
+          const meta = (rn.metadata || {}) as any
+          if (meta.floor) floor = parseInt(meta.floor) || floor
 
-            combinedRooms.push({
-              id: roomId,
-              number: roomNumber,
-              floor: floorNum,
-              name: room.name || room.room_id || '',
-            })
+          rooms.push({
+            id: name.toLowerCase(),
+            number: roomNum,
+            floor,
+            name: meta.room_name || name,
+          })
+        }
 
-            // Fetch assets for this room
-            const { data: assets } = await supabase
-              .from('assets')
-              .select('*')
-              .eq('room_id', room.id)
+        // Map AC assets
+        for (const an of acNodes) {
+          const name = (an.name || '').replace(`${prefix}-`, '')
+          const meta = (an.metadata || {}) as any
+          const acType = meta.ac_type || '42TGF0361CP'
 
-            if (!assets) continue
+          // Extract AC unit IDs from this node's children or metadata
+          const childNodes = bldNodes.filter(n => {
+            const parent = (n.metadata as any)?.parent_id
+            return parent === an.id
+          })
 
-            for (const a of assets) {
-              const metadata = a.metadata || {}
-              const assetId = (metadata.id || a.asset_id || '').toLowerCase()
-              if (!assetId) continue
+          for (const cn of childNodes) {
+            const cnName = (cn.name || '').replace(`${prefix}-`, '').toLowerCase()
+            if (cnName.startsWith('fcu-') || cnName.startsWith('cdu-')) {
+              const type: 'FCU' | 'CDU' = cnName.startsWith('cdu') ? 'CDU' : 'FCU'
+              // Get logs for this asset
+              const assetLogs = allLogs.filter(l => {
+                const aid = (l.asset_id || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
+                const nid = cnName.replace(/[^a-z0-9-]/g, '')
+                return aid === nid || nid.includes(aid)
+              })
 
-              const type: 'FCU' | 'CDU' = assetId.startsWith('cdu') ? 'CDU' : 'FCU'
-              combinedAssets.push({
-                id: assetId,
-                name: assetId.toUpperCase(),
+              const latestStatus = assetLogs.length > 0 ? assetLogs[0].status : 'Normal'
+              const installDate = meta.install_date || ''
+
+              assets.push({
+                id: cnName,
+                name: cnName.toUpperCase(),
                 type,
-                brand: a.brand || 'Unknown',
-                model: a.model || '---',
-                capacity: metadata.capacity || '---',
-                status: a.status || 'Normal',
-                lastService: a.last_service || '',
-                nextService: a.next_service || '',
-                metadata: { buildingCode: b.code },
-                install: a.install_date || '',
+                brand: meta.brand || 'Carrier',
+                model: acType,
+                capacity: meta.capacity || '---',
+                status: latestStatus,
+                lastService: assetLogs.length > 0 ? assetLogs[0].date : '',
+                nextService: assetLogs.length > 0 ? 'Serviced' : 'Pending',
+                metadata: { buildingCode: b.code, installDate },
+                install: installDate,
               } as any)
             }
           }
         }
-        console.log(`[Master] ${b.code}: ${combinedAssets.length} total AC so far`)
+        console.log(`[Master] ${b.code}: ${assets.length} total AC so far`)
       }
     } catch (e) {
       console.warn('[Master] load failed:', e)
     }
 
-    combinedAssets.sort((a, b) => a.id.localeCompare(b.id))
-    setAllAssets(combinedAssets)
-    setAllRooms(combinedRooms)
+    // Deduplicate rooms
+    const roomMap = new Map<string, Room>()
+    for (const r of rooms) roomMap.set(r.id, r)
+
+    setAllAssets(assets)
+    setAllRooms(Array.from(roomMap.values()))
     setLoading(false)
-    console.log(`[Master] DONE: ${combinedAssets.length} AC units from all buildings`)
+    console.log(`[Master] DONE: ${assets.length} AC units, ${roomMap.size} rooms`)
   }
 
   const handleSelect = (assetId: string) => {
@@ -111,10 +141,7 @@ export function MasterDashboard() {
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <div className="text-5xl">📊</div>
           <p className="text-stone-400 dark:text-zinc-500 text-sm">ยังไม่มีข้อมูล AC ในระบบ</p>
-          <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm"
-          >
+          <button onClick={() => navigate('/')} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm">
             กลับหน้าแรก
           </button>
         </div>
