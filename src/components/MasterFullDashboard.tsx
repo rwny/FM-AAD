@@ -42,7 +42,7 @@ export function MasterFullDashboard() {
           if ((n.type || '').toLowerCase() === 'room') {
             const name = (n.name || '').replace(`${prefix}-`, '')
             rooms.push({
-              id: name.toLowerCase(),
+              id: `${prefix.toLowerCase()}-${name.toLowerCase()}`,
               number: name.replace(/[^0-9]/g, '') || '0',
               floor: parseInt(name.charAt(0)) || 1,
               name: ((n.metadata as any)?.room_name || name),
