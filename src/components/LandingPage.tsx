@@ -1,12 +1,15 @@
 import { buildings, type Building } from '../utils/buildings'
 import { useNavigate } from 'react-router-dom'
+import { useAppStore } from '../store'
 
 const TITLE_BG = "AAD · FACULTY OF ARCHITECTURE"
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const switchBuilding = useAppStore(s => s.switchBuilding)
 
   const handleSelect = (b: Building) => {
+    switchBuilding(b.code)
     navigate(`/${b.code}/ac`)
   }
 

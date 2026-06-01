@@ -5,6 +5,7 @@ import type { MergedACAsset, ACLogSummary } from './types/database'
 interface AppState {
   buildingCode: string
   setBuildingCode: (code: string) => void
+  switchBuilding: (code: string) => void
 
   activeMode: BIMMode
   setActiveMode: (mode: BIMMode) => void
@@ -46,6 +47,17 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   buildingCode: 'AR15',
   setBuildingCode: (buildingCode) => set({ buildingCode }),
+  switchBuilding: (code) =>
+    set({
+      buildingCode: code,
+      selectedRoomId: null,
+      selectedLog: null,
+      reportAsset: null,
+      clipFloor: null,
+      expandedFloors: {},
+      rooms: [],
+      acAssets: [],
+    }),
 
   activeMode: 'AC',
   setActiveMode: (activeMode) => set({ activeMode }),

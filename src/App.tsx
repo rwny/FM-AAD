@@ -56,6 +56,7 @@ function App() {
   const setSelectedLog = useAppStore(s => s.setSelectedLog)
   const buildingCode = useAppStore(s => s.buildingCode)
   const setBuildingCode = useAppStore(s => s.setBuildingCode)
+  const switchBuilding = useAppStore(s => s.switchBuilding)
   const isDarkMode = useAppStore(s => s.isDarkMode)
   const setDarkMode = useAppStore(s => s.setDarkMode)
 
@@ -116,7 +117,7 @@ function App() {
       }
     }
 
-    if (bld !== buildingCode) setBuildingCode(bld)
+    if (bld !== buildingCode) switchBuilding(bld)
     if (mode !== activeMode) setActiveMode(mode)
     if (itemId) setSelectedRoomId(itemId)
 
@@ -380,7 +381,7 @@ function App() {
                           onClick={() => {
                             setShowBldMenu(false)
                             if (!isActive) {
-                              setBuildingCode(b.code)
+                              switchBuilding(b.code)
                               navigate(`/${b.code}/ac`)
                             }
                           }}
