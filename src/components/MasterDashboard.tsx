@@ -96,7 +96,7 @@ export function MasterDashboard() {
 
           assets.push({
             id: name,
-            name: name.toUpperCase(),
+            name: `[${b.code}] ${name.toUpperCase()}`,
             type: acType,
             brand,
             model,
@@ -120,6 +120,12 @@ export function MasterDashboard() {
       console.warn('[Master] load failed:', e)
     }
 
+    // Sort by building code, then asset ID
+    assets.sort((a, b) => {
+      const ca = (a as any).metadata?.buildingCode || ''
+      const cb = (b as any).metadata?.buildingCode || ''
+      return ca.localeCompare(cb) || a.id.localeCompare(b.id)
+    })
     setAllAssets(assets)
     setLoading(false)
     console.log(`[Master] DONE: ${assets.length} AC units, ${rooms.length} rooms`)
