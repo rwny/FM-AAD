@@ -25,6 +25,7 @@ import { GlobalSearch } from './components/search/GlobalSearch'
 import { ProjectDashboard } from './components/ui/ProjectDashboard'
 import { Scene } from './components/3d/Scene'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { NotFoundPage } from './components/NotFoundPage'
 import { buildings, getBuilding } from './utils/buildings'
 
 const modes = [
@@ -182,6 +183,12 @@ function App() {
       if (result.mode !== activeMode) setActiveMode(result.mode)
       setSelectedRoomId(result.data.id)
     }
+  }
+
+  // 404 check — building code must exist in registry
+  const isValidBuilding = !!getBuilding(buildingCode)
+  if (!isValidBuilding && segments.length > 0) {
+    return <NotFoundPage />
   }
 
   return (
