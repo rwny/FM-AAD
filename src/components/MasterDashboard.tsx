@@ -19,113 +19,110 @@ export function MasterDashboard() {
     const rooms: Room[] = []
 
     try {
-      // Fetch ALL KG nodes at once (AC type nodes have room/floor info in metadata)
       const { data: nodes } = await supabase.from('kg_nodes').select('*')
-      const allNodes = nodes || []
-      console.log('[Master] Raw kg_nodes sample:', allNodes.slice(0, 5).map(n => ({ name: n.name, type: n.type, meta: n.metadata })))
-      console.log('[Master] Total kg_nodes:', allNodes.length)
-
-      // Debug: show AR15 nodes structure
-      console.log('[Master] AR15 nodes count:', allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).length)
-      console.log('[Master] AR15 node types:', [...new Set(allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).map(n => n.type || JSON.stringify(n.metadata)))].slice(0, 20))
-      console.log('[Master] AR15 node names (first 15):', allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).slice(0, 15).map(n => n.name))
       const { data: logs } = await supabase.from('ac_maintenance_logs').select('*')
+      const { data: edges } = await supabase.from('kg_edges').select('*')
+      const allNodes = nodes || []
       const allLogs: any[] = logs || []
+      const allEdges: any[] = edges || []
 
-      // Group by building
+      // Map: node id → node
+      const nodeMap = new Map<string, any>()
+      for (const n of allNodes) nodeMap.set(n.id, n)
+
       for (const b of buildings) {
         const prefix = b.code.toUpperCase()
-        const bldNodes = allNodes.filter(n => {
-          const name = (n.name || '').toUpperCase()
-          return name.startsWith(`${prefix}-`)
-        })
 
+        // Find all nodes for this building
+        const bldNodes = allNodes.filter(n => (n.name || '').toUpperCase().startsWith(`${prefix}-`))
         if (bldNodes.length === 0) continue
 
-        // Find AC type nodes and their parent rooms
-        const acNodes = bldNodes.filter(n => {
-          const type = ((n.metadata as any)?.type || n.type || '').toLowerCase()
-          return type === 'ac' || (n.name || '').toLowerCase().includes('ac-')
-        })
-
-        // Find room nodes (ARCH, FUR, AC parents)
-        const roomNodes = bldNodes.filter(n => {
-          const name = (n.name || '').toUpperCase()
-          return name.includes('ROOM-') || (name.match(/-AC-/) && !name.endsWith('-AC'))
-        })
-
-        // Map rooms
-        for (const rn of roomNodes) {
-          const name = (rn.name || '').replace(`${prefix}-`, '')
-          const roomNum = name.replace(/[^0-9]/g, '') || '0'
-          let floor = parseInt(roomNum.charAt(0)) || 1
-          const meta = (rn.metadata || {}) as any
-          if (meta.floor) floor = parseInt(meta.floor) || floor
-
-          rooms.push({
-            id: name.toLowerCase(),
-            number: roomNum,
-            floor,
-            name: meta.room_name || name,
-          })
-        }
-
-        // Map AC assets
-        for (const an of acNodes) {
-          const name = (an.name || '').replace(`${prefix}-`, '')
-          const meta = (an.metadata || {}) as any
-          const acType = meta.ac_type || '42TGF0361CP'
-
-          // Extract AC unit IDs from this node's children or metadata
-          const childNodes = bldNodes.filter(n => {
-            const parent = (n.metadata as any)?.parent_id
-            return parent === an.id
-          })
-
-          for (const cn of childNodes) {
-            const cnName = (cn.name || '').replace(`${prefix}-`, '').toLowerCase()
-            if (cnName.startsWith('fcu-') || cnName.startsWith('cdu-')) {
-              const type: 'FCU' | 'CDU' = cnName.startsWith('cdu') ? 'CDU' : 'FCU'
-              // Get logs for this asset
-              const assetLogs = allLogs.filter(l => {
-                const aid = (l.asset_id || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
-                const nid = cnName.replace(/[^a-z0-9-]/g, '')
-                return aid === nid || nid.includes(aid)
-              })
-
-              const latestStatus = assetLogs.length > 0 ? assetLogs[0].status : 'Normal'
-              const installDate = meta.install_date || ''
-
-              assets.push({
-                id: cnName,
-                name: cnName.toUpperCase(),
-                type,
-                brand: meta.brand || 'Carrier',
-                model: acType,
-                capacity: meta.capacity || '---',
-                status: latestStatus,
-                lastService: assetLogs.length > 0 ? assetLogs[0].date : '',
-                nextService: assetLogs.length > 0 ? 'Serviced' : 'Pending',
-                metadata: { buildingCode: b.code, installDate },
-                install: installDate,
-              } as any)
-            }
+        // Rooms: type === 'room' or type === 'floor'
+        for (const n of bldNodes) {
+          const type = (n.type || '').toLowerCase()
+          if (type === 'room') {
+            const name = (n.name || '').replace(`${prefix}-`, '')
+            const roomNum = name.replace(/[^0-9]/g, '') || '0'
+            const meta = n.metadata || {} as any
+            rooms.push({
+              id: name.toLowerCase(),
+              number: roomNum,
+              floor: parseInt(roomNum.charAt(0)) || 1,
+              name: meta.room_name || meta.name || name,
+            })
           }
         }
-        console.log(`[Master] ${b.code}: ${assets.length} total AC so far`)
+
+        // AC units: type === 'fcu' or type === 'cdu'
+        const acUnits = bldNodes.filter(n => {
+          const t = (n.type || '').toLowerCase()
+          return t === 'fcu' || t === 'cdu'
+        })
+
+        for (const unit of acUnits) {
+          const name = (unit.name || '').replace(`${prefix}-`, '').toLowerCase()
+          const meta = unit.metadata || {} as any
+          const acType: 'FCU' | 'CDU' = (unit.type || '').toLowerCase() === 'cdu' ? 'CDU' : 'FCU'
+
+          // Find parent AC_SET to get brand/install info
+          const parentEdges = allEdges.filter(e => e.object_id === unit.id && e.predicate === 'contains')
+          let brand = 'Carrier'
+          let model = '---'
+          let capacity = '---'
+          let installDate = ''
+
+          for (const pe of parentEdges) {
+            const parent = nodeMap.get(pe.subject_id)
+            if (parent && (parent.type === 'ac_set' || (parent.name || '').includes('AC-'))) {
+              const pmeta = parent.metadata || {} as any
+              brand = pmeta.brand || 'Carrier'
+              model = pmeta.model || pmeta.ac_type || '---'
+              capacity = pmeta.capacity || '---'
+              installDate = pmeta.install_date || ''
+              break
+            }
+          }
+
+          // Get logs for this unit
+          const unitLogs = allLogs.filter(l => {
+            const aid = (l.asset_id || '').toLowerCase().replace(/[^a-z0-9-]/g, '')
+            const nid = name.replace(/[^a-z0-9-]/g, '')
+            return aid === nid || nid.includes(aid) || aid.includes(nid)
+          })
+
+          const status = unitLogs.length > 0
+            ? (unitLogs[0].status || 'Normal')
+            : 'Normal'
+
+          assets.push({
+            id: name,
+            name: name.toUpperCase(),
+            type: acType,
+            brand,
+            model,
+            capacity,
+            status,
+            lastService: unitLogs.length > 0 ? unitLogs[0].date : '',
+            nextService: unitLogs.length > 0 ? 'Serviced' : installDate ? 'Due' : 'N/A',
+            metadata: { buildingCode: b.code, installDate },
+            install: installDate,
+          } as any)
+        }
+
+        console.log(`[Master] ${b.code}: ${acUnits.length} AC units (${assets.length} total)`)
       }
+
+      // Dedup rooms
+      const roomMap = new Map<string, Room>()
+      for (const r of rooms) roomMap.set(r.id, r)
+      setAllRooms(Array.from(roomMap.values()))
     } catch (e) {
       console.warn('[Master] load failed:', e)
     }
 
-    // Deduplicate rooms
-    const roomMap = new Map<string, Room>()
-    for (const r of rooms) roomMap.set(r.id, r)
-
     setAllAssets(assets)
-    setAllRooms(Array.from(roomMap.values()))
     setLoading(false)
-    console.log(`[Master] DONE: ${assets.length} AC units, ${roomMap.size} rooms`)
+    console.log(`[Master] DONE: ${assets.length} AC units, ${rooms.length} rooms`)
   }
 
   const handleSelect = (assetId: string) => {
