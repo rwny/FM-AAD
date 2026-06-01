@@ -14,3 +14,9 @@ ar15
 
 -- 
 ติดตรงนี้แน่ๆ เลย ดูดีๆ ว่าเรามี AC 1 ระบบ ประกอบด้วย 1FCU 1CDU แวลาแสดง ให้แสดง level AC 1 ตัว 
+
+/_vercel/insights/view
+MasterDashboard.tsx:70 [Master] fcu-204-1 logs: 3 install: 2025-01-01 status: Normal
+MasterDashboard.tsx:70 [Master] fcu-204-1 logs: 7 install: 2025-01-01 status: Normal
+MasterDashboard.tsx:70 [Master] fcu-204-1 logs: 3 install: 2025-01-01 status: Normal
+MasterDashboard.tsx:70 [Master] fcu-204-1 logs: 7 install: 2025-01-01 status: Normal
