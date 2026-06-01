@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { supabase } from '../utils/supabase'
 import { buildings } from '../utils/buildings'
+import { determineStatus } from '../utils/asset-utils'
 import type { ACAsset } from '../types/bim'
 
 interface BldGroup {
@@ -64,8 +65,8 @@ export function MasterFullDashboard() {
             const nid = name.replace(/[^a-z0-9-]/g, '')
             return aid === nid || nid.includes(aid) || aid.includes(nid)
           })
-          const status = unitLogs.length > 0 ? (unitLogs[0].status || 'Normal') : 'Normal'
-          const latestDate = unitLogs.length > 0 ? unitLogs[0].date : ''
+          const status = determineStatus(unitLogs, installDate || undefined)
+          const latestDate = unitLogs.length > 0 ? unitLogs.sort((a: any, b: any) => (a.created_at < b.created_at ? 1 : -1))[0].date : ''
 
           assets.push({
             id: name,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../utils/supabase'
 import { buildings } from '../utils/buildings'
+import { determineStatus } from '../utils/asset-utils'
 import type { ACAsset } from '../types/bim'
 
 interface BldGroup {
@@ -72,7 +73,7 @@ export function MasterDashboard() {
             return aid === nid || nid.includes(aid) || aid.includes(nid)
           })
 
-          const status = unitLogs.length > 0 ? (unitLogs[0].status || 'Normal') : 'Normal'
+          const status = determineStatus(unitLogs, installDate || undefined)
 
           assets.push({
             id: name,
