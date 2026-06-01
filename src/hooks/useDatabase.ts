@@ -7,7 +7,12 @@ import type { ACLogRow, KGNodeRow, KGEdgeRow } from '../types/database'
 function extractAssetIds(data: Record<string, unknown> | null): Set<string> {
   const ids = new Set<string>()
   if (!data || !data.floors) return ids
-  const floors = data.floors as any[]
+  
+  // floors can be array or object — handle both
+  const floors: any[] = Array.isArray(data.floors)
+    ? data.floors
+    : Object.values(data.floors as object)
+  
   for (const f of floors) {
     if (!f.rooms) continue
     for (const r of f.rooms) {
