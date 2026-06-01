@@ -83,7 +83,10 @@ export function MasterDashboard() {
     setLoading(false)
   }
 
-  const totalUnits = groups.reduce((s, g) => s + g.assets.length, 0)
+  const totalUnits = groups.reduce((s, g) => {
+    const keys = new Set(g.assets.map(a => { const p = a.id.split('-'); return p.length >= 3 ? `${p[1]}-${p[2]}` : a.id }))
+    return s + keys.size
+  }, 0)
   const totalFaulty = groups.reduce((s, g) => s + g.summary.faulty, 0)
   const totalMaint = groups.reduce((s, g) => s + g.summary.maint, 0)
 
@@ -95,15 +98,34 @@ export function MasterDashboard() {
   }
 
   const groupByFloor = (assets: ACAsset[]) => {
-    const map = new Map<number, ACAsset[]>()
+    // Merge FCU+CDU pairs into one "system" block per room
+    const systems = new Map<string, { id: string; fcu?: ACAsset; cdu?: ACAsset }>()
     for (const a of assets) {
       const parts = a.id.split('-')
+      const key = parts.length >= 3 ? `${parts[1]}-${parts[2]}` : a.id
+      if (!systems.has(key)) systems.set(key, { id: key })
+      const entry = systems.get(key)!
+      if (a.type === 'FCU') entry.fcu = a
+      else entry.cdu = a
+    }
+
+    const map = new Map<number, Array<{ id: string; status: string; name: string }>>()
+    for (const [, sys] of systems) {
+      const asset = sys.fcu || sys.cdu!
+      const fcuStatus = sys.fcu?.status || 'Normal'
+      const cduStatus = sys.cdu?.status || 'Normal'
+      // Worst status wins
+      const status = fcuStatus === 'Faulty' || cduStatus === 'Faulty' ? 'Faulty'
+        : fcuStatus === 'Maintenance' || cduStatus === 'Maintenance' ? 'Maintenance'
+        : 'Normal'
+      const parts = asset.id.split('-')
       const room = parts.length >= 2 ? parts[1] : ''
       const floor = parseInt(room.charAt(0)) || 1
+      const label = `AC-${sys.id}`
       if (!map.has(floor)) map.set(floor, [])
-      map.get(floor)!.push(a)
+      map.get(floor)!.push({ id: label, status, name: label })
     }
-    return Array.from(map.entries()).sort((a, b) => a[0] - b[0])
+    return Array.from(map.entries()).sort((a, b) => b[0] - a[0])
   }
 
   return (
@@ -137,7 +159,9 @@ export function MasterDashboard() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-xs font-black font-mono text-amber-600 dark:text-amber-400">{g.code}</span>
                     {g.name && <span className="text-[9px] text-stone-400 dark:text-zinc-600 truncate">{g.name}</span>}
-                    <span className="ml-auto text-[9px] text-stone-400 dark:text-zinc-600 font-mono">{g.assets.length}</span>
+                    <span className="ml-auto text-[9px] text-stone-400 dark:text-zinc-600 font-mono">
+                      {new Set(g.assets.map(a => { const p = a.id.split('-'); return p.length >= 3 ? `${p[1]}-${p[2]}` : a.id })).size}
+                    </span>
                   </div>
                   {/* Floor rows */}
                   {floors.map(([floor, assets]) => (
