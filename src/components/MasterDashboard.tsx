@@ -6,15 +6,11 @@ import { determineStatus } from '../utils/asset-utils'
 import type { ACAsset } from '../types/bim'
 
 interface BldGroup {
-  code: string
-  name: string
-  hasModel: boolean
-  assets: ACAsset[]
+  code: string; name: string; hasModel: boolean; assets: ACAsset[]
   summary: { normal: number; maint: number; faulty: number }
 }
 
 export function MasterDashboard() {
-  console.log('[Master] COMPONENT MOUNTED')
   const navigate = useNavigate()
   const [groups, setGroups] = useState<BldGroup[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,7 +21,6 @@ export function MasterDashboard() {
   async function loadAllData() {
     setLoading(true)
     const result: BldGroup[] = []
-
     try {
       const { data: nodes } = await supabase.from('kg_nodes').select('*')
       const { data: logs } = await supabase.from('ac_maintenance_logs').select('*')
@@ -43,11 +38,10 @@ export function MasterDashboard() {
         if (acUnits.length === 0) continue
 
         const assets: ACAsset[] = []
-        for (const unit of acUnits) {
+        for (const unit of acUnits) { try {
           const name = (unit.name || '').replace(`${prefix}-`, '').toLowerCase()
           const acType: 'FCU' | 'CDU' = (unit.type || '').toLowerCase() === 'cdu' ? 'CDU' : 'FCU'
           let installDate = ''
-          // Try parent AC_SET first, then unit's own metadata
           const parentEdges = allEdges.filter(e => e.object_id === unit.id && e.predicate === 'contains')
           for (const pe of parentEdges) {
             const parent = nodeMap.get(pe.subject_id)
@@ -57,7 +51,6 @@ export function MasterDashboard() {
               if (installDate) break
             }
           }
-          // Fallback: unit's own metadata
           if (!installDate) {
             const um = (unit.metadata || {}) as any
             installDate = um.install_date || um.InstallDate || ''
@@ -67,31 +60,15 @@ export function MasterDashboard() {
             const nid = name.replace(/[^a-z0-9-]/g, '')
             return aid === nid
           })
-          // Debug: show actual formats
-          if (name.includes('204-1') && unitLogs.length > 0) {
-            const latest = unitLogs.sort((a: any, b: any) => (a.created_at < b.created_at ? 1 : -1))[0]
-            console.log('[Master] fcu-204-1 detail:', {
-              name, nid: name.replace(/[^a-z0-9-]/g, ''),
-              logs: unitLogs.length,
-              latestStatus: latest?.status,
-              latestDate: latest?.date,
-              installDate,
-              status,
-              parentFound: parentEdges.length > 0,
-              unitMeta: unit.metadata,
-            })
-          }
           const status = determineStatus(unitLogs, installDate || undefined)
-          if (name.includes('204-1')) console.log('[Master] fcu-204-1 logs:', unitLogs.length, 'install:', installDate, 'status:', status)
-
           assets.push({
             id: name, name: name.toUpperCase(), type: acType,
             brand: '', model: '', capacity: '',
-            status,
-            lastService: '', nextService: '',
+            status, lastService: '', nextService: '',
             metadata: { buildingCode: b.code }, install: installDate,
           } as any)
-        }
+        } catch { /* skip broken unit */ } }
+
         assets.sort((a, b) => a.id.localeCompare(b.id))
         result.push({
           code: b.code, name: b.name === 'x' ? '' : b.name, hasModel: b.hasModel, assets,
@@ -103,7 +80,7 @@ export function MasterDashboard() {
         })
       }
       result.sort((a, b) => a.code.localeCompare(b.code))
-    } catch (e) { console.warn('[Master] load failed:', e) }
+    } catch { /* no data */ }
     setGroups(result)
     setLoading(false)
   }
@@ -123,7 +100,6 @@ export function MasterDashboard() {
   }
 
   const groupByFloor = (assets: ACAsset[]) => {
-    // Merge FCU+CDU pairs into one "system" block per room
     const systems = new Map<string, { id: string; fcu?: ACAsset; cdu?: ACAsset }>()
     for (const a of assets) {
       const parts = a.id.split('-')
@@ -133,16 +109,13 @@ export function MasterDashboard() {
       if (a.type === 'FCU') entry.fcu = a
       else entry.cdu = a
     }
-
     const map = new Map<number, Array<{ id: string; status: string; name: string }>>()
     for (const [, sys] of systems) {
       const asset = sys.fcu || sys.cdu!
       const fcuStatus = sys.fcu?.status || 'Normal'
       const cduStatus = sys.cdu?.status || 'Normal'
-      // Worst status wins
       const status = fcuStatus === 'Faulty' || cduStatus === 'Faulty' ? 'Faulty'
-        : fcuStatus === 'Maintenance' || cduStatus === 'Maintenance' ? 'Maintenance'
-        : 'Normal'
+        : fcuStatus === 'Maintenance' || cduStatus === 'Maintenance' ? 'Maintenance' : 'Normal'
       const parts = asset.id.split('-')
       const room = parts.length >= 2 ? parts[1] : ''
       const floor = parseInt(room.charAt(0)) || 1
@@ -160,10 +133,10 @@ export function MasterDashboard() {
           <button onClick={() => navigate('/')} className="text-stone-400 dark:text-zinc-500 hover:text-amber-600 text-lg">←</button>
           <div>
             <h1 className="text-lg font-bold tracking-tight">📊 Master Dashboard</h1>
-            <p className="text-[10px] text-stone-500 dark:text-zinc-500">{groups.length} อาคาร · {totalUnits} เครื่อง</p>
+            <p className="text-xs text-stone-500 dark:text-zinc-500">{groups.length} อาคาร · {totalUnits} เครื่อง</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[10px]">
+        <div className="flex items-center gap-2 text-xs">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> {groups.reduce((s,g) => s + g.summary.normal, 0)}</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500"></span> {totalMaint}</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> {totalFaulty}</span>
@@ -179,18 +152,16 @@ export function MasterDashboard() {
               const floors = groupByFloor(g.assets)
               return (
                 <div key={g.code}>
-                  {/* Building label */}
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-black font-mono text-amber-600 dark:text-amber-400">{g.code}</span>
-                    {g.name && <span className="text-[9px] text-stone-400 dark:text-zinc-600 truncate">{g.name}</span>}
-                    <span className="ml-auto text-[9px] text-stone-400 dark:text-zinc-600 font-mono">
+                    <span className="text-sm font-black font-mono text-amber-600 dark:text-amber-400">{g.code}</span>
+                    {g.name && <span className="text-xs text-stone-400 dark:text-zinc-600 truncate">{g.name}</span>}
+                    <span className="ml-auto text-xs text-stone-400 dark:text-zinc-600 font-mono">
                       {new Set(g.assets.map(a => { const p = a.id.split('-'); return p.length >= 3 ? `${p[1]}-${p[2]}` : a.id })).size}
                     </span>
                   </div>
-                  {/* Floor rows */}
                   {floors.map(([floor, assets]) => (
                     <div key={floor} className="flex items-center gap-1 mb-0.5">
-                      <span className="text-[8px] text-stone-400 dark:text-zinc-600 w-8 text-right font-mono shrink-0">F{floor}</span>
+                      <span className="text-[10px] text-stone-400 dark:text-zinc-600 w-8 text-right font-mono shrink-0">F{floor}</span>
                       <div className="flex gap-0.5 flex-wrap">
                         {assets.map(a => {
                           const id = `${g.code}-${a.id}`
@@ -217,7 +188,7 @@ export function MasterDashboard() {
         )}
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 border-t border-stone-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-6 py-2 flex items-center justify-center gap-4 text-[10px] text-stone-500 dark:text-zinc-500">
+      <footer className="fixed bottom-0 inset-x-0 border-t border-stone-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur px-6 py-2 flex items-center justify-center gap-4 text-xs text-stone-500 dark:text-zinc-500">
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> Normal</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-500"></span> Maintenance</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> Faulty</span>
