@@ -22,10 +22,13 @@ export function MasterDashboard() {
       // Fetch ALL KG nodes at once (AC type nodes have room/floor info in metadata)
       const { data: nodes } = await supabase.from('kg_nodes').select('*')
       const allNodes = nodes || []
-      console.log('[Master] Raw kg_nodes sample:', allNodes.slice(0, 5).map(n => ({ name: n.name, type: n.type, metadata: n.metadata })))
+      console.log('[Master] Raw kg_nodes sample:', allNodes.slice(0, 5).map(n => ({ name: n.name, type: n.type, meta: n.metadata })))
       console.log('[Master] Total kg_nodes:', allNodes.length)
 
-      // Fetch ALL AC maintenance logs to get status
+      // Debug: show AR15 nodes structure
+      console.log('[Master] AR15 nodes count:', allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).length)
+      console.log('[Master] AR15 node types:', [...new Set(allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).map(n => n.type || JSON.stringify(n.metadata)))].slice(0, 20))
+      console.log('[Master] AR15 node names (first 15):', allNodes.filter(n => (n.name || '').toUpperCase().startsWith('AR15-')).slice(0, 15).map(n => n.name))
       const { data: logs } = await supabase.from('ac_maintenance_logs').select('*')
       const allLogs: any[] = logs || []
 
