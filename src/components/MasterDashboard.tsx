@@ -129,19 +129,37 @@ export function MasterDashboard() {
           <div className="text-center py-12 text-stone-400">กำลังโหลด...</div>
         ) : (
           <div className="space-y-0.5">
-            {groups.map(g => (
-              <div key={g.code} className="flex items-center gap-2">
-                {/* Label */}
-                <div className="w-32 shrink-0 text-right pr-2">
-                  <div className="text-xs font-bold font-mono text-amber-600 dark:text-amber-400">{g.code}</div>
-                  {g.name && <div className="text-[9px] text-stone-400 dark:text-zinc-600 truncate">{g.name}</div>}
+            {groups.map(g => {
+              // Group assets by floor (from asset ID pattern: fcu-<room>-<unit>)
+              const byFloor = new Map<number, ACAsset[]>()
+              for (const a of g.assets) {
+                const parts = a.id.split('-')
+                const room = parts.length >= 2 ? parts[1] : ''
+                const floor = parseInt(room.charAt(0)) || 1
+                if (!byFloor.has(floor)) byFloor.set(floor, [])
+                byFloor.get(floor)!.push(a)
+              }
+              const floors = Array.from(byFloor.keys()).sort()
+
+              return (
+              <div key={g.code} className="pb-1">
+                {/* Building label */}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-xs font-black font-mono text-amber-600 dark:text-amber-400 w-32 text-right pr-2">{g.code}</span>
+                  {g.name && <span className="text-[9px] text-stone-400 dark:text-zinc-600 truncate">{g.name}</span>}
+                  <span className="ml-auto text-[9px] text-stone-400 dark:text-zinc-600 font-mono">{g.assets.length}</span>
                 </div>
 
-                {/* Blocks */}
-                <div className="flex gap-0.5 flex-wrap flex-1">
-                  {g.assets.map(a => {
-                    const isHovered = hovered === `${g.code}-${a.id}`
-                    return (
+                {/* Floors */}
+                {floors.map(floor => (
+                  <div key={floor} className="flex items-center gap-1 mb-0.5">
+                    <span className="text-[8px] text-stone-400 dark:text-zinc-600 w-32 text-right pr-2 font-mono shrink-0">
+                      F{floor}
+                    </span>
+                    <div className="flex gap-0.5 flex-wrap flex-1">
+                      {byFloor.get(floor)!.map(a => {
+                        const isHovered = hovered === `${g.code}-${a.id}`
+                        return (
                       <button
                         key={a.id}
                         onClick={() => navigate(`/${g.code}/ac/${a.id}`)}
@@ -154,16 +172,13 @@ export function MasterDashboard() {
                         `}
                         title={`${a.id.toUpperCase()} · ${a.status}`}
                       />
-                    )
-                  })}
-                </div>
-
-                {/* Count */}
-                <div className="w-10 shrink-0 text-right text-[9px] text-stone-400 dark:text-zinc-600 font-mono">
-                  {g.assets.length}
-                </div>
-              </div>
-            ))}
+                      )
+                      })}
+                      </div>
+                      </div>
+                      ))}
+                      </div>
+                      ))}
           </div>
         )}
       </main>

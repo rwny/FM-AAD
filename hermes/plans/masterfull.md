@@ -9,4 +9,5 @@ GitHub Contribution Graph หรือที่เรียกว่า Contribu
 ไปเรือ่ยๆ แสดง เขียว ส้ม แดง 
 
 ar15
-1st floor G G G G 
+1st floor G G G G Y R G G
+2nd floor G G G Y G G
